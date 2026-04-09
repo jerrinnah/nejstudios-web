@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NEJstudios — Production & Weddings</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- ══════════════ NAVIGATION ══════════════ -->
+  <nav class="nav" id="nav">
+    <div class="nav__inner">
+      <a href="#" class="nav__logo">
+        <span class="nav__logo-nej">NEJ</span><span class="nav__logo-studios">studios</span>
+      </a>
+      <ul class="nav__links" id="navLinks">
+        <li><a href="#services">Services</a></li>
+        <li><a href="#studio-gallery">Studio</a></li>
+        <li><a href="#weddings-gallery">Weddings</a></li>
+        <li><a href="#production-gallery">Production</a></li>
+        <li><a href="#packages">Packages</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+      <button class="btn btn--gold nav__cta book-trigger" aria-label="Book Now">Book Now</button>
+      <button class="nav__hamburger" id="hamburger" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <!-- Mobile menu -->
+    <div class="nav__mobile" id="mobileMenu">
+      <ul>
+        <li><a href="#services" onclick="closeMobile()">Services</a></li>
+        <li><a href="#studio-gallery" onclick="closeMobile()">Studio</a></li>
+        <li><a href="#weddings-gallery" onclick="closeMobile()">Weddings</a></li>
+        <li><a href="#production-gallery" onclick="closeMobile()">Production</a></li>
+        <li><a href="#packages" onclick="closeMobile()">Packages</a></li>
+        <li><a href="#about" onclick="closeMobile()">About</a></li>
+        <li><a href="#contact" onclick="closeMobile()">Contact</a></li>
+        <li><button class="mobile-cta book-trigger" onclick="closeMobile()">Book Now</button></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- ══════════════ HERO ══════════════ -->
+  <section class="hero" id="hero">
+    <div class="hero__bg">
+      <div class="hero__overlay"></div>
+      <div class="hero__film-grain"></div>
+    </div>
+    <div class="hero__content">
+      <p class="hero__eyebrow reveal">Studio · Weddings · Events — Lagos, Nigeria</p>
+      <h1 class="hero__title reveal">
+        Where<br /><em>Light Meets</em><br />Legacy.
+      </h1>
+      <p class="hero__sub reveal">
+        NEJstudios — a creative studio built on craft. We shoot portraits &amp; brand campaigns,<br class="d-none-mobile" />
+        tell wedding stories, and produce films that last a lifetime.
+      </p>
+      <div class="hero__actions reveal">
+        <button class="btn btn--gold btn--lg book-trigger">Book a Session</button>
+        <a href="#studio-gallery" class="btn btn--ghost btn--lg">View Our Work</a>
+      </div>
+    </div>
+    <div class="hero__scroll-hint">
+      <div class="hero__scroll-line"></div>
+      <span>Scroll</span>
+    </div>
+    <!-- Floating stat badges -->
+    <div class="hero__stats">
+      <div class="stat-badge"><strong>500+</strong><span>Events Covered</span></div>
+      <div class="stat-badge"><strong>8 yrs</strong><span>In Business</span></div>
+      <div class="stat-badge"><strong>4K</strong><span>Ultra HD Films</span></div>
+    </div>
+  </section>
+
+  <!-- ══════════════ BRAND STRIP ══════════════ -->
+  <div class="brand-strip">
+    <div class="brand-strip__track">
+      <span>Studio Sessions</span><span class="brand-strip__dot">✦</span>
+      <span>Weddings</span><span class="brand-strip__dot">✦</span>
+      <span>Brand Films</span><span class="brand-strip__dot">✦</span>
+      <span>Portraits</span><span class="brand-strip__dot">✦</span>
+      <span>Music Videos</span><span class="brand-strip__dot">✦</span>
+      <span>Traditional Ceremonies</span><span class="brand-strip__dot">✦</span>
+      <span>Drone Cinematography</span><span class="brand-strip__dot">✦</span>
+      <span>Documentary</span><span class="brand-strip__dot">✦</span>
+      <!-- duplicate for seamless loop -->
+      <span>Studio Sessions</span><span class="brand-strip__dot">✦</span>
+      <span>Weddings</span><span class="brand-strip__dot">✦</span>
+      <span>Brand Films</span><span class="brand-strip__dot">✦</span>
+      <span>Portraits</span><span class="brand-strip__dot">✦</span>
+      <span>Music Videos</span><span class="brand-strip__dot">✦</span>
+      <span>Traditional Ceremonies</span><span class="brand-strip__dot">✦</span>
+      <span>Drone Cinematography</span><span class="brand-strip__dot">✦</span>
+      <span>Documentary</span><span class="brand-strip__dot">✦</span>
+    </div>
+  </div>
+
+  <!-- ══════════════ SERVICES ══════════════ -->
+  <section class="services section" id="services">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-label">What We Do</span>
+        <h2 class="section-title">One Studio.<br /><em>Every Story.</em></h2>
+      </div>
+      <div class="services__grid services__grid--3">
+        <!-- Studio Sessions — PRIORITY 1 -->
+        <div class="service-card service-card--primary reveal" data-delay="0">
+          <div class="service-card__number">01</div>
+          <div class="service-card__icon">
+            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="24" cy="18" r="10" stroke="currentColor" stroke-width="2"/>
+              <path d="M6 42c0-9.94 8.06-18 18-18s18 8.06 18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="24" cy="18" r="4" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </div>
+          <h3>Studio Sessions</h3>
+          <p>Our creative studio is where great imagery begins. Portraits, fashion, commercial stills, and brand photography shot to a cinematic standard.</p>
+          <ul class="service-card__list">
+            <li>Portrait & Fashion Shoots</li>
+            <li>Commercial & Product Photography</li>
+            <li>Brand Identity Campaigns</li>
+            <li>Headshots & Editorial</li>
+            <li>Behind-the-Scenes Content</li>
+          </ul>
+          <button class="service-card__link book-trigger" data-type="studio">Book a Studio Session →</button>
+        </div>
+        <!-- Weddings — PRIORITY 2 -->
+        <div class="service-card service-card--accent service-card--featured reveal" data-delay="120">
+          <div class="service-card__number">02</div>
+          <div class="service-card__icon">
+            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M24 42C24 42 6 30 6 16a10 10 0 0118-6 10 10 0 0118 6c0 14-18 26-18 26z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M24 16c0-3.5 2-6 5-7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h3>Weddings</h3>
+          <p>Timeless films and photography that capture the emotions, the details, and the pure magic of your day — preserved forever.</p>
+          <ul class="service-card__list">
+            <li>Full-Day Wedding Films</li>
+            <li>Same-Day Edit Highlights</li>
+            <li>Pre-Wedding / Engagement Shoots</li>
+            <li>Traditional & White Weddings</li>
+            <li>Luxury Photo Albums</li>
+          </ul>
+          <button class="service-card__link book-trigger" data-type="wedding">Book Your Wedding →</button>
+        </div>
+        <!-- Event Production — PRIORITY 3 -->
+        <div class="service-card reveal" data-delay="240">
+          <div class="service-card__number">03</div>
+          <div class="service-card__icon">
+            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="3" y="9" width="30" height="22" rx="2" stroke="currentColor" stroke-width="2"/>
+              <path d="M33 17l12-6v26l-12-6V17z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              <circle cx="18" cy="39" r="3" stroke="currentColor" stroke-width="2"/>
+              <line x1="10" y1="39" x2="26" y2="39" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </div>
+          <h3>Event Production</h3>
+          <p>Full-scale video production for brands, corporate events, music artists, and live occasions. Built for impact, delivered on time.</p>
+          <ul class="service-card__list">
+            <li>Brand & Commercial Films</li>
+            <li>Music Videos</li>
+            <li>Corporate Event Coverage</li>
+            <li>Documentary & Short Films</li>
+            <li>Aerial & Drone Cinematography</li>
+          </ul>
+          <button class="service-card__link book-trigger" data-type="event">Book a Production →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ STUDIO GALLERY ══════════════ -->
+  <section class="gallery-section section" id="studio-gallery">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-label">Our Work</span>
+        <h2 class="section-title">Studio Gallery</h2>
+        <p class="section-desc">Behind-the-scenes, portraits, and stills from our studio shoots.</p>
+      </div>
+
+      <!-- Filter tabs -->
+      <div class="gallery-tabs reveal" id="studioTabs">
+        <button class="tab-btn active" data-filter="all">All</button>
+        <button class="tab-btn" data-filter="portrait">Portraits</button>
+        <button class="tab-btn" data-filter="bts">Behind the Scenes</button>
+        <button class="tab-btn" data-filter="commercial">Commercial</button>
+        <button class="tab-btn" data-filter="event">Events</button>
+      </div>
+
+      <!-- Masonry grid -->
+      <div class="masonry-grid reveal" id="studioGrid">
+        <div class="masonry-item" data-category="portrait">
+          <img src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=600&q=80" alt="Portrait shoot" loading="lazy" />
+          <div class="masonry-item__overlay"><span>Portrait Session</span></div>
+        </div>
+        <div class="masonry-item masonry-item--tall" data-category="bts">
+          <img src="https://images.unsplash.com/photo-1598387993441-a364f854c3e1?w=600&q=80" alt="Behind the scenes" loading="lazy" />
+          <div class="masonry-item__overlay"><span>Behind the Lens</span></div>
+        </div>
+        <div class="masonry-item" data-category="commercial">
+          <img src="https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=600&q=80" alt="Commercial shoot" loading="lazy" />
+          <div class="masonry-item__overlay"><span>Brand Campaign</span></div>
+        </div>
+        <div class="masonry-item" data-category="event">
+          <img src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&q=80" alt="Event coverage" loading="lazy" />
+          <div class="masonry-item__overlay"><span>Corporate Event</span></div>
+        </div>
+        <div class="masonry-item masonry-item--wide" data-category="portrait">
+          <img src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=800&q=80" alt="Portrait" loading="lazy" />
+          <div class="masonry-item__overlay"><span>Editorial Portrait</span></div>
+        </div>
+        <div class="masonry-item" data-category="bts">
+          <img src="https://images.unsplash.com/photo-1605296867424-35fc25c9212a?w=600&q=80" alt="Studio setup" loading="lazy" />
+          <div class="masonry-item__overlay"><span>Studio Setup</span></div>
+        </div>
+        <div class="masonry-item" data-category="commercial">
+          <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80" alt="Product shoot" loading="lazy" />
+          <div class="masonry-item__overlay"><span>Product Shoot</span></div>
+        </div>
+        <div class="masonry-item masonry-item--tall" data-category="event">
+          <img src="https://images.unsplash.com/photo-1511578314322-379afb476865?w=600&q=80" alt="Event" loading="lazy" />
+          <div class="masonry-item__overlay"><span>Gala Night</span></div>
+        </div>
+        <div class="masonry-item" data-category="portrait">
+          <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&q=80" alt="Portrait" loading="lazy" />
+          <div class="masonry-item__overlay"><span>Fashion Portrait</span></div>
+        </div>
+      </div>
+
+      <div class="gallery-footer reveal">
+        <button class="btn btn--ghost" id="loadMoreStudio">Load More</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ WEDDINGS GALLERY ══════════════ -->
+  <section class="gallery-section gallery-section--dark section" id="weddings-gallery">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-label">Love Stories</span>
+        <h2 class="section-title">Wedding Gallery</h2>
+        <p class="section-desc">Every couple has a story. We make sure it's told beautifully — forever.</p>
+      </div>
+
+      <div class="gallery-tabs reveal" id="weddingTabs">
+        <button class="tab-btn active" data-filter="all">All</button>
+        <button class="tab-btn" data-filter="photo">Photography</button>
+        <button class="tab-btn" data-filter="film">Films</button>
+        <button class="tab-btn" data-filter="traditional">Traditional</button>
+        <button class="tab-btn" data-filter="white">White Wedding</button>
+      </div>
+
+      <!-- Wedding mixed grid: photos + video cards -->
+      <div class="wedding-grid reveal" id="weddingGrid">
+
+        <!-- Photo items -->
+        <div class="wedding-item" data-category="white photo">
+          <img src="https://images.unsplash.com/photo-1519741497674-611481863552?w=600&q=80" alt="Wedding" loading="lazy" />
+          <div class="wedding-item__overlay"><span>Joy & David — 2024</span></div>
+        </div>
+        <div class="wedding-item wedding-item--tall" data-category="traditional photo">
+          <img src="https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=600&q=80" alt="Traditional wedding" loading="lazy" />
+          <div class="wedding-item__overlay"><span>Amaka & Chidi — Traditional</span></div>
+        </div>
+        <div class="wedding-item" data-category="white photo">
+          <img src="https://images.unsplash.com/photo-1529636798458-92182e662485?w=600&q=80" alt="Wedding ceremony" loading="lazy" />
+          <div class="wedding-item__overlay"><span>Ceremony Bliss</span></div>
+        </div>
+
+        <!-- Inline video card (film) -->
+        <div class="wedding-item wedding-item--video" data-category="film white">
+          <div class="video-thumb" data-video-id="s2-r8nJMHsY" data-source="youtube">
+            <img src="https://img.youtube.com/vi/s2-r8nJMHsY/hqdefault.jpg" alt="Wedding film" />
+            <div class="video-card__play">
+              <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="currentColor"/></svg>
+            </div>
+          </div>
+          <div class="wedding-item__video-info">
+            <span>Ada & Michael — Highlight Film</span>
+            <div>
+              <button class="btn btn--gold btn--sm play-btn" data-video-id="s2-r8nJMHsY" data-source="youtube">Play Film</button>
+              <a href="https://youtube.com" target="_blank" class="btn btn--ghost btn--sm">YouTube ↗</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="wedding-item" data-category="traditional photo">
+          <img src="https://images.unsplash.com/photo-1606800052052-a08af7148866?w=600&q=80" alt="Traditional wedding" loading="lazy" />
+          <div class="wedding-item__overlay"><span>Traditional Colours</span></div>
+        </div>
+        <div class="wedding-item wedding-item--wide" data-category="white photo">
+          <img src="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=800&q=80" alt="Wedding reception" loading="lazy" />
+          <div class="wedding-item__overlay"><span>Reception Magic</span></div>
+        </div>
+        <div class="wedding-item" data-category="white photo">
+          <img src="https://images.unsplash.com/photo-1550005809-91ad75fb315f?w=600&q=80" alt="Wedding" loading="lazy" />
+          <div class="wedding-item__overlay"><span>Golden Hour Portraits</span></div>
+        </div>
+
+        <!-- Second film card -->
+        <div class="wedding-item wedding-item--video" data-category="film traditional">
+          <div class="video-thumb" data-video-id="Ys5etSzLPHY" data-source="youtube">
+            <img src="https://img.youtube.com/vi/Ys5etSzLPHY/hqdefault.jpg" alt="Traditional film" />
+            <div class="video-card__play">
+              <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="currentColor"/></svg>
+            </div>
+          </div>
+          <div class="wedding-item__video-info">
+            <span>Ngozi & Emeka — Traditional Ceremony</span>
+            <div>
+              <button class="btn btn--gold btn--sm play-btn" data-video-id="Ys5etSzLPHY" data-source="youtube">Play Film</button>
+              <a href="https://youtube.com" target="_blank" class="btn btn--ghost btn--sm">YouTube ↗</a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="gallery-footer reveal">
+        <button class="btn btn--ghost book-trigger" data-type="wedding">Book Your Wedding →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ PRODUCTION GALLERY (VIDEOS) ══════════════ -->
+  <section class="gallery-section section" id="production-gallery">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-label">Showreel</span>
+        <h2 class="section-title">Production Gallery</h2>
+        <p class="section-desc">Films, brand content, and cinematic projects — watch directly or on YouTube.</p>
+      </div>
+
+      <!-- Filter tabs -->
+      <div class="gallery-tabs reveal" id="productionTabs">
+        <button class="tab-btn active" data-filter="all">All</button>
+        <button class="tab-btn" data-filter="brand">Brand Films</button>
+        <button class="tab-btn" data-filter="music">Music Videos</button>
+        <button class="tab-btn" data-filter="doc">Documentary</button>
+        <button class="tab-btn" data-filter="event">Event Films</button>
+      </div>
+
+      <!-- Video grid -->
+      <div class="video-grid reveal" id="productionGrid">
+
+        <!-- Featured / Hero video -->
+        <div class="video-card video-card--featured" data-category="brand">
+          <div class="video-thumb" data-video-id="dQw4w9WgXcQ" data-source="youtube">
+            <img src="https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg" alt="Brand film" />
+            <div class="video-card__play">
+              <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="currentColor"/></svg>
+            </div>
+            <div class="video-card__badge">YouTube</div>
+          </div>
+          <div class="video-card__info">
+            <span class="video-card__tag">Brand Film</span>
+            <h4>The Vision Campaign — 2024</h4>
+            <p>A cinematic brand story for a leading Lagos fashion house.</p>
+            <div class="video-card__actions">
+              <button class="btn btn--gold btn--sm play-btn" data-video-id="dQw4w9WgXcQ" data-source="youtube">Play Now</button>
+              <a href="https://youtube.com" target="_blank" class="btn btn--ghost btn--sm">Watch on YouTube ↗</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Regular video cards -->
+        <div class="video-card" data-category="music">
+          <div class="video-thumb" data-video-id="ZbZSe6N_BXs" data-source="youtube">
+            <img src="https://img.youtube.com/vi/ZbZSe6N_BXs/hqdefault.jpg" alt="Music video" />
+            <div class="video-card__play">
+              <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="currentColor"/></svg>
+            </div>
+            <div class="video-card__badge">YouTube</div>
+          </div>
+          <div class="video-card__info">
+            <span class="video-card__tag">Music Video</span>
+            <h4>Afrobeats — Official Video</h4>
+            <div class="video-card__actions">
+              <button class="btn btn--gold btn--sm play-btn" data-video-id="ZbZSe6N_BXs" data-source="youtube">Play</button>
+              <a href="https://youtube.com" target="_blank" class="btn btn--ghost btn--sm">YouTube ↗</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="video-card" data-category="doc">
+          <div class="video-thumb" data-video-id="ysz5S6PUM-U" data-source="youtube">
+            <img src="https://img.youtube.com/vi/ysz5S6PUM-U/hqdefault.jpg" alt="Documentary" />
+            <div class="video-card__play">
+              <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="currentColor"/></svg>
+            </div>
+            <div class="video-card__badge">YouTube</div>
+          </div>
+          <div class="video-card__info">
+            <span class="video-card__tag">Documentary</span>
+            <h4>Stories from Lagos — Short Doc</h4>
+            <div class="video-card__actions">
+              <button class="btn btn--gold btn--sm play-btn" data-video-id="ysz5S6PUM-U" data-source="youtube">Play</button>
+              <a href="https://youtube.com" target="_blank" class="btn btn--ghost btn--sm">YouTube ↗</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="video-card" data-category="event">
+          <div class="video-thumb" data-video-id="3JZ_D3ELwOQ" data-source="youtube">
+            <img src="https://img.youtube.com/vi/3JZ_D3ELwOQ/hqdefault.jpg" alt="Event film" />
+            <div class="video-card__play">
+              <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="currentColor"/></svg>
+            </div>
+            <div class="video-card__badge">YouTube</div>
+          </div>
+          <div class="video-card__info">
+            <span class="video-card__tag">Event Film</span>
+            <h4>Gala Night — Corporate Event</h4>
+            <div class="video-card__actions">
+              <button class="btn btn--gold btn--sm play-btn" data-video-id="3JZ_D3ELwOQ" data-source="youtube">Play</button>
+              <a href="https://youtube.com" target="_blank" class="btn btn--ghost btn--sm">YouTube ↗</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="video-card" data-category="brand">
+          <div class="video-thumb" data-video-id="hT_nvWreIhg" data-source="youtube">
+            <img src="https://img.youtube.com/vi/hT_nvWreIhg/hqdefault.jpg" alt="Brand film" />
+            <div class="video-card__play">
+              <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="currentColor"/></svg>
+            </div>
+            <div class="video-card__badge">YouTube</div>
+          </div>
+          <div class="video-card__info">
+            <span class="video-card__tag">Brand Film</span>
+            <h4>Fashion Week Highlight Reel</h4>
+            <div class="video-card__actions">
+              <button class="btn btn--gold btn--sm play-btn" data-video-id="hT_nvWreIhg" data-source="youtube">Play</button>
+              <a href="https://youtube.com" target="_blank" class="btn btn--ghost btn--sm">YouTube ↗</a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="gallery-footer reveal">
+        <button class="btn btn--ghost book-trigger" data-type="event">Book a Production →</button>
+      </div>
+    </div>
+  </section>
+    </div>
+  </section>
+
+  <!-- ══════════════ PACKAGES ══════════════ -->
+  <section class="packages section section--dark" id="packages">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-label">Pricing</span>
+        <h2 class="section-title">Our Packages</h2>
+        <p class="section-desc">Tailored packages for every kind of story. All packages are customisable.</p>
+      </div>
+
+      <!-- Package tabs -->
+      <div class="pkg-tabs reveal">
+        <button class="pkg-tab active" data-pkg="production">Production</button>
+        <button class="pkg-tab" data-pkg="wedding">Wedding</button>
+      </div>
+
+      <!-- Production packages -->
+      <div class="packages__grid reveal" id="productionPkgs">
+        <div class="pkg-card">
+          <div class="pkg-card__header">
+            <span class="pkg-card__eyebrow">Starter</span>
+            <h3>Essential</h3>
+            <div class="pkg-card__price">From <strong>₦150,000</strong></div>
+          </div>
+          <ul class="pkg-card__features">
+            <li>Half-Day Shoot (4hrs)</li>
+            <li>1 Camera Setup</li>
+            <li>Basic Colour Grade</li>
+            <li>3–5 Min Final Deliverable</li>
+            <li>Digital Delivery</li>
+          </ul>
+          <a href="#booking" class="btn btn--outline pkg-card__cta">Book This Package</a>
+        </div>
+        <div class="pkg-card pkg-card--featured">
+          <div class="pkg-card__badge">Most Popular</div>
+          <div class="pkg-card__header">
+            <span class="pkg-card__eyebrow">Professional</span>
+            <h3>Premium</h3>
+            <div class="pkg-card__price">From <strong>₦350,000</strong></div>
+          </div>
+          <ul class="pkg-card__features">
+            <li>Full-Day Shoot (8hrs)</li>
+            <li>2 Camera Setup + Drone</li>
+            <li>Cinematic Colour Grade</li>
+            <li>5–10 Min Final Film</li>
+            <li>Behind-the-Scenes Package</li>
+            <li>Social Media Cuts Included</li>
+          </ul>
+          <a href="#booking" class="btn btn--gold pkg-card__cta">Book This Package</a>
+        </div>
+        <div class="pkg-card">
+          <div class="pkg-card__header">
+            <span class="pkg-card__eyebrow">Enterprise</span>
+            <h3>Bespoke</h3>
+            <div class="pkg-card__price">Custom</div>
+          </div>
+          <ul class="pkg-card__features">
+            <li>Multi-Day Production</li>
+            <li>Full Crew & Equipment</li>
+            <li>Script & Concept Development</li>
+            <li>Custom Deliverables</li>
+            <li>Dedicated Project Manager</li>
+            <li>Rush Turnaround Available</li>
+          </ul>
+          <a href="#contact" class="btn btn--outline pkg-card__cta">Get a Quote</a>
+        </div>
+      </div>
+
+      <!-- Wedding packages -->
+      <div class="packages__grid reveal" id="weddingPkgs" style="display:none">
+        <div class="pkg-card">
+          <div class="pkg-card__header">
+            <span class="pkg-card__eyebrow">Classic</span>
+            <h3>Essentials</h3>
+            <div class="pkg-card__price">From <strong>₦250,000</strong></div>
+          </div>
+          <ul class="pkg-card__features">
+            <li>6-Hour Coverage</li>
+            <li>1 Photographer / 1 Videographer</li>
+            <li>300+ Edited Photos</li>
+            <li>5-Min Highlight Film</li>
+            <li>Online Gallery Delivery</li>
+          </ul>
+          <a href="#booking" class="btn btn--outline pkg-card__cta">Book This Package</a>
+        </div>
+        <div class="pkg-card pkg-card--featured">
+          <div class="pkg-card__badge">Most Popular</div>
+          <div class="pkg-card__header">
+            <span class="pkg-card__eyebrow">Signature</span>
+            <h3>Complete</h3>
+            <div class="pkg-card__price">From <strong>₦550,000</strong></div>
+          </div>
+          <ul class="pkg-card__features">
+            <li>Full-Day Coverage (12hrs)</li>
+            <li>2 Photographers + 2 Videographers</li>
+            <li>500+ Edited Photos</li>
+            <li>10-Min Cinematic Film</li>
+            <li>Same-Day Edit Highlight</li>
+            <li>Drone Coverage</li>
+            <li>Printed Album Included</li>
+          </ul>
+          <a href="#booking" class="btn btn--gold pkg-card__cta">Book This Package</a>
+        </div>
+        <div class="pkg-card">
+          <div class="pkg-card__header">
+            <span class="pkg-card__eyebrow">Ultimate</span>
+            <h3>Luxury</h3>
+            <div class="pkg-card__price">Custom</div>
+          </div>
+          <ul class="pkg-card__features">
+            <li>Multi-Day Wedding Coverage</li>
+            <li>Traditional + White Wedding</li>
+            <li>Pre-Wedding Shoot Included</li>
+            <li>Full Feature Film (30+ mins)</li>
+            <li>Luxury Photo Book</li>
+            <li>Dedicated Wedding Director</li>
+          </ul>
+          <a href="#contact" class="btn btn--outline pkg-card__cta">Get a Quote</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ ABOUT ══════════════ -->
+  <section class="about section" id="about">
+    <div class="container">
+      <div class="about__inner">
+        <div class="about__media reveal">
+          <div class="about__img-stack">
+            <img src="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500&q=80" alt="NEJstudios team" class="about__img about__img--back" />
+            <img src="https://images.unsplash.com/photo-1598387993441-a364f854c3e1?w=500&q=80" alt="NEJstudios at work" class="about__img about__img--front" />
+          </div>
+          <div class="about__badge-floating">
+            <strong>2016</strong>
+            <span>Est.</span>
+          </div>
+        </div>
+        <div class="about__content reveal">
+          <span class="section-label">Our Story</span>
+          <h2 class="section-title">Crafted with<br /><em>Purpose.</em></h2>
+          <p>NEJstudios was born out of a simple but powerful belief — that every moment worth living is worth preserving. What started as a one-person passion project in Lagos has grown into a full production house trusted by brands, families, and couples across Nigeria.</p>
+          <p>We obsess over light, emotion, and storytelling. Whether we're on a commercial set or capturing a bride's first glance at her groom, our standard never changes: excellence in every frame.</p>
+          <div class="about__milestones">
+            <div class="milestone">
+              <strong>500+</strong>
+              <span>Events Covered</span>
+            </div>
+            <div class="milestone">
+              <strong>200+</strong>
+              <span>Weddings</span>
+            </div>
+            <div class="milestone">
+              <strong>50+</strong>
+              <span>Brand Films</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ TESTIMONIALS ══════════════ -->
+  <section class="testimonials section section--dark" id="testimonials">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-label">Kind Words</span>
+        <h2 class="section-title">What Our Clients Say</h2>
+      </div>
+      <div class="testimonials__slider reveal" id="testimonialSlider">
+        <div class="testimonials__track" id="testimonialTrack">
+
+          <div class="testimonial-card">
+            <div class="testimonial-card__stars">★★★★★</div>
+            <blockquote>"NEJstudios didn't just film our wedding — they told our story. Every time we watch the film, we relive that day all over again. Absolute professionals."</blockquote>
+            <div class="testimonial-card__author">
+              <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Ada O." />
+              <div>
+                <strong>Ada Okonkwo</strong>
+                <span>Wedding Client, 2024</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="testimonial-card">
+            <div class="testimonial-card__stars">★★★★★</div>
+            <blockquote>"We hired NEJstudios for our brand launch film and the result was beyond expectations. The team was professional, creative, and delivered on time. Highly recommended."</blockquote>
+            <div class="testimonial-card__author">
+              <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Emeka A." />
+              <div>
+                <strong>Emeka Adeyemi</strong>
+                <span>Brand Client — Adeyemi Holdings</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="testimonial-card">
+            <div class="testimonial-card__stars">★★★★★</div>
+            <blockquote>"From our engagement shoot to our wedding day, NEJstudios was with us every step. The photos are stunning and the film had our entire family in tears — of joy!"</blockquote>
+            <div class="testimonial-card__author">
+              <img src="https://randomuser.me/api/portraits/women/68.jpg" alt="Ngozi M." />
+              <div>
+                <strong>Ngozi & Michael Eze</strong>
+                <span>Wedding Clients, 2023</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="testimonial-card">
+            <div class="testimonial-card__stars">★★★★★</div>
+            <blockquote>"Outstanding quality, creative vision, and a team that genuinely cares. NEJstudios has been our go-to for all video productions for the past 3 years."</blockquote>
+            <div class="testimonial-card__author">
+              <img src="https://randomuser.me/api/portraits/men/75.jpg" alt="Tunde B." />
+              <div>
+                <strong>Tunde Babatunde</strong>
+                <span>Brand Client — TBL Media</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="testimonials__controls">
+          <button class="testimonials__btn" id="prevTestimonial" aria-label="Previous">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <div class="testimonials__dots" id="testimonialDots"></div>
+          <button class="testimonials__btn" id="nextTestimonial" aria-label="Next">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ BOOKING CTA ══════════════ -->
+  <section class="booking-cta section" id="booking">
+    <div class="booking-cta__bg"></div>
+    <div class="container">
+      <div class="booking-cta__inner reveal">
+        <span class="section-label">Ready to Begin?</span>
+        <h2>Let's Create Something<br /><em>Unforgettable</em></h2>
+        <p>Tell us about your vision and we'll craft the perfect plan.</p>
+        <button class="btn btn--gold btn--lg book-trigger">Reserve Your Date →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ BOOKING FORM ══════════════ -->
+  <section class="booking-form-section section section--dark" id="booking-form">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-label">Let's Talk</span>
+        <h2 class="section-title">Event Booking Form</h2>
+        <p class="section-desc">Tell us about your event and we'll craft the perfect plan for you.</p>
+      </div>
+
+      <form class="booking-form reveal" id="bookingForm" novalidate>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="firstName">First Name *</label>
+            <input type="text" id="firstName" name="firstName" placeholder="Your first name" required />
+          </div>
+          <div class="form-group">
+            <label for="lastName">Last Name *</label>
+            <input type="text" id="lastName" name="lastName" placeholder="Your last name" required />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="email">Email Address *</label>
+            <input type="email" id="email" name="email" placeholder="your@email.com" required />
+          </div>
+          <div class="form-group">
+            <label for="phone">Phone Number *</label>
+            <input type="tel" id="phone" name="phone" placeholder="+234 800 000 0000" required />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="eventType">Event Type *</label>
+            <select id="eventType" name="eventType" required>
+              <option value="" disabled selected>Select event type</option>
+              <optgroup label="Production">
+                <option value="brand-film">Brand / Commercial Film</option>
+                <option value="music-video">Music Video</option>
+                <option value="documentary">Documentary</option>
+                <option value="corporate-event">Corporate Event Coverage</option>
+                <option value="other-production">Other Production</option>
+              </optgroup>
+              <optgroup label="Weddings">
+                <option value="traditional-wedding">Traditional Wedding</option>
+                <option value="white-wedding">White Wedding</option>
+                <option value="full-wedding">Full Wedding (Traditional + White)</option>
+                <option value="engagement">Engagement / Pre-Wedding Shoot</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="package">Preferred Package</label>
+            <select id="package" name="package">
+              <option value="" disabled selected>Select a package</option>
+              <option value="essential">Essential</option>
+              <option value="premium">Premium / Complete</option>
+              <option value="luxury">Luxury / Bespoke</option>
+              <option value="custom">Custom — Let's Discuss</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="eventDate">Event Date *</label>
+            <input type="date" id="eventDate" name="eventDate" required />
+          </div>
+          <div class="form-group">
+            <label for="eventLocation">Event Location *</label>
+            <input type="text" id="eventLocation" name="eventLocation" placeholder="City, State" required />
+          </div>
+        </div>
+
+        <div class="form-group form-group--full">
+          <label for="budget">Estimated Budget</label>
+          <select id="budget" name="budget">
+            <option value="" disabled selected>Select a budget range</option>
+            <option value="under150">Under ₦150,000</option>
+            <option value="150-350">₦150,000 – ₦350,000</option>
+            <option value="350-600">₦350,000 – ₦600,000</option>
+            <option value="600-1m">₦600,000 – ₦1,000,000</option>
+            <option value="above1m">Above ₦1,000,000</option>
+          </select>
+        </div>
+
+        <div class="form-group form-group--full">
+          <label for="message">Tell Us About Your Vision</label>
+          <textarea id="message" name="message" rows="5" placeholder="Describe your event, style preferences, special requirements, or anything that will help us understand your vision..."></textarea>
+        </div>
+
+        <div class="form-group form-group--full form-check">
+          <label class="checkbox-label">
+            <input type="checkbox" name="consent" required />
+            <span>I agree to be contacted by NEJstudios regarding my enquiry.*</span>
+          </label>
+        </div>
+
+        <div class="form-submit">
+          <button type="submit" class="btn btn--gold btn--lg btn--full">
+            <span class="btn-text">Send Booking Request</span>
+            <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </button>
+        </div>
+
+        <!-- Success message -->
+        <div class="form-success" id="formSuccess" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <h3>Request Sent!</h3>
+          <p>Thank you! We've received your enquiry and will be in touch within 24 hours.</p>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- ══════════════ CONTACT ══════════════ -->
+  <section class="contact section" id="contact">
+    <div class="container">
+      <div class="contact__inner">
+        <div class="contact__info reveal">
+          <span class="section-label">Find Us</span>
+          <h2 class="section-title">Get in Touch</h2>
+          <p>Have questions? Want to chat about your project before booking? Reach out — we'd love to hear from you.</p>
+          <div class="contact__details">
+            <div class="contact__item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.81 19.79 19.79 0 01.07 2.18 2 2 0 012.03.02h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0122 16.92z"/></svg>
+              <div>
+                <strong>Phone</strong>
+                <a href="tel:+2348000000000">+234 800 000 0000</a>
+              </div>
+            </div>
+            <div class="contact__item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              <div>
+                <strong>Email</strong>
+                <a href="mailto:hello@nejstudios.com">hello@nejstudios.com</a>
+              </div>
+            </div>
+            <div class="contact__item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              <div>
+                <strong>Location</strong>
+                <span>Lagos, Nigeria</span>
+              </div>
+            </div>
+          </div>
+          <div class="contact__social">
+            <a href="#" aria-label="Instagram" class="social-link">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+            </a>
+            <a href="#" aria-label="YouTube" class="social-link">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22.54 6.42a2.78 2.78 0 00-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 00-1.95 1.96A29 29 0 001 12a29 29 0 00.46 5.58A2.78 2.78 0 003.41 19.6C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 001.95-1.95A29 29 0 0023 12a29 29 0 00-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"/></svg>
+            </a>
+            <a href="#" aria-label="Facebook" class="social-link">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+            </a>
+            <a href="#" aria-label="TikTok" class="social-link">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/></svg>
+            </a>
+          </div>
+        </div>
+        <div class="contact__map reveal">
+          <div class="map-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <p>Lagos, Nigeria</p>
+            <span>We travel across Nigeria and internationally</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ FOOTER ══════════════ -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer__top">
+        <div class="footer__brand">
+          <a href="#" class="nav__logo">
+            <span class="nav__logo-nej">NEJ</span><span class="nav__logo-studios">studios</span>
+          </a>
+          <p>Premium production studio crafting cinematic stories for brands, events, and love stories across Nigeria.</p>
+        </div>
+        <div class="footer__links">
+          <div class="footer__col">
+            <h5>Services</h5>
+            <ul>
+              <li><a href="#production-gallery">Production Studio</a></li>
+              <li><a href="#weddings-gallery">Wedding Studio</a></li>
+              <li><a href="#studio-gallery">Photography</a></li>
+              <li><a href="#packages">Packages</a></li>
+            </ul>
+          </div>
+          <div class="footer__col">
+            <h5>Company</h5>
+            <ul>
+              <li><a href="#about">About Us</a></li>
+              <li><a href="#testimonials">Testimonials</a></li>
+              <li><a href="#contact">Contact</a></li>
+              <li><a href="#booking">Book an Event</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="footer__bottom">
+        <span>© 2026 NEJstudios. All rights reserved.</span>
+        <span>Designed with craft in Lagos, Nigeria. &nbsp;·&nbsp; <a href="dashboard.html" style="color:var(--grey-4);transition:.3s" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--grey-4)'">Studio Dashboard</a> &nbsp;·&nbsp; <a href="cms.html" style="color:var(--grey-4);transition:.3s" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--grey-4)'">Website Manager</a></span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ══════════════ BOOKING CHOOSER ══════════════ -->
+  <div class="chooser-overlay" id="bookingChooser" role="dialog" aria-modal="true" aria-label="Choose booking type">
+    <div class="chooser-backdrop" id="chooserBackdrop"></div>
+    <div class="chooser-panel">
+      <button class="chooser-close" id="chooserClose" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <div class="chooser-header">
+        <span class="section-label">Let's Begin</span>
+        <h3>What are you<br /><em>booking today?</em></h3>
+      </div>
+      <div class="chooser-cards">
+        <!-- Studio Session -->
+        <button class="chooser-card" data-type="studio">
+          <div class="chooser-card__icon">
+            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="24" cy="18" r="10" stroke="currentColor" stroke-width="2"/>
+              <path d="M6 42c0-9.94 8.06-18 18-18s18 8.06 18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="24" cy="18" r="4" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </div>
+          <div class="chooser-card__text">
+            <strong>Studio Session</strong>
+            <span>Portraits · Fashion · Brand Photography · Headshots</span>
+          </div>
+          <svg class="chooser-card__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
+        <!-- Wedding -->
+        <button class="chooser-card chooser-card--highlight" data-type="wedding">
+          <div class="chooser-card__icon">
+            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M24 42C24 42 6 30 6 16a10 10 0 0118-6 10 10 0 0118 6c0 14-18 26-18 26z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M24 16c0-3.5 2-6 5-7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="chooser-card__text">
+            <strong>Wedding</strong>
+            <span>Traditional · White Wedding · Engagement · Full Coverage</span>
+          </div>
+          <svg class="chooser-card__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
+        <!-- Event Production -->
+        <button class="chooser-card" data-type="event">
+          <div class="chooser-card__icon">
+            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="3" y="9" width="30" height="22" rx="2" stroke="currentColor" stroke-width="2"/>
+              <path d="M33 17l12-6v26l-12-6V17z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="chooser-card__text">
+            <strong>Event Production</strong>
+            <span>Brand Films · Music Videos · Corporate · Documentary</span>
+          </div>
+          <svg class="chooser-card__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
+      </div>
+      <p class="chooser-note">Not sure? <button class="chooser-contact" onclick="document.getElementById('bookingChooser').classList.remove('open'); document.querySelector('#contact').scrollIntoView({behavior:'smooth'})">Send us a message</button> and we'll guide you.</p>
+    </div>
+  </div>
+
+  <!-- ══════════════ VIDEO MODAL ══════════════ -->
+  <div class="video-modal" id="videoModal">
+    <div class="video-modal__backdrop" id="modalBackdrop"></div>
+    <div class="video-modal__inner">
+      <button class="video-modal__close" id="modalClose" aria-label="Close video">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <div class="video-modal__embed" id="modalEmbed"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════ BACK TO TOP ══════════════ -->
+  <button class="back-to-top" id="backToTop" aria-label="Back to top">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+  </button>
+
+  <script src="js/site-content.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

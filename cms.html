@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Website Manager — NEJstudios</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:#080808;--bg-2:#0f0f0f;--bg-3:#141414;--bg-4:#1a1a1a;
+      --border:#2a2a2a;--border-l:#383838;
+      --gold:#c9a84c;--gold-lt:#e0c06a;--gold-glow:rgba(201,168,76,.14);
+      --white:#fff;--grey-1:#e8e8e8;--grey-2:#b0b0b0;--grey-3:#707070;--grey-4:#404040;
+      --green:#3ecf8e;--green-bg:rgba(62,207,142,.1);
+      --blue:#60a5fa;--blue-bg:rgba(96,165,250,.1);
+      --orange:#fb923c;--orange-bg:rgba(251,146,60,.1);
+      --red:#f87171;--red-bg:rgba(248,113,113,.1);
+      --purple:#a78bfa;--purple-bg:rgba(167,139,250,.1);
+      --serif:'Playfair Display',Georgia,serif;
+      --sans:'Outfit',system-ui,sans-serif;
+      --trans:.25s cubic-bezier(.4,0,.2,1);
+      --r:8px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{background:var(--bg);color:var(--grey-1);font-family:var(--sans);min-height:100vh}
+    a{color:inherit;text-decoration:none}
+    button{cursor:pointer;border:none;background:none;font-family:inherit}
+    input,select,textarea{font-family:inherit}
+    ::-webkit-scrollbar{width:4px}
+    ::-webkit-scrollbar-track{background:var(--bg)}
+    ::-webkit-scrollbar-thumb{background:var(--gold);border-radius:99px}
+    ::selection{background:var(--gold);color:#000}
+    img{display:block;max-width:100%}
+
+    /* ── LOGIN ── */
+    #loginGate{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px}
+    #loginGate.hidden{display:none}
+    .login-box{background:var(--bg-2);border:1px solid var(--border);border-radius:20px;padding:44px 40px;width:100%;max-width:400px;text-align:center}
+    .login-logo{font-size:1.4rem;font-weight:700;margin-bottom:6px}
+    .ln{color:var(--gold);font-family:var(--serif)}
+    .ls{color:var(--white);font-family:var(--sans);font-weight:300;font-size:.9rem}
+    .login-badge{display:inline-block;margin:0 0 24px;font-size:.62rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;background:var(--purple);color:#000;padding:3px 10px;border-radius:99px}
+    .login-box h2{font-family:var(--serif);font-size:1.35rem;color:var(--white);margin-bottom:6px}
+    .login-box p{font-size:.82rem;color:var(--grey-3);margin-bottom:24px}
+    .pin-wrap{position:relative;margin-bottom:14px}
+    .pin-wrap input{width:100%;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--r);padding:13px 16px 13px 42px;color:var(--white);font-size:.95rem;outline:none;transition:var(--trans)}
+    .pin-wrap input:focus{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-glow)}
+    .pin-wrap svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--grey-4)}
+    .login-err{font-size:.78rem;color:var(--red);min-height:18px;margin-bottom:10px}
+    .btn-login{width:100%;padding:13px;background:var(--gold);color:#000;font-weight:700;font-size:.82rem;letter-spacing:.08em;text-transform:uppercase;border-radius:var(--r);transition:var(--trans)}
+    .btn-login:hover{background:var(--gold-lt)}
+    .login-hint{margin-top:14px;font-size:.7rem;color:var(--grey-4)}
+
+    /* ── SHELL ── */
+    .shell{display:flex;min-height:100vh}
+
+    /* ── SIDEBAR ── */
+    .sidebar{width:220px;flex-shrink:0;background:var(--bg-2);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:200;overflow-y:auto}
+    .sb-logo{padding:20px 18px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+    .sb-logo-text{font-size:1.2rem;font-weight:700}
+    .sb-badge{font-size:.55rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:var(--purple);color:#000;padding:2px 7px;border-radius:99px}
+    .sb-nav{flex:1;padding:12px 0}
+    .sb-section{font-size:.6rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--grey-4);padding:10px 18px 5px}
+    .sb-item{display:flex;align-items:center;gap:10px;padding:10px 18px;font-size:.83rem;color:var(--grey-2);transition:var(--trans);cursor:pointer;border-left:2px solid transparent;width:100%;text-align:left}
+    .sb-item svg{width:15px;height:15px;flex-shrink:0}
+    .sb-item:hover{color:var(--white);background:rgba(255,255,255,.03)}
+    .sb-item.active{color:var(--gold);border-left-color:var(--gold);background:var(--gold-glow)}
+    .sb-footer{padding:14px 18px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px}
+    .btn-preview{width:100%;padding:9px;background:var(--gold);color:#000;font-weight:700;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;border-radius:6px;display:flex;align-items:center;justify-content:center;gap:6px;transition:var(--trans)}
+    .btn-preview:hover{background:var(--gold-lt)}
+    .btn-preview svg{width:13px;height:13px}
+    .btn-logout-sm{width:100%;padding:8px;background:var(--bg-3);border:1px solid var(--border);border-radius:6px;font-size:.72rem;color:var(--grey-3);display:flex;align-items:center;justify-content:center;gap:6px;transition:var(--trans)}
+    .btn-logout-sm:hover{color:var(--red);border-color:var(--red)}
+    .btn-logout-sm svg{width:13px;height:13px}
+
+    /* ── MAIN ── */
+    .main{margin-left:220px;flex:1;display:flex;flex-direction:column}
+    .top-bar{background:var(--bg-2);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+    .top-bar__title{font-size:.95rem;font-weight:600;color:var(--white)}
+    .top-bar__sub{font-size:.75rem;color:var(--grey-3);margin-top:2px}
+    .saved-indicator{font-size:.72rem;color:var(--green);display:flex;align-items:center;gap:5px;opacity:0;transition:opacity .4s}
+    .saved-indicator.show{opacity:1}
+    .saved-indicator svg{width:13px;height:13px}
+
+    /* ── CONTENT AREA ── */
+    .content{padding:28px;max-width:900px}
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
+
+    /* ── SECTION CARD ── */
+    .cms-card{background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:20px}
+    .cms-card__title{font-size:.72rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+    .cms-card__title svg{width:14px;height:14px}
+
+    /* ── FORM ELEMENTS ── */
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+    .form-row--3{grid-template-columns:1fr 1fr 1fr}
+    .fg{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+    .fg:last-child{margin-bottom:0}
+    label.lbl{font-size:.68rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--grey-3)}
+    input[type=text],input[type=url],input[type=email],input[type=tel],select,textarea{background:var(--bg-3);border:1px solid var(--border);border-radius:6px;padding:10px 14px;color:var(--white);font-size:.875rem;font-family:var(--sans);outline:none;transition:var(--trans);width:100%}
+    input:focus,select:focus,textarea:focus{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-glow)}
+    input::placeholder,textarea::placeholder{color:var(--grey-4)}
+    textarea{resize:vertical;min-height:80px}
+    select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23707070' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;cursor:pointer}
+    select option{background:var(--bg-3)}
+
+    /* Toggle */
+    .toggle-row{display:flex;align-items:center;gap:10px}
+    .toggle{position:relative;width:40px;height:22px;flex-shrink:0}
+    .toggle input{opacity:0;width:0;height:0;position:absolute}
+    .toggle-slider{position:absolute;inset:0;background:var(--bg-4);border:1px solid var(--border);border-radius:99px;cursor:pointer;transition:var(--trans)}
+    .toggle-slider::before{content:'';position:absolute;width:16px;height:16px;left:2px;top:2px;background:var(--grey-3);border-radius:50%;transition:var(--trans)}
+    .toggle input:checked + .toggle-slider{background:var(--gold-glow);border-color:var(--gold)}
+    .toggle input:checked + .toggle-slider::before{transform:translateX(18px);background:var(--gold)}
+    .toggle-label{font-size:.82rem;color:var(--grey-2)}
+
+    /* Buttons */
+    .btn-save{padding:10px 24px;background:var(--gold);color:#000;font-weight:700;font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;border-radius:6px;transition:var(--trans);display:inline-flex;align-items:center;gap:7px}
+    .btn-save:hover{background:var(--gold-lt)}
+    .btn-save svg{width:14px;height:14px}
+    .btn-add{padding:8px 18px;background:var(--bg-3);border:1px solid var(--border);border-radius:6px;font-size:.75rem;color:var(--grey-2);display:inline-flex;align-items:center;gap:6px;transition:var(--trans)}
+    .btn-add:hover{border-color:var(--gold);color:var(--gold)}
+    .btn-add svg{width:13px;height:13px}
+    .btn-ghost-sm{padding:6px 12px;border:1px solid var(--border);border-radius:5px;font-size:.7rem;color:var(--grey-3);transition:var(--trans)}
+    .btn-ghost-sm:hover{border-color:var(--border-l);color:var(--white)}
+    .btn-danger-sm{padding:6px 12px;border:1px solid transparent;border-radius:5px;font-size:.7rem;color:var(--grey-4);transition:var(--trans)}
+    .btn-danger-sm:hover{border-color:var(--red);color:var(--red)}
+
+    .section-save-row{display:flex;align-items:center;justify-content:space-between;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+    .reset-link{font-size:.72rem;color:var(--grey-4);cursor:pointer;transition:var(--trans)}
+    .reset-link:hover{color:var(--red)}
+
+    /* ── ITEMS LIST ── */
+    .items-list{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+    .list-item{background:var(--bg-3);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;display:flex;gap:12px;align-items:flex-start}
+    .list-item__thumb{width:60px;height:45px;border-radius:5px;object-fit:cover;flex-shrink:0;background:var(--bg-4)}
+    .list-item__yt{width:60px;height:45px;border-radius:5px;overflow:hidden;flex-shrink:0;background:#000}
+    .list-item__yt img{width:100%;height:100%;object-fit:cover}
+    .list-item__body{flex:1;min-width:0}
+    .list-item__label{font-size:.85rem;font-weight:500;color:var(--white);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .list-item__meta{font-size:.72rem;color:var(--grey-3)}
+    .list-item__actions{display:flex;gap:6px;flex-shrink:0;margin-left:auto}
+
+    /* ── ADD FORM ── */
+    .add-form{background:var(--bg-3);border:1px solid var(--border-l);border-radius:var(--r);padding:16px;margin-bottom:14px;display:none}
+    .add-form.open{display:block}
+    .add-form__title{font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:14px}
+    .add-form-btns{display:flex;gap:8px;margin-top:12px}
+
+    /* ── PACKAGE GRID ── */
+    .pkg-edit-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+    .pkg-edit-card{background:var(--bg-3);border:1px solid var(--border);border-radius:var(--r);padding:16px}
+    .pkg-edit-card.featured-card{border-color:rgba(201,168,76,.4)}
+    .pkg-edit-card__header{font-size:.65rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:12px}
+    .features-list{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+    .feature-item{display:flex;align-items:center;gap:6px}
+    .feature-item input{flex:1}
+    .feature-item button{width:22px;height:22px;border-radius:4px;color:var(--grey-4);transition:var(--trans);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .feature-item button:hover{color:var(--red);background:var(--red-bg)}
+    .feature-item button svg{width:11px;height:11px}
+    .add-feature{font-size:.72rem;color:var(--grey-3);cursor:pointer;display:inline-flex;align-items:center;gap:4px;margin-top:6px;transition:var(--trans)}
+    .add-feature:hover{color:var(--gold)}
+    .add-feature svg{width:12px;height:12px}
+
+    /* ── TESTIMONIALS ── */
+    .testi-list{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+    .testi-item{background:var(--bg-3);border:1px solid var(--border);border-radius:var(--r);padding:14px}
+    .testi-item__quote{font-style:italic;font-size:.85rem;color:var(--grey-2);margin-bottom:8px;line-height:1.5}
+    .testi-item__meta{font-size:.78rem;color:var(--grey-3);display:flex;justify-content:space-between;align-items:center}
+    .testi-item__actions{display:flex;gap:6px}
+
+    /* ── MEDIA PREVIEW ── */
+    .img-preview{width:100%;height:120px;object-fit:cover;border-radius:6px;border:1px solid var(--border);margin-top:8px;background:var(--bg-4);display:none}
+    .img-preview.show{display:block}
+
+    /* ── HERO PREVIEW ── */
+    .hero-preview{background:var(--bg-3);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:14px;text-align:center}
+    .hp-eyebrow{font-size:.65rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+    .hp-title{font-family:var(--serif);font-size:1.6rem;font-weight:600;color:var(--white);line-height:1.2}
+    .hp-title em{font-style:italic;color:var(--gold)}
+    .hp-sub{font-size:.82rem;color:var(--grey-2);margin-top:8px;line-height:1.6}
+
+    /* ── COLOR CHIPS ── */
+    .stat-chips{display:flex;gap:10px}
+    .stat-chip{flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px}
+    .stat-chip__val{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--grey-3);margin-bottom:4px}
+    .stat-chip input{font-size:.875rem;color:var(--white);background:transparent;border:none;outline:none;width:100%;padding:0}
+
+    /* ── TOAST ── */
+    .toast{position:fixed;bottom:24px;right:24px;z-index:9999;background:var(--bg-2);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:var(--r);padding:12px 18px;font-size:.83rem;color:var(--grey-1);transform:translateY(12px);opacity:0;transition:var(--trans);pointer-events:none;max-width:300px}
+    .toast.show{transform:translateY(0);opacity:1}
+
+    /* ── RESPONSIVE ── */
+    @media(max-width:900px){
+      .sidebar{transform:translateX(-100%)}
+      .sidebar.open{transform:none}
+      .main{margin-left:0}
+      .pkg-edit-grid{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══ -->
+<div id="loginGate">
+  <div class="login-box">
+    <div class="login-logo"><span class="ln">NEJ</span><span class="ls">studios</span></div>
+    <div class="login-badge">Website Manager</div>
+    <h2>Manage Your Site</h2>
+    <p>Enter your CMS PIN to continue</p>
+    <div class="pin-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      <input type="password" id="pinInput" placeholder="Enter PIN" autocomplete="off" maxlength="30" />
+    </div>
+    <div class="login-err" id="loginErr"></div>
+    <button class="btn-login" id="loginBtn">Enter CMS</button>
+    <p class="login-hint">Default PIN: <strong>nej2026</strong></p>
+  </div>
+</div>
+
+<!-- ══ SHELL ══ -->
+<div class="shell" id="cmsShell" style="display:none">
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-text"><span class="ln">NEJ</span><span class="ls">studios</span></div>
+      <span class="sb-badge">CMS</span>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-section">Content</div>
+      <button class="sb-item active" data-tab="hero">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>
+        Hero Section
+      </button>
+      <button class="sb-item" data-tab="services">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14"/><path d="M4.93 4.93a10 10 0 000 14.14"/></svg>
+        Services
+      </button>
+      <button class="sb-item" data-tab="about">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        About
+      </button>
+      <div class="sb-section" style="margin-top:4px">Gallery</div>
+      <button class="sb-item" data-tab="studio-gallery">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        Studio Gallery
+      </button>
+      <button class="sb-item" data-tab="wedding-gallery">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+        Wedding Gallery
+      </button>
+      <button class="sb-item" data-tab="production-videos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+        Production Videos
+      </button>
+      <div class="sb-section" style="margin-top:4px">Pricing</div>
+      <button class="sb-item" data-tab="packages-production">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        Production Packages
+      </button>
+      <button class="sb-item" data-tab="packages-wedding">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        Wedding Packages
+      </button>
+      <div class="sb-section" style="margin-top:4px">Social</div>
+      <button class="sb-item" data-tab="testimonials">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        Testimonials
+      </button>
+      <button class="sb-item" data-tab="contact">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2A19.79 19.79 0 0112 18.69a19.5 19.5 0 01-8-8 19.79 19.79 0 01-3-8.67A2 2 0 012.81 0h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L6.91 7.91A16 16 0 0012.91 13l1.27-1.27a2 2 0 012.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0122 16.92z"/></svg>
+        Contact & Socials
+      </button>
+      <button class="sb-item" data-tab="settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        Site Settings
+      </button>
+    </nav>
+    <div class="sb-footer">
+      <a href="index.html" target="_blank" class="btn-preview">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        Preview Site
+      </a>
+      <button class="btn-logout-sm" id="logoutBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Sign Out
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="top-bar">
+      <div>
+        <div class="top-bar__title" id="topBarTitle">Hero Section</div>
+        <div class="top-bar__sub">Changes are applied live when you save</div>
+      </div>
+      <div class="saved-indicator" id="savedIndicator">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        Saved
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ══ HERO TAB ══ -->
+      <div class="tab-panel active" id="tab-hero">
+        <div class="cms-card">
+          <div class="cms-card__title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><eye/><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Live Preview
+          </div>
+          <div class="hero-preview">
+            <div class="hp-eyebrow" id="hp-eyebrow">Studio · Weddings · Events — Lagos, Nigeria</div>
+            <div class="hp-title" id="hp-title">Where <em>Light Meets</em> Legacy.</div>
+            <div class="hp-sub" id="hp-sub">NEJstudios — a creative studio built on craft.</div>
+          </div>
+        </div>
+        <div class="cms-card">
+          <div class="cms-card__title">Eyebrow &amp; Title</div>
+          <div class="fg">
+            <label class="lbl">Eyebrow Text</label>
+            <input type="text" id="hero-eyebrow" placeholder="Studio · Weddings · Events — Lagos, Nigeria" />
+          </div>
+          <div class="form-row form-row--3">
+            <div class="fg">
+              <label class="lbl">Title Line 1</label>
+              <input type="text" id="hero-line1" placeholder="Where" />
+            </div>
+            <div class="fg">
+              <label class="lbl">Line 2 (italic/gold)</label>
+              <input type="text" id="hero-line2" placeholder="Light Meets" />
+            </div>
+            <div class="fg">
+              <label class="lbl">Title Line 3</label>
+              <input type="text" id="hero-line3" placeholder="Legacy." />
+            </div>
+          </div>
+          <div class="fg">
+            <label class="lbl">Subtitle Paragraph</label>
+            <textarea id="hero-sub" rows="2" placeholder="NEJstudios — a creative studio built on craft..."></textarea>
+          </div>
+        </div>
+        <div class="cms-card">
+          <div class="cms-card__title">CTA Buttons</div>
+          <div class="form-row">
+            <div class="fg">
+              <label class="lbl">Button 1 Text (opens booking chooser)</label>
+              <input type="text" id="hero-cta1" placeholder="Book a Session" />
+            </div>
+            <div class="fg">
+              <label class="lbl">Button 2 Text</label>
+              <input type="text" id="hero-cta2" placeholder="View Our Work" />
+            </div>
+          </div>
+        </div>
+        <div class="cms-card">
+          <div class="cms-card__title">Background Image</div>
+          <div class="fg">
+            <label class="lbl">Hero Background Image URL</label>
+            <input type="url" id="hero-bg" placeholder="https://images.unsplash.com/..." />
+            <img class="img-preview" id="hero-bg-preview" alt="Hero preview" />
+          </div>
+        </div>
+        <div class="section-save-row">
+          <button class="btn-save" data-save="hero">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Save Hero
+          </button>
+          <span class="reset-link" data-reset="hero">Reset to default</span>
+        </div>
+      </div>
+
+      <!-- ══ SERVICES TAB ══ -->
+      <div class="tab-panel" id="tab-services">
+        <div id="servicesEditor"></div>
+        <div class="section-save-row">
+          <button class="btn-save" data-save="services">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+            Save Services
+          </button>
+          <span class="reset-link" data-reset="services">Reset to default</span>
+        </div>
+      </div>
+
+      <!-- ══ ABOUT TAB ══ -->
+      <div class="tab-panel" id="tab-about">
+        <div class="cms-card">
+          <div class="cms-card__title">About Text</div>
+          <div class="form-row">
+            <div class="fg">
+              <label class="lbl">Title Line 1</label>
+              <input type="text" id="about-title" placeholder="Crafted with" />
+            </div>
+            <div class="fg">
+              <label class="lbl">Title Line 2 (italic/gold)</label>
+              <input type="text" id="about-titleItalic" placeholder="Purpose." />
+            </div>
+          </div>
+          <div class="fg">
+            <label class="lbl">Paragraph 1</label>
+            <textarea id="about-para1" rows="3"></textarea>
+          </div>
+          <div class="fg">
+            <label class="lbl">Paragraph 2</label>
+            <textarea id="about-para2" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="cms-card">
+          <div class="cms-card__title">Milestone Stats</div>
+          <div class="form-row form-row--3">
+            <div class="fg"><label class="lbl">Stat 1 Value</label><input type="text" id="about-m1v" placeholder="500+" /></div>
+            <div class="fg"><label class="lbl">Stat 1 Label</label><input type="text" id="about-m1l" placeholder="Events Covered" /></div>
+          </div>
+          <div class="form-row form-row--3">
+            <div class="fg"><label class="lbl">Stat 2 Value</label><input type="text" id="about-m2v" placeholder="200+" /></div>
+            <div class="fg"><label class="lbl">Stat 2 Label</label><input type="text" id="about-m2l" placeholder="Weddings" /></div>
+          </div>
+          <div class="form-row form-row--3">
+            <div class="fg"><label class="lbl">Stat 3 Value</label><input type="text" id="about-m3v" placeholder="50+" /></div>
+            <div class="fg"><label class="lbl">Stat 3 Label</label><input type="text" id="about-m3l" placeholder="Brand Films" /></div>
+          </div>
+        </div>
+        <div class="section-save-row">
+          <button class="btn-save" data-save="about">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+            Save About
+          </button>
+          <span class="reset-link" data-reset="about">Reset to default</span>
+        </div>
+      </div>
+
+      <!-- ══ STUDIO GALLERY TAB ══ -->
+      <div class="tab-panel" id="tab-studio-gallery">
+        <div class="cms-card">
+          <div class="cms-card__title">Studio Gallery Photos</div>
+          <div class="items-list" id="studioGalleryList"></div>
+          <button class="btn-add" id="addStudioImg">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Photo
+          </button>
+          <div class="add-form" id="addStudioForm">
+            <div class="add-form__title">New Photo</div>
+            <div class="fg"><label class="lbl">Image URL</label><input type="url" id="sg-url" placeholder="https://..." /></div>
+            <div class="form-row">
+              <div class="fg"><label class="lbl">Caption / Label</label><input type="text" id="sg-label" placeholder="Portrait Session" /></div>
+              <div class="fg">
+                <label class="lbl">Category</label>
+                <select id="sg-cat">
+                  <option value="portrait">Portrait</option>
+                  <option value="bts">Behind the Scenes</option>
+                  <option value="commercial">Commercial</option>
+                  <option value="event">Event</option>
+                </select>
+              </div>
+            </div>
+            <div class="toggle-row" style="margin-bottom:12px">
+              <label class="toggle"><input type="checkbox" id="sg-tall" /><span class="toggle-slider"></span></label>
+              <span class="toggle-label">Tall image (portrait ratio)</span>
+            </div>
+            <div class="add-form-btns">
+              <button class="btn-save" id="sg-add-btn">Add Photo</button>
+              <button class="btn-ghost-sm" id="sg-cancel-btn">Cancel</button>
+            </div>
+          </div>
+        </div>
+        <div class="section-save-row">
+          <button class="btn-save" data-save="studioGallery">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+            Save Gallery
+          </button>
+          <span class="reset-link" data-reset="studioGallery">Reset to default</span>
+        </div>
+      </div>
+
+      <!-- ══ WEDDING GALLERY TAB ══ -->
+      <div class="tab-panel" id="tab-wedding-gallery">
+        <div class="cms-card">
+          <div class="cms-card__title">Wedding Photos</div>
+          <div class="items-list" id="weddingPhotoList"></div>
+          <button class="btn-add" id="addWeddingPhoto">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Photo
+          </button>
+          <div class="add-form" id="addWeddingPhotoForm">
+            <div class="add-form__title">New Wedding Photo</div>
+            <div class="fg"><label class="lbl">Image URL</label><input type="url" id="wp-url" placeholder="https://..." /></div>
+            <div class="form-row">
+              <div class="fg"><label class="lbl">Caption</label><input type="text" id="wp-label" placeholder="Joy & David — 2024" /></div>
+              <div class="fg">
+                <label class="lbl">Category</label>
+                <select id="wp-cat">
+                  <option value="white photo">White Wedding</option>
+                  <option value="traditional photo">Traditional</option>
+                  <option value="photo">General</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="toggle-row"><label class="toggle"><input type="checkbox" id="wp-tall" /><span class="toggle-slider"></span></label><span class="toggle-label">Tall</span></div>
+              <div class="toggle-row"><label class="toggle"><input type="checkbox" id="wp-wide" /><span class="toggle-slider"></span></label><span class="toggle-label">Wide (2 columns)</span></div>
+            </div>
+            <div class="add-form-btns">
+              <button class="btn-save" id="wp-add-btn">Add Photo</button>
+              <button class="btn-ghost-sm" id="wp-cancel-btn">Cancel</button>
+            </div>
+          </div>
+        </div>
+        <div class="cms-card" style="margin-top:16px">
+          <div class="cms-card__title">Wedding Films (YouTube)</div>
+          <div class="items-list" id="weddingVideoList"></div>
+          <button class="btn-add" id="addWeddingVideo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Film
+          </button>
+          <div class="add-form" id="addWeddingVideoForm">
+            <div class="add-form__title">New Wedding Film</div>
+            <div class="form-row">
+              <div class="fg"><label class="lbl">YouTube Video ID</label><input type="text" id="wv-id" placeholder="dQw4w9WgXcQ" /></div>
+              <div class="fg"><label class="lbl">Caption</label><input type="text" id="wv-label" placeholder="Ada & Michael — Highlight" /></div>
+            </div>
+            <div class="fg">
+              <label class="lbl">Category</label>
+              <select id="wv-cat">
+                <option value="film white">White Wedding Film</option>
+                <option value="film traditional">Traditional Film</option>
+                <option value="film">General Film</option>
+              </select>
+            </div>
+            <div class="add-form-btns">
+              <button class="btn-save" id="wv-add-btn">Add Film</button>
+              <button class="btn-ghost-sm" id="wv-cancel-btn">Cancel</button>
+            </div>
+          </div>
+        </div>
+        <div class="section-save-row">
+          <button class="btn-save" data-save="weddingGallery">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+            Save Wedding Gallery
+          </button>
+          <span class="reset-link" data-reset="weddingGallery">Reset to default</span>
+        </div>
+      </div>
+
+      <!-- ══ PRODUCTION VIDEOS TAB ══ -->
+      <div class="tab-panel" id="tab-production-videos">
+        <div class="cms-card">
+          <div class="cms-card__title">Production Videos (YouTube)</div>
+          <div class="items-list" id="productionVideoList"></div>
+          <button class="btn-add" id="addProductionVideo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Video
+          </button>
+          <div class="add-form" id="addProductionVideoForm">
+            <div class="add-form__title">New Production Video</div>
+            <div class="form-row">
+              <div class="fg"><label class="lbl">YouTube Video ID</label><input type="text" id="pv-id" placeholder="dQw4w9WgXcQ" /></div>
+              <div class="fg">
+                <label class="lbl">Category</label>
+                <select id="pv-cat">
+                  <option value="brand">Brand Film</option>
+                  <option value="music">Music Video</option>
+                  <option value="doc">Documentary</option>
+                  <option value="event">Event Film</option>
+                </select>
+              </div>
+            </div>
+            <div class="fg"><label class="lbl">Video Title</label><input type="text" id="pv-title" placeholder="The Vision Campaign — 2024" /></div>
+            <div class="fg"><label class="lbl">Short Description</label><input type="text" id="pv-desc" placeholder="A cinematic brand story..." /></div>
+            <div class="toggle-row" style="margin-bottom:12px">
+              <label class="toggle"><input type="checkbox" id="pv-featured" /><span class="toggle-slider"></span></label>
+              <span class="toggle-label">Featured (full-width hero card)</span>
+            </div>
+            <div class="add-form-btns">
+              <button class="btn-save" id="pv-add-btn">Add Video</button>
+              <button class="btn-ghost-sm" id="pv-cancel-btn">Cancel</button>
+            </div>
+          </div>
+        </div>
+        <div class="section-save-row">
+          <button class="btn-save" data-save="productionVideos">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+            Save Production
+          </button>
+          <span class="reset-link" data-reset="productionVideos">Reset to default</span>
+        </div>
+      </div>
+
+      <!-- ══ PRODUCTION PACKAGES TAB ══ -->
+      <div class="tab-panel" id="tab-packages-production">
+        <div class="cms-card">
+          <div class="cms-card__title">Production Pricing Tiers</div>
+          <div class="pkg-edit-grid" id="prodPkgGrid"></div>
+        </div>
+        <div class="section-save-row">
+          <button class="btn-save" data-save="packagesProduction">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+            Save Production Packages
+          </button>
+          <span class="reset-link" data-reset="packagesProduction">Reset to default</span>
+        </div>
+      </div>
+
+      <!-- ══ WEDDING PACKAGES TAB ══ -->
+      <div class="tab-panel" id="tab-packages-wedding">
+        <div class="cms-card">
+          <div class="cms-card__title">Wedding Pricing Tiers</div>
+          <div class="pkg-edit-grid" id="weddingPkgGrid"></div>
+        </div>
+        <div class="section-save-row">
+          <button class="btn-save" data-save="packagesWedding">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+            Save Wedding Packages
+          </button>
+          <span class="reset-link" data-reset="packagesWedding">Reset to default</span>
+        </div>
+      </div>
+
+      <!-- ══ TESTIMONIALS TAB ══ -->
+      <div class="tab-panel" id="tab-testimonials">
+        <div class="cms-card">
+          <div class="cms-card__title">Client Testimonials</div>
+          <div class="testi-list" id="testiList"></div>
+          <button class="btn-add" id="addTestiBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Testimonial
+          </button>
+          <div class="add-form" id="addTestiForm">
+            <div class="add-form__title">New Testimonial</div>
+            <div class="fg"><label class="lbl">Quote</label><textarea id="testi-quote" rows="3" placeholder="&quot;NEJstudios didn't just film our wedding...&quot;"></textarea></div>
+            <div class="form-row">
+              <div class="fg"><label class="lbl">Client Name</label><input type="text" id="testi-name" placeholder="Ada Okonkwo" /></div>
+              <div class="fg"><label class="lbl">Role / Context</label><input type="text" id="testi-role" placeholder="Wedding Client, 2024" /></div>
+            </div>
+            <div class="add-form-btns">
+              <button class="btn-save" id="testi-add-btn">Add Testimonial</button>
+              <button class="btn-ghost-sm" id="testi-cancel-btn">Cancel</button>
+            </div>
+          </div>
+        </div>
+        <div class="section-save-row">
+          <button class="btn-save" data-save="testimonials">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+            Save Testimonials
+          </button>
+          <span class="reset-link" data-reset="testimonials">Reset to default</span>
+        </div>
+      </div>
+
+      <!-- ══ CONTACT TAB ══ -->
+      <div class="tab-panel" id="tab-contact">
+        <div class="cms-card">
+          <div class="cms-card__title">Contact Information</div>
+          <div class="form-row">
+            <div class="fg"><label class="lbl">Phone Number</label><input type="tel" id="contact-phone" placeholder="+234 800 000 0000" /></div>
+            <div class="fg"><label class="lbl">Email Address</label><input type="email" id="contact-email" placeholder="hello@nejstudios.com" /></div>
+          </div>
+          <div class="fg"><label class="lbl">Location</label><input type="text" id="contact-location" placeholder="Lagos, Nigeria" /></div>
+        </div>
+        <div class="cms-card">
+          <div class="cms-card__title">Social Media Links</div>
+          <div class="form-row">
+            <div class="fg"><label class="lbl">Instagram URL</label><input type="url" id="social-instagram" placeholder="https://instagram.com/nejstudios" /></div>
+            <div class="fg"><label class="lbl">YouTube URL</label><input type="url" id="social-youtube" placeholder="https://youtube.com/@nejstudios" /></div>
+          </div>
+          <div class="form-row">
+            <div class="fg"><label class="lbl">Facebook URL</label><input type="url" id="social-facebook" placeholder="https://facebook.com/nejstudios" /></div>
+            <div class="fg"><label class="lbl">TikTok URL</label><input type="url" id="social-tiktok" placeholder="https://tiktok.com/@nejstudios" /></div>
+          </div>
+        </div>
+        <div class="section-save-row">
+          <button class="btn-save" data-save="contact">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+            Save Contact
+          </button>
+          <span class="reset-link" data-reset="contact">Reset to default</span>
+        </div>
+      </div>
+
+      <!-- ══ SETTINGS TAB ══ -->
+      <div class="tab-panel" id="tab-settings">
+        <div class="cms-card">
+          <div class="cms-card__title">Hero Stats Badges</div>
+          <p style="font-size:.8rem;color:var(--grey-3);margin-bottom:16px">These appear on the right side of the hero section.</p>
+          <div class="form-row form-row--3">
+            <div class="fg"><label class="lbl">Badge 1 Value</label><input type="text" id="stat1v" placeholder="500+" /></div>
+            <div class="fg"><label class="lbl">Badge 2 Value</label><input type="text" id="stat2v" placeholder="8 yrs" /></div>
+            <div class="fg"><label class="lbl">Badge 3 Value</label><input type="text" id="stat3v" placeholder="4K" /></div>
+          </div>
+          <div class="form-row form-row--3">
+            <div class="fg"><label class="lbl">Badge 1 Label</label><input type="text" id="stat1l" placeholder="Events Covered" /></div>
+            <div class="fg"><label class="lbl">Badge 2 Label</label><input type="text" id="stat2l" placeholder="In Business" /></div>
+            <div class="fg"><label class="lbl">Badge 3 Label</label><input type="text" id="stat3l" placeholder="Ultra HD Films" /></div>
+          </div>
+        </div>
+        <div class="cms-card">
+          <div class="cms-card__title">Brand Ticker Strip</div>
+          <p style="font-size:.8rem;color:var(--grey-3);margin-bottom:12px">Items shown in the scrolling gold strip below the hero. Separate with commas.</p>
+          <div class="fg">
+            <label class="lbl">Ticker Items</label>
+            <textarea id="ticker-items" rows="3" placeholder="Studio Sessions, Weddings, Brand Films, Portraits, Music Videos, Drone Cinematography"></textarea>
+          </div>
+        </div>
+        <div class="cms-card">
+          <div class="cms-card__title">Footer Text</div>
+          <div class="form-row">
+            <div class="fg"><label class="lbl">Copyright Line</label><input type="text" id="footer-copy" placeholder="© 2026 NEJstudios. All rights reserved." /></div>
+            <div class="fg"><label class="lbl">Tagline</label><input type="text" id="footer-tag" placeholder="Designed with craft in Lagos, Nigeria." /></div>
+          </div>
+        </div>
+        <div class="section-save-row">
+          <button class="btn-save" data-save="settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+            Save Settings
+          </button>
+          <span class="reset-link" data-reset="settings">Reset to default</span>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<div class="toast" id="toast"></div>
+
+<script src="js/cms.js"></script>
+</body>
+</html>

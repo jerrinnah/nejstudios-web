@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Book a Studio Session — NEJstudios</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:       #080808;
+      --bg-2:     #0f0f0f;
+      --bg-3:     #141414;
+      --bg-4:     #1a1a1a;
+      --border:   #2a2a2a;
+      --border-l: #333;
+      --gold:     #c9a84c;
+      --gold-lt:  #e0c06a;
+      --gold-glow:rgba(201,168,76,.14);
+      --white:    #ffffff;
+      --grey-1:   #e8e8e8;
+      --grey-2:   #b0b0b0;
+      --grey-3:   #707070;
+      --grey-4:   #404040;
+      --serif:    'Playfair Display', Georgia, serif;
+      --sans:     'Outfit', system-ui, sans-serif;
+      --radius:   10px;
+      --trans:    0.3s cubic-bezier(.4,0,.2,1);
+      --shadow:   0 8px 40px rgba(0,0,0,.55);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--grey-1);
+      font-family: var(--sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 99px; }
+    ::selection { background: var(--gold); color: #000; }
+
+    /* ── TOP BAR ── */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(8,8,8,.92);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo { font-size: 1.4rem; font-weight: 700; }
+    .logo-nej { color: var(--gold); font-family: var(--serif); }
+    .logo-studios { color: var(--white); font-family: var(--sans); font-weight: 300; font-size: .95rem; }
+    .topbar-back {
+      font-size: .75rem;
+      font-weight: 500;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--grey-3);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: color var(--trans);
+    }
+    .topbar-back:hover { color: var(--gold); }
+    .topbar-back svg { width: 14px; height: 14px; }
+
+    /* ── LAYOUT ── */
+    .page {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      max-width: 1100px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 60px 24px 80px;
+      gap: 80px;
+      align-items: start;
+    }
+
+    /* ── LEFT PANEL ── */
+    .panel-info {
+      position: sticky;
+      top: 100px;
+    }
+    .eyebrow {
+      font-size: .7rem;
+      font-weight: 600;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 16px;
+    }
+    .panel-title {
+      font-family: var(--serif);
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 600;
+      color: var(--white);
+      line-height: 1.15;
+      margin-bottom: 20px;
+    }
+    .panel-title em { font-style: italic; color: var(--gold); }
+    .panel-desc {
+      color: var(--grey-2);
+      line-height: 1.8;
+      font-size: .95rem;
+      margin-bottom: 40px;
+    }
+
+    /* Session type tiles */
+    .session-tiles {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .session-tile {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      transition: var(--trans);
+    }
+    .session-tile:hover { border-color: var(--border-l); }
+    .session-tile__icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: var(--gold-glow);
+      border: 1px solid rgba(201,168,76,.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+    .session-tile__label {
+      font-size: .85rem;
+      font-weight: 500;
+      color: var(--grey-1);
+    }
+    .session-tile__desc {
+      font-size: .75rem;
+      color: var(--grey-3);
+      margin-top: 1px;
+    }
+
+    /* ── RIGHT PANEL — FORM ── */
+    .panel-form {
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 44px 40px;
+      box-shadow: var(--shadow);
+    }
+    .form-title {
+      font-family: var(--serif);
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: var(--white);
+      margin-bottom: 28px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 7px; margin-bottom: 16px; }
+    .form-group:last-of-type { margin-bottom: 0; }
+
+    label {
+      font-size: .72rem;
+      font-weight: 600;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--grey-3);
+    }
+    label .req { color: var(--gold); margin-left: 2px; }
+
+    input, select {
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 13px 16px;
+      color: var(--white);
+      font-size: .9rem;
+      font-family: var(--sans);
+      outline: none;
+      transition: var(--trans);
+      width: 100%;
+    }
+    input::placeholder { color: var(--grey-4); }
+    input:focus, select:focus {
+      border-color: var(--gold);
+      background: var(--bg-4);
+      box-shadow: 0 0 0 3px var(--gold-glow);
+    }
+    input.error { border-color: #e05555; }
+
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23707070' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 36px;
+      cursor: pointer;
+    }
+    select option { background: var(--bg-3); }
+
+    /* Session type cards */
+    .session-picker {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .sp-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 14px 8px;
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: var(--trans);
+      font-family: var(--sans);
+      color: var(--grey-2);
+      text-align: center;
+    }
+    .sp-card:hover { border-color: var(--border-l); color: var(--white); }
+    .sp-card.selected {
+      border-color: var(--gold);
+      background: var(--gold-glow);
+      color: var(--gold);
+    }
+    .sp-card__emoji { font-size: 1.4rem; }
+    .sp-card__label { font-size: .68rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+    .sp-error { font-size: .78rem; color: #e05555; margin-top: 4px; display: none; }
+    .sp-error.show { display: block; }
+
+    /* Hidden input for session type */
+    #sessionTypeInput { display: none; }
+
+    /* Submit button */
+    .btn-submit {
+      width: 100%;
+      margin-top: 28px;
+      padding: 16px;
+      background: var(--gold);
+      color: #000;
+      font-family: var(--sans);
+      font-size: .85rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: var(--trans);
+    }
+    .btn-submit:hover { background: var(--gold-lt); transform: translateY(-1px); box-shadow: 0 6px 24px rgba(201,168,76,.3); }
+    .btn-submit:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+    .btn-submit svg { width: 18px; height: 18px; transition: transform var(--trans); }
+    .btn-submit:hover svg { transform: translateX(4px); }
+
+    /* Notice */
+    .form-notice {
+      font-size: .75rem;
+      color: var(--grey-4);
+      text-align: center;
+      margin-top: 14px;
+      line-height: 1.6;
+    }
+
+    /* ── SUCCESS STATE ── */
+    .success-screen {
+      display: none;
+      text-align: center;
+      padding: 20px 0;
+    }
+    .success-screen.show { display: block; }
+    .success-icon {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: var(--gold-glow);
+      border: 1px solid var(--gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      color: var(--gold);
+    }
+    .success-icon svg { width: 32px; height: 32px; }
+    .success-screen h3 {
+      font-family: var(--serif);
+      font-size: 1.75rem;
+      color: var(--white);
+      margin-bottom: 12px;
+    }
+    .success-screen p { color: var(--grey-2); line-height: 1.7; margin-bottom: 8px; font-size: .9rem; }
+    .success-id {
+      display: inline-block;
+      margin: 16px 0 28px;
+      padding: 8px 20px;
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      font-size: .75rem;
+      letter-spacing: .12em;
+      color: var(--gold);
+      font-weight: 600;
+    }
+    .btn-back-home {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 28px;
+      background: var(--gold);
+      color: #000;
+      font-weight: 700;
+      font-size: .8rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-family: var(--sans);
+      transition: var(--trans);
+    }
+    .btn-back-home:hover { background: var(--gold-lt); }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 20px 24px;
+      display: flex;
+      justify-content: center;
+      font-size: .75rem;
+      color: var(--grey-4);
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .page { grid-template-columns: 1fr; gap: 40px; padding: 40px 20px 60px; }
+      .panel-info { position: static; }
+      .panel-form { padding: 32px 24px; }
+      .form-row { grid-template-columns: 1fr; gap: 0; }
+      .session-picker { grid-template-columns: repeat(5, 1fr); gap: 6px; }
+      .sp-card__label { font-size: .6rem; }
+      .sp-card { padding: 10px 4px; }
+    }
+    @media (max-width: 480px) {
+      .session-picker { grid-template-columns: repeat(3, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP BAR -->
+  <nav class="topbar">
+    <a href="index.html" class="logo">
+      <span class="logo-nej">NEJ</span><span class="logo-studios">studios</span>
+    </a>
+    <a href="index.html" class="topbar-back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      Back to site
+    </a>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="page">
+
+    <!-- LEFT: INFO -->
+    <div class="panel-info">
+      <p class="eyebrow">Studio Booking</p>
+      <h1 class="panel-title">Book Your<br /><em>Session.</em></h1>
+      <p class="panel-desc">
+        Reserve your spot in our studio. Fill out the quick form and we'll confirm your session within 24 hours. All sessions are conducted at our Lagos studio.
+      </p>
+
+      <div class="session-tiles">
+        <div class="session-tile">
+          <div class="session-tile__icon">🎂</div>
+          <div>
+            <div class="session-tile__label">Birthday</div>
+            <div class="session-tile__desc">Milestone portraits & celebrations</div>
+          </div>
+        </div>
+        <div class="session-tile">
+          <div class="session-tile__icon">👨‍👩‍👧</div>
+          <div>
+            <div class="session-tile__label">Family</div>
+            <div class="session-tile__desc">Group portraits & family moments</div>
+          </div>
+        </div>
+        <div class="session-tile">
+          <div class="session-tile__icon">✨</div>
+          <div>
+            <div class="session-tile__label">Creative</div>
+            <div class="session-tile__desc">Conceptual & artistic shoots</div>
+          </div>
+        </div>
+        <div class="session-tile">
+          <div class="session-tile__icon">👗</div>
+          <div>
+            <div class="session-tile__label">Fashion</div>
+            <div class="session-tile__desc">Lookbooks, editorials & style shoots</div>
+          </div>
+        </div>
+        <div class="session-tile">
+          <div class="session-tile__icon">📦</div>
+          <div>
+            <div class="session-tile__label">Product</div>
+            <div class="session-tile__desc">E-commerce & brand product photography</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: FORM -->
+    <div class="panel-form">
+
+      <!-- BOOKING FORM -->
+      <form id="studioBookingForm" novalidate>
+        <div class="form-title">Your Details</div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="firstName">First Name <span class="req">*</span></label>
+            <input type="text" id="firstName" name="firstName" placeholder="e.g. Amaka" required autocomplete="given-name" />
+          </div>
+          <div class="form-group">
+            <label for="middleName">Middle Name</label>
+            <input type="text" id="middleName" name="middleName" placeholder="e.g. Chioma" autocomplete="additional-name" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="phone">Phone Number <span class="req">*</span></label>
+          <input type="tel" id="phone" name="phone" placeholder="+234 800 000 0000" required autocomplete="tel" />
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email Address <span class="req">*</span></label>
+          <input type="email" id="email" name="email" placeholder="your@email.com" required autocomplete="email" />
+        </div>
+
+        <div class="form-group">
+          <label>Session Type <span class="req">*</span></label>
+          <input type="hidden" id="sessionTypeInput" name="sessionType" required />
+          <div class="session-picker" id="sessionPicker">
+            <button type="button" class="sp-card" data-type="Birthday">
+              <span class="sp-card__emoji">🎂</span>
+              <span class="sp-card__label">Birthday</span>
+            </button>
+            <button type="button" class="sp-card" data-type="Family">
+              <span class="sp-card__emoji">👨‍👩‍👧</span>
+              <span class="sp-card__label">Family</span>
+            </button>
+            <button type="button" class="sp-card" data-type="Creative">
+              <span class="sp-card__emoji">✨</span>
+              <span class="sp-card__label">Creative</span>
+            </button>
+            <button type="button" class="sp-card" data-type="Fashion">
+              <span class="sp-card__emoji">👗</span>
+              <span class="sp-card__label">Fashion</span>
+            </button>
+            <button type="button" class="sp-card" data-type="Product">
+              <span class="sp-card__emoji">📦</span>
+              <span class="sp-card__label">Product</span>
+            </button>
+          </div>
+          <div class="sp-error" id="spError">Please select a session type.</div>
+        </div>
+
+        <button type="submit" class="btn-submit" id="submitBtn">
+          <span id="submitText">Request Booking</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
+
+        <p class="form-notice">
+          By submitting, you agree to be contacted by NEJstudios.<br />
+          Confirmation is sent to your email within 24 hours.
+        </p>
+      </form>
+
+      <!-- SUCCESS STATE -->
+      <div class="success-screen" id="successScreen">
+        <div class="success-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <h3>You're Booked!</h3>
+        <p>Thank you. Your studio session request has been received.</p>
+        <p>A confirmation has been sent to your email. We'll be in touch within 24 hours to confirm your date and time.</p>
+        <div class="success-id" id="successId"></div>
+        <br />
+        <button class="btn-back-home" onclick="window.location.href='index.html'">
+          ← Back to NEJstudios
+        </button>
+      </div>
+
+    </div>
+  </main>
+
+  <footer>
+    <span>© 2026 NEJstudios · Lagos, Nigeria</span>
+  </footer>
+
+  <!--
+  ╔══════════════════════════════════════════════════════╗
+  ║  EmailJS Setup — complete these 3 steps:            ║
+  ║  1. Sign up at https://www.emailjs.com              ║
+  ║  2. Create an Email Service (Gmail / Outlook etc.)  ║
+  ║  3. Create 2 templates (see js/booking.js comments) ║
+  ║  4. Replace the 4 EMAILJS_* constants in booking.js ║
+  ╚══════════════════════════════════════════════════════╝
+  -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script src="js/booking.js"></script>
+</body>
+</html>
