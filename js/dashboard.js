@@ -3,12 +3,10 @@
    Auth: username+PIN multi-role · Bookings · Tasks · Team
    ══════════════════════════════════════════════ */
 
-const ADMIN_PIN     = 'nej2026';      // ← change this
-const STORAGE_KEY   = 'nej_bookings';
-const TASKS_KEY     = 'nej_tasks';
-const TEAM_KEY      = 'nej_team';
-const SESSION_KEY   = 'nej_session';
-const SCHEDULE_KEY  = 'nej_schedule';
+const ADMIN_PIN   = 'nej2026';      // ← change this
+const STORAGE_KEY = 'nej_bookings';
+const TEAM_KEY    = 'nej_team';
+const SESSION_KEY = 'nej_session';
 
 /* ════════════════════════════════════════════
    TEAM CONFIG  ← add / edit team members here
@@ -26,13 +24,9 @@ const TEAM_CONFIG = [
 /* ════════════════════════════════════════════
    STORAGE HELPERS
    ════════════════════════════════════════════ */
-function getBookings()      { return JSON.parse(localStorage.getItem(STORAGE_KEY)  || '[]'); }
-function saveBookings(arr)  { localStorage.setItem(STORAGE_KEY,  JSON.stringify(arr)); }
-function getTasks()         { return JSON.parse(localStorage.getItem(TASKS_KEY)    || '[]'); }
-function saveTasks(arr)     { localStorage.setItem(TASKS_KEY,    JSON.stringify(arr)); }
-function saveTeam(arr)      { localStorage.setItem(TEAM_KEY,     JSON.stringify(arr)); }
-function getSchedule()      { return JSON.parse(localStorage.getItem(SCHEDULE_KEY) || '[]'); }
-function saveSchedule(arr)  { localStorage.setItem(SCHEDULE_KEY, JSON.stringify(arr)); }
+function getBookings()     { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+function saveBookings(arr) { localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); }
+function saveTeam(arr)     { localStorage.setItem(TEAM_KEY, JSON.stringify(arr)); }
 
 // Merges hardcoded TEAM_CONFIG with members added via the UI (localStorage).
 // TEAM_CONFIG entries take precedence so credentials always work cross-device.
@@ -470,7 +464,7 @@ schedCreateToggle.addEventListener('click', () => {
 });
 
 // Submit form
-document.getElementById('schedForm').addEventListener('submit', e => {
+document.getElementById('schedForm').addEventListener('submit', async e => {
   e.preventDefault();
   const title    = document.getElementById('schedTitle').value.trim();
   const date     = document.getElementById('schedDate').value;
@@ -484,27 +478,25 @@ document.getElementById('schedForm').addEventListener('submit', e => {
   const entry = {
     id:         'SCH-' + Math.random().toString(36).slice(2,8).toUpperCase(),
     title, date, type,
-    time:       time || null,
-    clientName: client || null,
+    time:       time     || null,
+    clientName: client   || null,
     location:   location || null,
-    notes:      notes || null,
+    notes:      notes    || null,
     createdAt:  Date.now(),
   };
 
-  const sched = getSchedule();
-  sched.unshift(entry);
-  saveSchedule(sched);
+  await dbAddScheduleEntry(entry);
   e.target.reset();
   schedCreateBody.classList.remove('open');
   schedCreateToggle.classList.remove('open');
-  renderAdminSchedule();
+  await renderAdminSchedule();
   showToast('Added to schedule — team can see it now');
 });
 
-function renderAdminSchedule() {
+async function renderAdminSchedule() {
   const grid = document.getElementById('adminScheduleGrid');
   if (!grid) return;
-  const sched = getSchedule().slice().sort((a, b) => a.date.localeCompare(b.date));
+  const sched = (await dbGetSchedule()).slice().sort((a, b) => a.date.localeCompare(b.date));
 
   if (sched.length === 0) {
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
@@ -548,10 +540,10 @@ function renderAdminSchedule() {
   }).join('');
 
   grid.querySelectorAll('[data-sched-id]').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       if (!confirm('Remove this schedule entry?')) return;
-      saveSchedule(getSchedule().filter(s => s.id !== btn.dataset.schedId));
-      renderAdminSchedule();
+      await dbDeleteScheduleEntry(btn.dataset.schedId);
+      await renderAdminSchedule();
       showToast('Removed from schedule');
     });
   });
@@ -570,7 +562,7 @@ taskCreateToggle.addEventListener('click', () => {
 });
 
 // Task form
-document.getElementById('taskForm').addEventListener('submit', e => {
+document.getElementById('taskForm').addEventListener('submit', async e => {
   e.preventDefault();
   const title    = document.getElementById('taskTitle').value.trim();
   const desc     = document.getElementById('taskDesc').value.trim();
@@ -578,29 +570,27 @@ document.getElementById('taskForm').addEventListener('submit', e => {
   const priority = document.getElementById('taskPriority').value;
   if (!title) return;
 
-  const team = getTeam();
+  const team   = getTeam();
   const member = team.find(m => m.id === assignee);
-  const task = {
-    id:          'TASK-' + Math.random().toString(36).slice(2,8).toUpperCase(),
+  const task   = {
+    id:           'TASK-' + Math.random().toString(36).slice(2,8).toUpperCase(),
     title, desc,
-    assignedTo:  assignee || null,
+    assignedTo:   assignee || null,
     assignedName: member ? member.name : null,
     priority,
-    status:      'pending',
-    createdAt:   Date.now(),
-    startedAt:   null,
-    completedAt: null,
-    reports:     [],
+    status:       'pending',
+    createdAt:    Date.now(),
+    startedAt:    null,
+    completedAt:  null,
+    reports:      [],
   };
 
-  const tasks = getTasks();
-  tasks.unshift(task);
-  saveTasks(tasks);
+  await dbAddTask(task);
   e.target.reset();
   taskCreateBody.classList.remove('open');
   taskCreateToggle.classList.remove('open');
-  renderTasks();
-  renderTasksBadge();
+  await renderTasks();
+  await renderTasksBadge();
   showToast('Task created');
 });
 
@@ -614,8 +604,8 @@ document.querySelectorAll('[data-task-status]').forEach(btn => {
   });
 });
 
-function renderTasks() {
-  let tasks = getTasks();
+async function renderTasks() {
+  let tasks = await dbGetTasks();
   if (activeTaskStatus !== 'all') tasks = tasks.filter(t => t.status === activeTaskStatus);
 
   const grid = document.getElementById('tasksGrid');
@@ -670,20 +660,21 @@ function buildTaskCard(t) {
     </div>`;
 }
 
-function handleTaskAction(id, action) {
+async function handleTaskAction(id, action) {
   if (action === 'delete') {
     if (!confirm('Delete this task?')) return;
-    saveTasks(getTasks().filter(t => t.id !== id));
-    renderTasks(); renderTasksBadge();
+    await dbDeleteTask(id);
+    await renderTasks();
+    await renderTasksBadge();
     showToast('Task deleted');
     return;
   }
-  if (action === 'reports') { openReportsModal(id); return; }
+  if (action === 'reports')  { openReportsModal(id); return; }
   if (action === 'reassign') { openReassignModal(id); return; }
 }
 
-function renderTasksBadge() {
-  const count = getTasks().filter(t => t.status === 'pending').length;
+async function renderTasksBadge() {
+  const count = (await dbGetTasks()).filter(t => t.status === 'pending').length;
   const badge = document.getElementById('tabTasksBadge');
   const navCount = document.getElementById('navPendingTasks');
   const mnavBadge = document.getElementById('mnavTasksBadge');
@@ -702,8 +693,8 @@ const reportsModalTitle   = document.getElementById('reportsModalTitle');
 const reportsModalClose   = document.getElementById('reportsModalClose');
 const reportsModalBack    = document.getElementById('reportsModalBackdrop');
 
-function openReportsModal(taskId) {
-  const task = getTasks().find(t => t.id === taskId);
+async function openReportsModal(taskId) {
+  const task = await dbGetTask(taskId);
   if (!task) return;
   reportsModalTitle.textContent = `Reports — ${task.title}`;
   if (!task.reports || task.reports.length === 0) {
@@ -729,27 +720,24 @@ reportsModalBack.addEventListener('click', closeReportsModal);
 /* ════════════════════════════════════════════
    REASSIGN MODAL (inline prompt)
    ════════════════════════════════════════════ */
-function openReassignModal(taskId) {
-  const task = getTasks().find(t => t.id === taskId);
+async function openReassignModal(taskId) {
+  const task = await dbGetTask(taskId);
   if (!task) return;
   const team = getTeam();
   if (team.length === 0) { showToast('Add team members first'); return; }
 
-  // Build options string for prompt
   const options = ['0: Unassigned', ...team.map((m, i) => `${i+1}: ${m.name} (@${m.username})`)].join('\n');
-  const choice = prompt(`Reassign "${task.title}"\n\n${options}\n\nEnter number:`);
+  const choice  = prompt(`Reassign "${task.title}"\n\n${options}\n\nEnter number:`);
   if (choice === null) return;
   const idx = parseInt(choice, 10);
   if (isNaN(idx) || idx < 0 || idx > team.length) { showToast('Invalid choice'); return; }
 
   const member = idx === 0 ? null : team[idx - 1];
-  const tasks = getTasks();
-  const tIdx  = tasks.findIndex(t => t.id === taskId);
-  if (tIdx === -1) return;
-  tasks[tIdx].assignedTo   = member ? member.id : null;
-  tasks[tIdx].assignedName = member ? member.name : null;
-  saveTasks(tasks);
-  renderTasks();
+  await dbUpdateTask(taskId, {
+    assigned_to:   member ? member.id   : null,
+    assigned_name: member ? member.name : null,
+  });
+  await renderTasks();
   showToast(member ? `Assigned to ${member.name}` : 'Unassigned');
 }
 
@@ -818,8 +806,9 @@ function cancelEdit() {
 
 document.getElementById('cancelEditBtn').addEventListener('click', cancelEdit);
 
-function renderTeam() {
-  const team = getTeam();
+async function renderTeam() {
+  const team     = getTeam();
+  const allTasks = await dbGetTasks();
   document.getElementById('teamCount').textContent = team.length;
   const grid = document.getElementById('teamGrid');
 
@@ -829,8 +818,8 @@ function renderTeam() {
   }
 
   grid.innerHTML = team.map(m => {
-    const initials = m.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
-    const taskCount = getTasks().filter(t => t.assignedTo === m.id).length;
+    const initials  = m.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
+    const taskCount = allTasks.filter(t => t.assignedTo === m.id).length;
     return `
       <div class="member-card">
         <div class="member-avatar">${initials}</div>
@@ -882,14 +871,12 @@ function editMember(id) {
   document.querySelector('.team-form-card').scrollIntoView({ behavior:'smooth', block:'nearest' });
 }
 
-function removeMember(id, name) {
+async function removeMember(id, name) {
   if (!confirm(`Remove ${name} from the team? Their tasks will become unassigned.`)) return;
-  // Unassign their tasks
-  const tasks = getTasks().map(t => t.assignedTo === id ? { ...t, assignedTo:null, assignedName:null } : t);
-  saveTasks(tasks);
+  await dbUnassignMemberTasks(id);
   saveTeam(getTeam().filter(m => m.id !== id));
-  renderTeam();
-  renderTasks();
+  await renderTeam();
+  await renderTasks();
   populateAssigneeSelect();
   showToast(`${name} removed`);
 }
@@ -912,8 +899,10 @@ function showToast(msg) {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeDetail(); closeReportsModal(); } });
 window.addEventListener('storage', e => {
   if (!isAdminAuthed()) return;
-  if (e.key === STORAGE_KEY)  renderBookings();
-  if (e.key === TASKS_KEY)    { renderTasks(); renderTasksBadge(); }
-  if (e.key === TEAM_KEY)     renderTeam();
-  if (e.key === SCHEDULE_KEY) renderAdminSchedule();
+  if (e.key === STORAGE_KEY) renderBookings();
+  if (e.key === TEAM_KEY)    renderTeam();
 });
+
+// Real-time sync: reflect changes made on other devices (e.g. team updating task status/reports)
+dbSubscribeTasks(() => { renderTasks(); renderTasksBadge(); });
+dbSubscribeSchedule(() => { renderAdminSchedule(); });

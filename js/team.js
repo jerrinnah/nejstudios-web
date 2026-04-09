@@ -4,10 +4,8 @@
    Features: all tasks bar, my tasks, start/end, reports
    ══════════════════════════════════════════════ */
 
-const TASKS_KEY    = 'nej_tasks';
-const TEAM_KEY     = 'nej_team';
-const SESSION_KEY  = 'nej_session';
-const SCHEDULE_KEY = 'nej_schedule';
+const TEAM_KEY    = 'nej_team';
+const SESSION_KEY = 'nej_session';
 
 /* ════════════════════════════════════════════
    TEAM CONFIG  ← add / edit team members here
@@ -25,9 +23,6 @@ const TEAM_CONFIG = [
 /* ════════════════════════════════════════════
    STORAGE HELPERS
    ════════════════════════════════════════════ */
-function getTasks()        { return JSON.parse(localStorage.getItem(TASKS_KEY)    || '[]'); }
-function saveTasks(arr)    { localStorage.setItem(TASKS_KEY, JSON.stringify(arr)); }
-function getSchedule()     { return JSON.parse(localStorage.getItem(SCHEDULE_KEY) || '[]'); }
 
 // Merges hardcoded TEAM_CONFIG with any members added via the admin UI (localStorage).
 // TEAM_CONFIG entries take precedence so credentials always work cross-device.
@@ -62,6 +57,7 @@ function fmtShort(ts) { if (!ts) return '—'; return new Date(ts).toLocaleDateS
    SESSION / CURRENT MEMBER
    ════════════════════════════════════════════ */
 let currentMember = null; // populated after login / session restore
+let activeTab     = 'schedule';
 
 /* ════════════════════════════════════════════
    LOGIN
@@ -167,8 +163,6 @@ if (sess && sess.role === 'team') {
 /* ════════════════════════════════════════════
    TAB SWITCHING
    ════════════════════════════════════════════ */
-let activeTab = 'schedule';
-
 function switchTab(name) {
   activeTab = name;
   document.querySelectorAll('.t-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
@@ -191,12 +185,14 @@ document.querySelectorAll('.mobile-bottom-nav [data-tab]').forEach(btn => {
 /* ════════════════════════════════════════════
    SCHEDULE
    ════════════════════════════════════════════ */
-function renderSchedule() {
+async function renderSchedule() {
   const grid = document.getElementById('scheduleGrid');
   if (!grid) return;
 
+  grid.innerHTML = `<div class="sch-empty" style="opacity:0.5"><p style="color:var(--grey-3);font-size:0.85rem">Loading…</p></div>`;
+
   const todayStr = new Date().toISOString().slice(0, 10);
-  const shots    = getSchedule().slice().sort((a, b) => a.date.localeCompare(b.date));
+  const shots    = (await dbGetSchedule()).slice().sort((a, b) => a.date.localeCompare(b.date));
 
   const upcoming = shots.filter(s => s.date >= todayStr);
   const past     = shots.filter(s => s.date < todayStr).slice(-5).reverse();
@@ -276,13 +272,14 @@ document.querySelectorAll('[data-bar-filter]').forEach(btn => {
   });
 });
 
-function renderAllTasksBar() {
-  let tasks = getTasks();
+async function renderAllTasksBar() {
+  document.getElementById('allTasksBar').innerHTML = `<div class="tasks-bar-empty" style="opacity:0.5">Loading…</div>`;
+  const allTasks = await dbGetTasks();
+  let tasks = allTasks;
   if (barFilter !== 'all') tasks = tasks.filter(t => t.status === barFilter);
 
-  const bar       = document.getElementById('allTasksBar');
-  const countEl   = document.getElementById('allTasksCount');
-  const allTasks  = getTasks();
+  const bar     = document.getElementById('allTasksBar');
+  const countEl = document.getElementById('allTasksCount');
 
   countEl.textContent = allTasks.length + ' task' + (allTasks.length !== 1 ? 's' : '');
 
@@ -312,9 +309,10 @@ function renderAllTasksBar() {
 /* ════════════════════════════════════════════
    MY TASKS
    ════════════════════════════════════════════ */
-function renderMyTasks() {
+async function renderMyTasks() {
   if (!currentMember) return;
-  const myTasks = getTasks().filter(t => t.assignedTo === currentMember.id);
+  document.getElementById('myTasksGrid').innerHTML = `<div class="empty-state" style="grid-column:1/-1;opacity:0.5"><p style="color:var(--grey-3);font-size:0.85rem">Loading…</p></div>`;
+  const myTasks = (await dbGetTasks()).filter(t => t.assignedTo === currentMember.id);
   const grid    = document.getElementById('myTasksGrid');
 
   if (myTasks.length === 0) {
@@ -391,28 +389,20 @@ function handleMyTaskAction(id, action) {
   if (action === 'report')   { openReportModal(id); return; }
 }
 
-function startTask(id) {
-  const tasks = getTasks();
-  const idx   = tasks.findIndex(t => t.id === id);
-  if (idx === -1) return;
-  if (tasks[idx].status !== 'pending') return;
-  tasks[idx].status    = 'in-progress';
-  tasks[idx].startedAt = Date.now();
-  saveTasks(tasks);
+async function startTask(id) {
+  const task = await dbGetTask(id);
+  if (!task || task.status !== 'pending') return;
+  await dbUpdateTask(id, { status: 'in-progress', started_at: Date.now() });
   renderMyTasks();
   renderAllTasksBar();
   updateBadges();
   showToast('Task started — good luck!');
 }
 
-function completeTask(id) {
-  const tasks = getTasks();
-  const idx   = tasks.findIndex(t => t.id === id);
-  if (idx === -1) return;
-  if (tasks[idx].status !== 'in-progress') return;
-  tasks[idx].status      = 'completed';
-  tasks[idx].completedAt = Date.now();
-  saveTasks(tasks);
+async function completeTask(id) {
+  const task = await dbGetTask(id);
+  if (!task || task.status !== 'in-progress') return;
+  await dbUpdateTask(id, { status: 'completed', completed_at: Date.now() });
   renderMyTasks();
   renderAllTasksBar();
   updateBadges();
@@ -433,8 +423,8 @@ const pastReportsList     = document.getElementById('pastReportsList');
 
 let activeReportTaskId = null;
 
-function openReportModal(taskId) {
-  const task = getTasks().find(t => t.id === taskId);
+async function openReportModal(taskId) {
+  const task = await dbGetTask(taskId);
   if (!task) return;
 
   activeReportTaskId = taskId;
@@ -474,26 +464,24 @@ function renderPastReports(task) {
   }</div>`;
 }
 
-submitReportBtn.addEventListener('click', () => {
+submitReportBtn.addEventListener('click', async () => {
   const content = reportTextarea.value.trim();
   if (!content) { reportTextarea.focus(); return; }
   if (!currentMember || !activeReportTaskId) return;
 
-  const tasks = getTasks();
-  const idx   = tasks.findIndex(t => t.id === activeReportTaskId);
-  if (idx === -1) return;
+  const task = await dbGetTask(activeReportTaskId);
+  if (!task) return;
 
-  if (!tasks[idx].reports) tasks[idx].reports = [];
-  tasks[idx].reports.push({
+  const reports = [...(task.reports || []), {
     memberId:   currentMember.id,
     memberName: currentMember.name,
     content,
     createdAt:  Date.now(),
-  });
+  }];
 
-  saveTasks(tasks);
+  await dbUpdateTask(activeReportTaskId, { reports });
   reportTextarea.value = '';
-  renderPastReports(tasks[idx]);
+  renderPastReports({ ...task, reports });
   renderMyTasks();
   showToast('Report submitted');
 });
@@ -511,19 +499,19 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeReportM
 /* ════════════════════════════════════════════
    BADGES
    ════════════════════════════════════════════ */
-function updateBadges() {
-  const allTasks = getTasks();
+async function updateBadges() {
+  const [allTasks, schedule] = await Promise.all([dbGetTasks(), dbGetSchedule()]);
 
   // Schedule badge: count today's shots
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const todayCount = getSchedule().filter(s => s.date === todayStr).length;
-  const schBadge = document.getElementById('scheduleBadge');
+  const todayStr   = new Date().toISOString().slice(0, 10);
+  const todayCount = schedule.filter(s => s.date === todayStr).length;
+  const schBadge   = document.getElementById('scheduleBadge');
   schBadge.textContent = todayCount;
   schBadge.classList.toggle('hidden', todayCount === 0);
 
   // All tasks badge: count pending
   const pendingCount = allTasks.filter(t => t.status === 'pending').length;
-  const allBadge = document.getElementById('allTasksBadge');
+  const allBadge     = document.getElementById('allTasksBadge');
   allBadge.textContent = pendingCount;
   allBadge.classList.toggle('hidden', pendingCount === 0);
 
@@ -549,19 +537,27 @@ function showToast(msg) {
 }
 
 /* ════════════════════════════════════════════
-   CROSS-TAB SYNC
+   REAL-TIME SYNC
    ════════════════════════════════════════════ */
 window.addEventListener('storage', e => {
   if (!currentMember) return;
-  if (e.key === TASKS_KEY) {
-    renderAllTasksBar();
-    renderMyTasks();
-    updateBadges();
-  }
   if (e.key === TEAM_KEY) {
-    // If current member was removed by admin, force logout
     const team   = getTeam();
     const exists = team.find(m => m.id === currentMember.id);
     if (!exists) { doLogout(); }
   }
+});
+
+// Live updates from Supabase — admin changes appear instantly on team portal
+dbSubscribeTasks(() => {
+  if (!currentMember) return;
+  renderAllTasksBar();
+  renderMyTasks();
+  updateBadges();
+});
+
+dbSubscribeSchedule(() => {
+  if (!currentMember) return;
+  if (activeTab === 'schedule') renderSchedule();
+  updateBadges();
 });
