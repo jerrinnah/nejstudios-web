@@ -56,7 +56,7 @@
   // studio → dedicated booking.html
   // wedding / event → inline booking form with pre-fill
   const TYPE_MAP = {
-    studio:  { redirect: 'booking.html', value: null,              label: 'Studio Session'  },
+    studio:  { redirect: 'booking', value: null,              label: 'Studio Session'  },
     wedding: { redirect: null,           value: 'full-wedding',    label: 'Wedding'          },
     event:   { redirect: null,           value: 'corporate-event', label: 'Event Production' },
   };
@@ -385,7 +385,7 @@
     };
     try {
       const encoded = btoa(encodeURIComponent(JSON.stringify(share)));
-      return `${location.origin}/booking-view.html?b=${encoded}`;
+      return `${location.origin}/booking-view?b=${encoded}`;
     } catch { return ''; }
   }
 

@@ -317,6 +317,65 @@
       .mobile-nav-item svg { width:20px; height:20px; }
       .mobile-nav-item.active { color:var(--gold); }
 
+      /* ════ SCHEDULE ════ */
+      .sch-header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+      .sch-header h2 { font-family:var(--serif); font-size:1.3rem; color:var(--white); }
+      .sch-header p { font-size:0.8rem; color:var(--grey-3); margin-top:2px; }
+
+      .sch-grid { display:flex; flex-direction:column; gap:12px; }
+
+      .sch-card {
+        background:var(--bg-2); border:1px solid var(--border);
+        border-radius:var(--radius); padding:18px 20px;
+        display:flex; gap:16px; align-items:flex-start; transition:var(--trans);
+      }
+      .sch-card:hover { border-color:var(--border-l); }
+      .sch-card--today { border-color:var(--gold); background:rgba(201,168,76,.04); }
+      .sch-card--past  { opacity:.5; }
+
+      .sch-date-block {
+        flex-shrink:0; text-align:center; min-width:54px;
+        background:var(--bg-3); border:1px solid var(--border);
+        border-radius:8px; padding:8px 6px;
+      }
+      .sch-date-block__day   { font-size:1.6rem; font-weight:700; line-height:1; color:var(--white); }
+      .sch-date-block__month { font-size:0.6rem; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--grey-3); margin-top:2px; }
+      .sch-card--today .sch-date-block { background:var(--gold-glow); border-color:rgba(201,168,76,.3); }
+      .sch-card--today .sch-date-block__day   { color:var(--gold); }
+      .sch-card--today .sch-date-block__month { color:var(--gold-lt); }
+
+      .sch-body { flex:1; min-width:0; }
+      .sch-body__top { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px; }
+
+      .sch-type-badge {
+        font-size:0.58rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase;
+        padding:2px 8px; border-radius:99px;
+      }
+      .sch-type--studio     { background:var(--blue-bg);              color:var(--blue); }
+      .sch-type--wedding    { background:rgba(251,146,60,.12);         color:var(--orange); }
+      .sch-type--event      { background:var(--purple-bg);             color:var(--purple); }
+      .sch-type--production { background:var(--green-bg);              color:var(--green); }
+      .sch-type--meeting    { background:rgba(255,255,255,.06);         color:var(--grey-2); }
+
+      .sch-today-pill {
+        font-size:0.58rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase;
+        padding:2px 8px; border-radius:99px; background:var(--gold); color:#000;
+      }
+
+      .sch-body__title { font-size:0.95rem; font-weight:600; color:var(--white); margin-bottom:2px; }
+      .sch-body__meta  { display:flex; flex-wrap:wrap; gap:10px; font-size:0.72rem; color:var(--grey-3); margin-top:6px; }
+      .sch-body__meta span { display:flex; align-items:center; gap:4px; }
+      .sch-body__notes { font-size:0.78rem; color:var(--grey-3); margin-top:8px; font-style:italic; line-height:1.5; }
+
+      .sch-section-label {
+        font-size:0.65rem; font-weight:600; letter-spacing:0.12em; text-transform:uppercase;
+        color:var(--grey-4); margin:20px 0 10px; padding-bottom:8px; border-bottom:1px solid var(--border);
+      }
+
+      .sch-empty { text-align:center; padding:60px 24px; color:var(--grey-3); }
+      .sch-empty svg { width:48px; height:48px; margin:0 auto 16px; display:block; opacity:.35; }
+      .sch-empty h3 { font-family:var(--serif); color:var(--grey-2); margin-bottom:8px; }
+
       /* ════ RESPONSIVE ════ */
       @media (max-width:600px) {
         .t-content { padding:16px; padding-bottom:80px; }
@@ -347,7 +406,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
           </svg>
-          <input type="text" id="usernameInput" placeholder="Your username" autocomplete="off" />
+          <input type="text" id="usernameInput" placeholder="Username (optional)" autocomplete="off" />
         </div>
         <div class="login-input-wrap">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -357,7 +416,7 @@
         </div>
         <div class="login-err" id="loginErr"></div>
         <button class="btn-login" id="loginBtn">Sign In</button>
-        <p class="login-back">Admin? <a href="dashboard.html">Go to Admin Dashboard</a></p>
+        <p class="login-back">Admin? <a href="dashboard">Go to Admin Dashboard</a></p>
       </div>
     </div>
 
@@ -376,7 +435,7 @@
           </div>
         </div>
         <div class="t-header__right">
-          <a href="index.html" class="btn-home">
+          <a href="/" class="btn-home">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
             <span>Home</span>
           </a>
@@ -389,7 +448,12 @@
 
       <!-- Tab nav -->
       <div class="t-tab-nav">
-        <button class="t-tab-btn active" data-tab="all-tasks">
+        <button class="t-tab-btn active" data-tab="schedule">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Schedule
+          <span class="t-tab-badge hidden" id="scheduleBadge">0</span>
+        </button>
+        <button class="t-tab-btn" data-tab="all-tasks">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
           All Tasks
           <span class="t-tab-badge hidden" id="allTasksBadge">0</span>
@@ -403,8 +467,25 @@
 
       <div class="t-content">
 
+        <!-- ══ SCHEDULE PANEL ══ -->
+        <div id="panel-schedule" class="t-panel active">
+          <div class="sch-header">
+            <div>
+              <h2>Upcoming Shots &amp; Events</h2>
+              <p>All scheduled shoots, weddings, events and meetings</p>
+            </div>
+          </div>
+          <div class="sch-grid" id="scheduleGrid">
+            <div class="sch-empty">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <h3>No upcoming shots yet</h3>
+              <p>Ask your admin to add upcoming shoots and events.</p>
+            </div>
+          </div>
+        </div>
+
         <!-- ══ ALL TASKS PANEL ══ -->
-        <div id="panel-all-tasks" class="t-panel active">
+        <div id="panel-all-tasks" class="t-panel">
           <div class="tasks-overview">
             <div class="tasks-overview__header">
               <div class="tasks-overview__title">
@@ -441,11 +522,11 @@
     <!-- Mobile Bottom Nav -->
     <nav class="mobile-bottom-nav" id="mobileBottomNav" style="display:none">
       <div class="nav-inner">
-        <a href="index.html" class="mobile-nav-item">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-          <span>Home</span>
-        </a>
-        <button class="mobile-nav-item active" data-tab="all-tasks">
+        <button class="mobile-nav-item active" data-tab="schedule">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span>Schedule</span>
+        </button>
+        <button class="mobile-nav-item" data-tab="all-tasks">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
           <span>All Tasks</span>
         </button>

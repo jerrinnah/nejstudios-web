@@ -4,9 +4,10 @@
    Features: all tasks bar, my tasks, start/end, reports
    ══════════════════════════════════════════════ */
 
-const TASKS_KEY   = 'nej_tasks';
-const TEAM_KEY    = 'nej_team';
-const SESSION_KEY = 'nej_session';
+const TASKS_KEY    = 'nej_tasks';
+const TEAM_KEY     = 'nej_team';
+const SESSION_KEY  = 'nej_session';
+const SCHEDULE_KEY = 'nej_schedule';
 
 /* ════════════════════════════════════════════
    TEAM CONFIG  ← add / edit team members here
@@ -14,15 +15,19 @@ const SESSION_KEY = 'nej_session';
    Format: { id, name, username, pin }
    ════════════════════════════════════════════ */
 const TEAM_CONFIG = [
-  // { id: 'TM-001', name: 'Kemi Adeyemi',  username: 'kemi',  pin: '1234' },
-  // { id: 'TM-002', name: 'Tunde Bello',   username: 'tunde', pin: '5678' },
+  { id: 'TM-001', name: 'Light',   username: 'light',   pin: '1234', role: 'team'  },
+  { id: 'TM-002', name: 'Uzo',     username: 'uzo',     pin: '1234', role: 'team'  },
+  { id: 'TM-003', name: 'Moses',   username: 'moses',   pin: '1234', role: 'team'  },
+  { id: 'TM-004', name: 'Lolya',   username: 'lolya',   pin: '1234', role: 'team'  },
+  { id: 'TM-005', name: 'Dorathy', username: 'dorathy', pin: '0000', role: 'admin' },
 ];
 
 /* ════════════════════════════════════════════
    STORAGE HELPERS
    ════════════════════════════════════════════ */
-function getTasks()     { return JSON.parse(localStorage.getItem(TASKS_KEY) || '[]'); }
-function saveTasks(arr) { localStorage.setItem(TASKS_KEY, JSON.stringify(arr)); }
+function getTasks()        { return JSON.parse(localStorage.getItem(TASKS_KEY)    || '[]'); }
+function saveTasks(arr)    { localStorage.setItem(TASKS_KEY, JSON.stringify(arr)); }
+function getSchedule()     { return JSON.parse(localStorage.getItem(SCHEDULE_KEY) || '[]'); }
 
 // Merges hardcoded TEAM_CONFIG with any members added via the admin UI (localStorage).
 // TEAM_CONFIG entries take precedence so credentials always work cross-device.
@@ -75,25 +80,32 @@ function showPortal(member) {
   teamShell.style.display = 'flex';
   mobileNav.style.display = 'flex';
   document.getElementById('userBadgeName').textContent = member.name;
-  renderAllTasksBar();
-  renderMyTasks();
+  switchTab('schedule');
   updateBadges();
 }
 
 function tryLogin() {
   const username = usernameInput.value.trim().toLowerCase();
   const pin      = pinInput.value.trim();
-  if (!username || !pin) { loginErr.textContent = 'Enter your username and PIN.'; return; }
+  if (!pin) { loginErr.textContent = 'Enter your PIN.'; return; }
 
-  const team   = getTeam();
-  const member = team.find(m => m.username.toLowerCase() === username && m.pin === pin);
+  const team = getTeam();
+  // Match by PIN alone, or PIN + username if username was provided
+  const member = username
+    ? team.find(m => m.pin === pin && m.username.toLowerCase() === username)
+    : team.find(m => m.pin === pin);
 
   if (member) {
     loginErr.textContent = '';
-    setSession({ role:'team', username:member.username, memberId:member.id, name:member.name, loginAt:Date.now() });
-    showPortal(member);
+    if (member.role === 'admin') {
+      setSession({ role:'admin', username:member.username, memberId:member.id, name:member.name, loginAt:Date.now() });
+      window.location.href = 'dashboard';
+    } else {
+      setSession({ role:'team', username:member.username, memberId:member.id, name:member.name, loginAt:Date.now() });
+      showPortal(member);
+    }
   } else {
-    loginErr.textContent = 'Username or PIN not found. Try again.';
+    loginErr.textContent = 'PIN not recognised. Check with your admin.';
     pinInput.value = ''; pinInput.focus();
   }
 }
@@ -107,6 +119,34 @@ function doLogout() { setSession(null); location.reload(); }
 document.getElementById('logoutBtn').addEventListener('click', doLogout);
 document.getElementById('mobileLogout').addEventListener('click', doLogout);
 
+// ── Handle admin-generated setup link: ?setup=BASE64 ──
+(function handleSetupLink() {
+  const params  = new URLSearchParams(location.search);
+  const payload = params.get('setup');
+  if (!payload) return;
+
+  try {
+    const creds = JSON.parse(atob(payload));
+    if (!creds.id || !creds.pin) return;
+
+    // Save member to this device's local team store
+    const stored = JSON.parse(localStorage.getItem(TEAM_KEY) || '[]');
+    const exists = stored.find(m => m.id === creds.id);
+    if (!exists) {
+      stored.push({ id: creds.id, name: creds.name, username: creds.username || '', pin: creds.pin });
+      localStorage.setItem(TEAM_KEY, JSON.stringify(stored));
+    }
+
+    // Auto-fill the PIN field and show a welcome message
+    pinInput.value = creds.pin;
+    loginErr.style.color = 'var(--green)';
+    loginErr.textContent = `Welcome ${creds.name}! Your account is set up — click Sign In.`;
+
+    // Clean the URL without reloading
+    history.replaceState(null, '', location.pathname);
+  } catch { /* malformed payload — ignore */ }
+})();
+
 // On page load: check existing session
 const sess = getSession();
 if (sess && sess.role === 'team') {
@@ -114,18 +154,20 @@ if (sess && sess.role === 'team') {
   const member = team.find(m => m.id === sess.memberId);
   if (member) {
     showPortal(member);
+  } else if (sess.name && sess.memberId) {
+    // Member not in this device's team list but session is valid — trust it
+    showPortal({ id: sess.memberId, name: sess.name, username: sess.username || '' });
   } else {
-    // Member removed — clear session
     setSession(null);
   }
 } else if (sess && sess.role === 'admin') {
-  window.location.href = 'dashboard.html';
+  window.location.href = 'dashboard';
 }
 
 /* ════════════════════════════════════════════
    TAB SWITCHING
    ════════════════════════════════════════════ */
-let activeTab = 'all-tasks';
+let activeTab = 'schedule';
 
 function switchTab(name) {
   activeTab = name;
@@ -134,6 +176,7 @@ function switchTab(name) {
   const panel = document.getElementById('panel-' + name);
   if (panel) panel.classList.add('active');
   document.querySelectorAll('.mobile-bottom-nav [data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  if (name === 'schedule')  renderSchedule();
   if (name === 'all-tasks') renderAllTasksBar();
   if (name === 'my-tasks')  renderMyTasks();
 }
@@ -144,6 +187,80 @@ document.querySelectorAll('.t-tab-btn').forEach(btn => {
 document.querySelectorAll('.mobile-bottom-nav [data-tab]').forEach(btn => {
   btn.addEventListener('click', () => switchTab(btn.dataset.tab));
 });
+
+/* ════════════════════════════════════════════
+   SCHEDULE
+   ════════════════════════════════════════════ */
+function renderSchedule() {
+  const grid = document.getElementById('scheduleGrid');
+  if (!grid) return;
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const shots    = getSchedule().slice().sort((a, b) => a.date.localeCompare(b.date));
+
+  const upcoming = shots.filter(s => s.date >= todayStr);
+  const past     = shots.filter(s => s.date < todayStr).slice(-5).reverse();
+
+  if (shots.length === 0) {
+    grid.innerHTML = `
+      <div class="sch-empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="4" width="18" height="18" rx="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        <h3>No upcoming shots yet</h3>
+        <p>Ask your admin to add upcoming shoots and events.</p>
+      </div>`;
+    return;
+  }
+
+  const typeLabel = { studio:'Studio', wedding:'Wedding', event:'Event', production:'Production', meeting:'Meeting' };
+
+  function buildCard(s, isPast) {
+    const d       = new Date(s.date + 'T00:00:00');
+    const day     = d.getDate();
+    const month   = d.toLocaleString('en-NG', { month:'short' }).toUpperCase();
+    const isToday = s.date === todayStr;
+    const cls     = isToday ? 'sch-card--today' : (isPast ? 'sch-card--past' : '');
+    const lbl     = typeLabel[s.type] || s.type;
+    return `
+      <div class="sch-card ${cls}">
+        <div class="sch-date-block">
+          <div class="sch-date-block__day">${day}</div>
+          <div class="sch-date-block__month">${month}</div>
+        </div>
+        <div class="sch-body">
+          <div class="sch-body__top">
+            <span class="sch-type-badge sch-type--${s.type}">${lbl}</span>
+            ${isToday ? '<span class="sch-today-pill">Today</span>' : ''}
+          </div>
+          <div class="sch-body__title">${s.title}</div>
+          <div class="sch-body__meta">
+            ${s.time       ? `<span>🕐 ${s.time}</span>`       : ''}
+            ${s.clientName ? `<span>👤 ${s.clientName}</span>` : ''}
+            ${s.location   ? `<span>📍 ${s.location}</span>`   : ''}
+          </div>
+          ${s.notes ? `<div class="sch-body__notes">${s.notes}</div>` : ''}
+        </div>
+      </div>`;
+  }
+
+  let html = '';
+  if (upcoming.length > 0) {
+    html += upcoming.map(s => buildCard(s, false)).join('');
+  } else {
+    html += `<div class="sch-empty" style="padding:32px 0">
+      <p style="color:var(--grey-3);font-size:0.85rem">No upcoming shots scheduled.</p>
+    </div>`;
+  }
+  if (past.length > 0) {
+    html += `<div class="sch-section-label">Past</div>`;
+    html += past.map(s => buildCard(s, true)).join('');
+  }
+
+  grid.innerHTML = html;
+}
 
 /* ════════════════════════════════════════════
    ALL TASKS BAR
@@ -396,6 +513,13 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeReportM
    ════════════════════════════════════════════ */
 function updateBadges() {
   const allTasks = getTasks();
+
+  // Schedule badge: count today's shots
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayCount = getSchedule().filter(s => s.date === todayStr).length;
+  const schBadge = document.getElementById('scheduleBadge');
+  schBadge.textContent = todayCount;
+  schBadge.classList.toggle('hidden', todayCount === 0);
 
   // All tasks badge: count pending
   const pendingCount = allTasks.filter(t => t.status === 'pending').length;

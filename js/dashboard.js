@@ -15,8 +15,11 @@ const SESSION_KEY   = 'nej_session';
    Format: { id, name, username, pin }
    ════════════════════════════════════════════ */
 const TEAM_CONFIG = [
-  // { id: 'TM-001', name: 'Kemi Adeyemi',  username: 'kemi',  pin: '1234' },
-  // { id: 'TM-002', name: 'Tunde Bello',   username: 'tunde', pin: '5678' },
+  { id: 'TM-001', name: 'Light',   username: 'light',   pin: '1234', role: 'team'  },
+  { id: 'TM-002', name: 'Uzo',     username: 'uzo',     pin: '1234', role: 'team'  },
+  { id: 'TM-003', name: 'Moses',   username: 'moses',   pin: '1234', role: 'team'  },
+  { id: 'TM-004', name: 'Lolya',   username: 'lolya',   pin: '1234', role: 'team'  },
+  { id: 'TM-005', name: 'Dorathy', username: 'dorathy', pin: '0000', role: 'admin' },
 ];
 
 /* ════════════════════════════════════════════
@@ -152,13 +155,18 @@ function tryLogin() {
     return;
   }
 
-  // Team member login: look up by username + PIN
+  // Team / admin member login: look up by username + PIN
   const team   = getTeam();
   const member = team.find(m => m.username.toLowerCase() === username && m.pin === pin);
   if (member) {
     loginErr.textContent = '';
-    setSession({ role:'team', username:member.username, memberId:member.id, name:member.name, loginAt:Date.now() });
-    window.location.href = 'team.html';
+    if (member.role === 'admin') {
+      setSession({ role:'admin', username:member.username, memberId:member.id, name:member.name, loginAt:Date.now() });
+      showDash();
+    } else {
+      setSession({ role:'team', username:member.username, memberId:member.id, name:member.name, loginAt:Date.now() });
+      window.location.href = 'team';
+    }
     return;
   }
 
@@ -178,7 +186,7 @@ const sess = getSession();
 if (sess && sess.role === 'admin') {
   showDash();
 } else if (sess && sess.role === 'team') {
-  window.location.href = 'team.html';
+  window.location.href = 'team';
 }
 
 /* ════════════════════════════════════════════
@@ -330,7 +338,7 @@ function renderBookings() {
   }
   const grid = document.getElementById('bookingsGrid');
   if (bookings.length === 0) {
-    grid.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><h3>No bookings found</h3><p>No bookings match the current filter.</p><a href="booking.html" target="_blank">+ New Studio Booking</a></div>`;
+    grid.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><h3>No bookings found</h3><p>No bookings match the current filter.</p><a href="booking" target="_blank">+ New Studio Booking</a></div>`;
     return;
   }
   grid.innerHTML = bookings.map(b => b.bookingKind === 'event' ? buildEventCard(b) : buildStudioCard(b)).join('');
@@ -728,18 +736,32 @@ function renderTeam() {
           <div class="member-meta">${taskCount} task${taskCount !== 1 ? 's' : ''} assigned · Added ${fmtDateShort(m.createdAt)}</div>
         </div>
         <div class="member-actions">
+          <button class="member-action-btn member-action-btn--link" data-mid="${m.id}" title="Copy login link to share with ${m.name}">🔗 Login Link</button>
           <button class="member-action-btn member-action-btn--edit" data-mid="${m.id}">Edit</button>
           <button class="member-action-btn member-action-btn--delete" data-mid="${m.id}" data-mname="${m.name}">Remove</button>
         </div>
       </div>`;
   }).join('');
 
+  grid.querySelectorAll('.member-action-btn--link').forEach(btn => {
+    btn.addEventListener('click', () => copyLoginLink(btn.dataset.mid));
+  });
   grid.querySelectorAll('.member-action-btn--edit').forEach(btn => {
     btn.addEventListener('click', () => editMember(btn.dataset.mid));
   });
   grid.querySelectorAll('.member-action-btn--delete').forEach(btn => {
     btn.addEventListener('click', () => removeMember(btn.dataset.mid, btn.dataset.mname));
   });
+}
+
+function copyLoginLink(id) {
+  const m = getTeam().find(m => m.id === id);
+  if (!m) return;
+  const payload = btoa(JSON.stringify({ id: m.id, name: m.name, username: m.username, pin: m.pin }));
+  const url = `${location.origin}/team?setup=${payload}`;
+  navigator.clipboard.writeText(url)
+    .then(() => showToast(`Login link for ${m.name} copied — send it to them`))
+    .catch(() => prompt(`Copy this link and send to ${m.name}:`, url));
 }
 
 function editMember(id) {

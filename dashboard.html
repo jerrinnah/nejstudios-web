@@ -410,6 +410,7 @@
       .member-actions { display:flex; gap:6px; flex-shrink:0; }
       .member-action-btn { padding:6px 12px; border-radius:6px; font-size:0.68rem; font-weight:600; border:1px solid var(--border); color:var(--grey-3); transition:var(--trans); }
       .member-action-btn:hover { border-color:var(--border-l); color:var(--grey-1); }
+      .member-action-btn--link:hover { border-color:var(--blue); color:var(--blue); }
       .member-action-btn--edit:hover { border-color:var(--gold); color:var(--gold); }
       .member-action-btn--delete:hover { border-color:var(--red); color:var(--red); }
 
@@ -513,7 +514,7 @@
         <div class="login-err" id="loginErr"></div>
         <button class="btn-login" id="loginBtn">Sign In</button>
         <p class="login-hint">Admin: leave username blank, PIN <strong>nej2026</strong><br/>Team members: enter your username &amp; PIN</p>
-        <a class="login-team-link" href="team.html">Team member portal →</a>
+        <a class="login-team-link" href="team">Team member portal →</a>
       </div>
     </div>
 
@@ -581,7 +582,7 @@
           </button>
 
           <div class="nav-section" style="margin-top:8px">Site</div>
-          <a class="nav-item" href="index.html">
+          <a class="nav-item" href="/">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
             Return to Website
           </a>
@@ -606,11 +607,11 @@
             <div class="header__title" id="headerTitle">All Bookings</div>
           </div>
           <div class="header__right">
-            <a href="index.html" class="btn-home">
+            <a href="/" class="btn-home">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
               <span>Home</span>
             </a>
-            <a href="booking.html" target="_blank" class="btn-new-booking">
+            <a href="booking" target="_blank" class="btn-new-booking">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               <span>New Booking</span>
             </a>
@@ -771,7 +772,7 @@
     <!-- Mobile Bottom Nav -->
     <nav class="mobile-bottom-nav" id="mobileBottomNav">
       <div class="nav-inner">
-        <a href="index.html" class="mobile-nav-item">
+        <a href="/" class="mobile-nav-item">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
           <span>Home</span>
         </a>

@@ -102,7 +102,7 @@ function makeShareUrl(booking) {
   };
   try {
     const encoded = btoa(encodeURIComponent(JSON.stringify(share)));
-    return `${location.origin}/booking-view.html?b=${encoded}`;
+    return `${location.origin}/booking-view?b=${encoded}`;
   } catch {
     return "";
   }

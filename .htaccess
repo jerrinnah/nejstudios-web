@@ -1,0 +1,11 @@
+Options +FollowSymLinks -MultiViews
+RewriteEngine On
+
+# ── Redirect .html requests to clean URL (301 permanent) ──
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\s/([^.]+)\.html[\s?] [NC]
+RewriteRule ^ /%1 [R=301,L]
+
+# ── Serve the .html file for extension-less URL requests ──
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.html -f
+RewriteRule ^(.+?)/?$ $1.html [L]
