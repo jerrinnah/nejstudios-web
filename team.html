@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Team Portal — NEJstudios</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg: #080808; --bg-2: #0f0f0f; --bg-3: #141414; --bg-4: #1a1a1a;
+        --surface: #1e1e1e; --border: #2a2a2a; --border-l: #333;
+        --gold: #c9a84c; --gold-lt: #e0c06a; --gold-dk: #a0832a;
+        --gold-glow: rgba(201,168,76,.14);
+        --white: #ffffff; --grey-1: #e8e8e8; --grey-2: #b0b0b0;
+        --grey-3: #707070; --grey-4: #404040;
+        --green: #3ecf8e; --green-bg: rgba(62,207,142,.1);
+        --blue: #60a5fa; --blue-bg: rgba(96,165,250,.1);
+        --orange: #fb923c; --orange-bg: rgba(251,146,60,.1);
+        --red: #f87171; --red-bg: rgba(248,113,113,.1);
+        --purple: #a78bfa; --purple-bg: rgba(167,139,250,.1);
+        --serif: "Playfair Display", Georgia, serif;
+        --sans: "Outfit", system-ui, sans-serif;
+        --trans: 0.25s cubic-bezier(0.4,0,0.2,1);
+        --radius: 10px;
+      }
+      *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+      html { scroll-behavior:smooth; }
+      body { background:var(--bg); color:var(--grey-1); font-family:var(--sans); min-height:100vh; }
+      a { color:inherit; text-decoration:none; }
+      button { cursor:pointer; border:none; background:none; font-family:inherit; }
+      ::-webkit-scrollbar { width:5px; height:5px; }
+      ::-webkit-scrollbar-track { background:var(--bg); }
+      ::-webkit-scrollbar-thumb { background:var(--gold); border-radius:99px; }
+      ::selection { background:var(--gold); color:#000; }
+
+      /* ════ LOGIN GATE ════ */
+      #loginGate {
+        position:fixed; inset:0; background:var(--bg); z-index:9999;
+        display:flex; align-items:center; justify-content:center;
+        flex-direction:column; padding:24px;
+      }
+      #loginGate.hidden { display:none; }
+      .login-box {
+        background:var(--bg-2); border:1px solid var(--border);
+        border-radius:20px; padding:44px 40px; width:100%; max-width:420px; text-align:center;
+      }
+      .login-logo { font-size:1.5rem; font-weight:700; margin-bottom:6px; }
+      .login-logo-nej { color:var(--gold); font-family:var(--serif); }
+      .login-logo-studios { color:var(--white); font-family:var(--sans); font-weight:300; font-size:1rem; }
+      .login-role-badge {
+        display:inline-block; margin-bottom:24px; font-size:0.62rem; font-weight:700;
+        letter-spacing:0.14em; text-transform:uppercase; color:var(--gold);
+        background:var(--gold-glow); border:1px solid rgba(201,168,76,.2);
+        padding:4px 12px; border-radius:99px;
+      }
+      .login-box h2 { font-family:var(--serif); font-size:1.4rem; color:var(--white); margin-bottom:8px; }
+      .login-box > p { font-size:0.85rem; color:var(--grey-3); margin-bottom:28px; }
+      .login-input-wrap { position:relative; margin-bottom:12px; }
+      .login-input-wrap input {
+        width:100%; background:var(--bg-3); border:1px solid var(--border);
+        border-radius:8px; padding:14px 16px 14px 44px; color:var(--white);
+        font-size:0.95rem; font-family:var(--sans); outline:none; transition:var(--trans);
+      }
+      .login-input-wrap input:focus { border-color:var(--gold); box-shadow:0 0 0 3px var(--gold-glow); }
+      .login-input-wrap svg { position:absolute; left:14px; top:50%; transform:translateY(-50%); width:18px; height:18px; color:var(--grey-4); }
+      .login-err { font-size:0.8rem; color:#f87171; margin-bottom:12px; min-height:20px; }
+      .btn-login {
+        width:100%; padding:14px; background:var(--gold); color:#000;
+        font-weight:700; font-size:0.85rem; letter-spacing:0.08em;
+        text-transform:uppercase; border-radius:8px; transition:var(--trans);
+      }
+      .btn-login:hover { background:var(--gold-lt); }
+      .login-back { display:block; margin-top:14px; font-size:0.78rem; color:var(--grey-3); }
+      .login-back a { color:var(--gold); }
+
+      /* ════ TEAM SHELL ════ */
+      #teamShell { display:flex; flex-direction:column; min-height:100vh; }
+
+      /* ── Header ── */
+      .t-header {
+        background:var(--bg-2); border-bottom:1px solid var(--border);
+        padding:14px 28px; display:flex; align-items:center; justify-content:space-between;
+        gap:16px; position:sticky; top:0; z-index:100;
+      }
+      .t-header__left { display:flex; align-items:center; gap:12px; }
+      .t-logo { font-size:1.1rem; font-weight:700; }
+      .t-logo-nej { color:var(--gold); font-family:var(--serif); }
+      .t-logo-studios { color:var(--white); font-family:var(--sans); font-weight:300; font-size:0.85rem; }
+      .t-user-badge {
+        display:flex; align-items:center; gap:8px; padding:6px 12px;
+        background:var(--gold-glow); border:1px solid rgba(201,168,76,.2);
+        border-radius:99px; font-size:0.75rem; color:var(--gold);
+      }
+      .t-user-badge svg { width:14px; height:14px; }
+      .t-header__right { display:flex; align-items:center; gap:10px; flex-shrink:0; }
+      .btn-home {
+        padding:8px 14px; border:1px solid var(--border); border-radius:6px;
+        font-size:0.72rem; font-weight:500; color:var(--grey-2);
+        display:flex; align-items:center; gap:6px; transition:var(--trans);
+      }
+      .btn-home:hover { color:var(--gold); border-color:var(--gold); }
+      .btn-home svg { width:13px; height:13px; }
+      .btn-logout-sm {
+        padding:8px 14px; border:1px solid var(--border); border-radius:6px;
+        font-size:0.72rem; color:var(--grey-3); display:flex; align-items:center;
+        gap:6px; transition:var(--trans);
+      }
+      .btn-logout-sm svg { width:13px; height:13px; }
+      .btn-logout-sm:hover { color:var(--red); border-color:var(--red); }
+
+      /* ── Tab Nav ── */
+      .t-tab-nav {
+        background:var(--bg-2); border-bottom:1px solid var(--border);
+        padding:0 28px; display:flex; overflow-x:auto;
+      }
+      .t-tab-btn {
+        padding:13px 20px; font-size:0.8rem; font-weight:600; color:var(--grey-3);
+        border-bottom:2px solid transparent; white-space:nowrap; transition:var(--trans);
+        display:flex; align-items:center; gap:8px;
+      }
+      .t-tab-btn:hover { color:var(--grey-1); }
+      .t-tab-btn.active { color:var(--gold); border-bottom-color:var(--gold); }
+      .t-tab-badge {
+        background:var(--orange); color:#000; font-size:0.6rem; font-weight:700;
+        padding:1px 5px; border-radius:99px; min-width:16px; text-align:center;
+      }
+      .t-tab-badge.hidden { display:none; }
+
+      /* ── Panels ── */
+      .t-panel { display:none; }
+      .t-panel.active { display:block; }
+
+      /* ── Main content ── */
+      .t-content { padding:28px; flex:1; padding-bottom:80px; }
+
+      /* ════ ALL TASKS BAR ════ */
+      .tasks-overview {
+        background:var(--bg-2); border:1px solid var(--border);
+        border-radius:var(--radius); margin-bottom:28px; overflow:hidden;
+      }
+      .tasks-overview__header {
+        padding:16px 20px; display:flex; align-items:center; justify-content:space-between;
+        flex-wrap:wrap; gap:12px; border-bottom:1px solid var(--border);
+      }
+      .tasks-overview__title {
+        font-size:0.9rem; font-weight:600; color:var(--white);
+        display:flex; align-items:center; gap:10px;
+      }
+      .tasks-overview__count {
+        background:var(--bg-3); border:1px solid var(--border);
+        font-size:0.65rem; font-weight:700; color:var(--grey-3);
+        padding:2px 8px; border-radius:99px; letter-spacing:0.08em;
+      }
+      .tasks-bar-filters { display:flex; gap:4px; flex-wrap:wrap; }
+      .tasks-bar-filter {
+        padding:5px 12px; border-radius:99px; font-size:0.68rem; font-weight:500;
+        letter-spacing:0.04em; text-transform:uppercase; border:1px solid var(--border);
+        color:var(--grey-2); transition:var(--trans); cursor:pointer;
+      }
+      .tasks-bar-filter:hover { border-color:var(--border-l); color:var(--white); }
+      .tasks-bar-filter.active { background:var(--gold); color:#000; border-color:var(--gold); font-weight:600; }
+
+      .tasks-bar-scroll { padding:16px 20px; display:flex; gap:10px; overflow-x:auto; }
+      .tasks-bar-scroll::-webkit-scrollbar { height:4px; }
+
+      .task-pill {
+        flex-shrink:0; background:var(--bg-3); border:1px solid var(--border);
+        border-radius:8px; padding:12px 16px; min-width:200px; max-width:260px;
+        cursor:default; transition:var(--trans);
+      }
+      .task-pill:hover { border-color:var(--border-l); }
+      .task-pill--pending  { border-left:2px solid var(--orange); }
+      .task-pill--in-progress { border-left:2px solid var(--purple); }
+      .task-pill--completed   { border-left:2px solid var(--green); opacity:.65; }
+      .task-pill__top { display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:6px; }
+      .task-pill__title { font-size:0.82rem; font-weight:600; color:var(--white); line-height:1.3; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+      .task-pill__status { flex-shrink:0; font-size:0.58rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; padding:2px 7px; border-radius:99px; }
+      .task-pill__status--pending   { background:var(--orange-bg); color:var(--orange); }
+      .task-pill__status--in-progress { background:var(--purple-bg); color:var(--purple); }
+      .task-pill__status--completed { background:var(--green-bg); color:var(--green); }
+      .task-pill__meta { font-size:0.68rem; color:var(--grey-4); }
+
+      .tasks-bar-empty { padding:32px 20px; text-align:center; color:var(--grey-3); font-size:0.85rem; }
+
+      /* ════ MY TASKS ════ */
+      .my-tasks-header {
+        display:flex; align-items:center; justify-content:space-between; gap:12px;
+        margin-bottom:20px; flex-wrap:wrap;
+      }
+      .my-tasks-header h2 { font-family:var(--serif); font-size:1.3rem; color:var(--white); }
+      .my-tasks-header p { font-size:0.8rem; color:var(--grey-3); margin-top:2px; }
+
+      .my-tasks-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
+
+      .my-task-card {
+        background:var(--bg-2); border:1px solid var(--border);
+        border-radius:var(--radius); padding:20px; transition:var(--trans);
+        display:flex; flex-direction:column;
+      }
+      .my-task-card:hover { border-color:var(--border-l); }
+      .my-task-card--pending    { border-left:3px solid var(--orange); }
+      .my-task-card--in-progress { border-left:3px solid var(--purple); }
+      .my-task-card--completed  { border-left:3px solid var(--green); opacity:.8; }
+
+      .my-task-card__top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:10px; }
+      .my-task-card__badges { display:flex; gap:5px; flex-wrap:wrap; }
+      .priority-badge { display:inline-flex; align-items:center; padding:3px 8px; border-radius:99px; font-size:0.58rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; }
+      .priority-badge--high   { background:rgba(248,113,113,.15); color:var(--red); }
+      .priority-badge--medium { background:var(--orange-bg); color:var(--orange); }
+      .priority-badge--low    { background:var(--green-bg); color:var(--green); }
+      .status-badge { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:99px; font-size:0.65rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; flex-shrink:0; }
+      .status-badge::before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; }
+      .status-badge--pending    { background:var(--orange-bg); color:var(--orange); }
+      .status-badge--in-progress { background:var(--purple-bg); color:var(--purple); }
+      .status-badge--completed  { background:var(--green-bg); color:var(--green); }
+
+      .my-task-card__title { font-size:1rem; font-weight:600; color:var(--white); margin-bottom:6px; line-height:1.4; }
+      .my-task-card__desc  { font-size:0.8rem; color:var(--grey-3); line-height:1.5; margin-bottom:14px; flex:1; }
+      .my-task-card__timestamps { display:flex; flex-direction:column; gap:4px; padding:10px 0; border-top:1px solid var(--border); border-bottom:1px solid var(--border); margin-bottom:14px; }
+      .ts-row { font-size:0.72rem; color:var(--grey-3); display:flex; gap:6px; }
+      .ts-row strong { color:var(--grey-2); }
+
+      .my-task-card__actions { display:flex; gap:8px; flex-wrap:wrap; }
+      .btn-start {
+        padding:9px 16px; background:var(--purple); color:#000; font-weight:700;
+        font-size:0.72rem; letter-spacing:0.06em; text-transform:uppercase;
+        border-radius:6px; display:flex; align-items:center; gap:6px; transition:var(--trans);
+      }
+      .btn-start:hover { filter:brightness(1.15); }
+      .btn-start svg { width:14px; height:14px; }
+      .btn-complete {
+        padding:9px 16px; background:var(--green); color:#000; font-weight:700;
+        font-size:0.72rem; letter-spacing:0.06em; text-transform:uppercase;
+        border-radius:6px; display:flex; align-items:center; gap:6px; transition:var(--trans);
+      }
+      .btn-complete:hover { filter:brightness(1.1); }
+      .btn-complete svg { width:14px; height:14px; }
+      .btn-report {
+        padding:9px 14px; border:1px solid var(--border); border-radius:6px;
+        font-size:0.72rem; font-weight:500; color:var(--grey-2);
+        display:flex; align-items:center; gap:6px; transition:var(--trans);
+      }
+      .btn-report:hover { border-color:var(--gold); color:var(--gold); }
+      .btn-report svg { width:14px; height:14px; }
+
+      .reports-count { font-size:0.7rem; color:var(--grey-3); margin-top:10px; padding-top:10px; border-top:1px solid var(--border); }
+      .last-report-preview { font-size:0.75rem; color:var(--grey-3); margin-top:4px; font-style:italic; }
+
+      /* ── Empty state ── */
+      .empty-state { text-align:center; padding:60px 24px; color:var(--grey-3); }
+      .empty-state svg { width:48px; height:48px; margin:0 auto 16px; opacity:.4; }
+      .empty-state h3 { font-family:var(--serif); color:var(--grey-2); margin-bottom:8px; }
+
+      /* ── Report modal ── */
+      .modal-overlay { position:fixed; inset:0; z-index:9000; display:flex; align-items:center; justify-content:center; padding:24px; pointer-events:none; opacity:0; transition:opacity 0.25s; }
+      .modal-overlay.open { pointer-events:all; opacity:1; }
+      .modal-backdrop { position:absolute; inset:0; background:rgba(0,0,0,.85); backdrop-filter:blur(6px); }
+      .modal-box {
+        position:relative; z-index:1; background:var(--bg-2); border:1px solid var(--border);
+        border-radius:16px; padding:36px; width:100%; max-width:520px;
+        transform:scale(0.96); transition:transform 0.25s; max-height:90vh; overflow-y:auto;
+      }
+      .modal-overlay.open .modal-box { transform:scale(1); }
+      .modal-close { position:absolute; top:16px; right:16px; width:32px; height:32px; border-radius:50%; background:var(--bg-3); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--grey-2); transition:var(--trans); }
+      .modal-close:hover { background:var(--gold); color:#000; }
+      .modal-close svg { width:14px; height:14px; }
+      .modal-box h3 { font-family:var(--serif); font-size:1.3rem; color:var(--white); margin-bottom:6px; }
+      .modal-box .modal-subtitle { font-size:0.8rem; color:var(--grey-3); margin-bottom:20px; }
+
+      /* Report form inside modal */
+      .report-form-section { margin-bottom:24px; }
+      .report-form-label { font-size:0.68rem; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--grey-3); margin-bottom:8px; display:block; }
+      .report-textarea {
+        width:100%; background:var(--bg-3); border:1px solid var(--border);
+        border-radius:8px; padding:12px 14px; color:var(--white); font-size:0.875rem;
+        font-family:var(--sans); outline:none; transition:var(--trans);
+        resize:vertical; min-height:100px;
+      }
+      .report-textarea:focus { border-color:var(--gold); box-shadow:0 0 0 3px var(--gold-glow); }
+      .report-textarea::placeholder { color:var(--grey-4); }
+      .btn-submit-report {
+        padding:11px 24px; background:var(--gold); color:#000; font-weight:700;
+        font-size:0.8rem; letter-spacing:0.08em; text-transform:uppercase;
+        border-radius:8px; transition:var(--trans); margin-top:10px;
+      }
+      .btn-submit-report:hover { background:var(--gold-lt); }
+
+      /* Past reports */
+      .past-reports-title { font-size:0.72rem; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--grey-3); margin-bottom:12px; padding-top:20px; border-top:1px solid var(--border); }
+      .reports-list { display:flex; flex-direction:column; gap:10px; }
+      .report-item { background:var(--bg-3); border:1px solid var(--border); border-radius:8px; padding:14px; }
+      .report-item__header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+      .report-item__author { font-size:0.75rem; font-weight:600; color:var(--gold); }
+      .report-item__date { font-size:0.68rem; color:var(--grey-4); }
+      .report-item__body { font-size:0.82rem; color:var(--grey-2); line-height:1.6; white-space:pre-wrap; }
+      .no-reports { text-align:center; padding:20px; color:var(--grey-3); font-size:0.82rem; }
+
+      /* ── Toast ── */
+      .toast { position:fixed; bottom:80px; right:20px; z-index:99999; background:var(--bg-2); border:1px solid var(--border); border-left:3px solid var(--gold); border-radius:8px; padding:14px 20px; font-size:0.85rem; color:var(--grey-1); transform:translateY(16px); opacity:0; transition:var(--trans); pointer-events:none; max-width:300px; }
+      .toast.show { transform:translateY(0); opacity:1; }
+
+      /* ════ MOBILE BOTTOM NAV ════ */
+      .mobile-bottom-nav {
+        position:fixed; bottom:0; left:0; right:0; z-index:300;
+        background:var(--bg-2); border-top:1px solid var(--border);
+        padding:0 4px env(safe-area-inset-bottom);
+        display:flex; flex-direction:column;
+      }
+      .mobile-bottom-nav .nav-inner { display:flex; }
+      .mobile-nav-item {
+        flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+        gap:4px; padding:10px 4px; font-size:0.62rem; font-weight:500; letter-spacing:0.04em;
+        text-transform:uppercase; color:var(--grey-3); transition:var(--trans);
+      }
+      .mobile-nav-item svg { width:20px; height:20px; }
+      .mobile-nav-item.active { color:var(--gold); }
+
+      /* ════ RESPONSIVE ════ */
+      @media (max-width:600px) {
+        .t-content { padding:16px; padding-bottom:80px; }
+        .t-header { padding:12px 16px; }
+        .t-tab-nav { padding:0 12px; }
+        .t-tab-btn { padding:11px 14px; font-size:0.75rem; }
+        .btn-home span, .btn-logout-sm span { display:none; }
+        .my-tasks-grid { grid-template-columns:1fr; }
+      }
+      @media (min-width:601px) {
+        .toast { bottom:28px; right:28px; }
+      }
+    </style>
+  </head>
+  <body>
+
+    <!-- ══ LOGIN GATE ══ -->
+    <div id="loginGate">
+      <div class="login-box">
+        <div class="login-logo">
+          <span class="login-logo-nej">NEJ</span><span class="login-logo-studios">studios</span>
+        </div>
+        <div class="login-role-badge">Team Portal</div>
+        <h2>Team Sign In</h2>
+        <p>Enter your username and PIN to access your tasks</p>
+
+        <div class="login-input-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+          </svg>
+          <input type="text" id="usernameInput" placeholder="Your username" autocomplete="off" />
+        </div>
+        <div class="login-input-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
+          </svg>
+          <input type="password" id="pinInput" placeholder="Your PIN" autocomplete="off" maxlength="20" />
+        </div>
+        <div class="login-err" id="loginErr"></div>
+        <button class="btn-login" id="loginBtn">Sign In</button>
+        <p class="login-back">Admin? <a href="dashboard.html">Go to Admin Dashboard</a></p>
+      </div>
+    </div>
+
+    <!-- ══ TEAM PORTAL ══ -->
+    <div id="teamShell" style="display:none">
+
+      <!-- Header -->
+      <header class="t-header">
+        <div class="t-header__left">
+          <div class="t-logo">
+            <span class="t-logo-nej">NEJ</span><span class="t-logo-studios">studios</span>
+          </div>
+          <div class="t-user-badge" id="userBadge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span id="userBadgeName">Team Member</span>
+          </div>
+        </div>
+        <div class="t-header__right">
+          <a href="index.html" class="btn-home">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <span>Home</span>
+          </a>
+          <button class="btn-logout-sm" id="logoutBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <span>Sign Out</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Tab nav -->
+      <div class="t-tab-nav">
+        <button class="t-tab-btn active" data-tab="all-tasks">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          All Tasks
+          <span class="t-tab-badge hidden" id="allTasksBadge">0</span>
+        </button>
+        <button class="t-tab-btn" data-tab="my-tasks">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          My Tasks
+          <span class="t-tab-badge hidden" id="myTasksBadge">0</span>
+        </button>
+      </div>
+
+      <div class="t-content">
+
+        <!-- ══ ALL TASKS PANEL ══ -->
+        <div id="panel-all-tasks" class="t-panel active">
+          <div class="tasks-overview">
+            <div class="tasks-overview__header">
+              <div class="tasks-overview__title">
+                Pending Tasks
+                <span class="tasks-overview__count" id="allTasksCount">0 tasks</span>
+              </div>
+              <div class="tasks-bar-filters">
+                <button class="tasks-bar-filter active" data-bar-filter="all">All</button>
+                <button class="tasks-bar-filter" data-bar-filter="pending">Pending</button>
+                <button class="tasks-bar-filter" data-bar-filter="in-progress">In Progress</button>
+                <button class="tasks-bar-filter" data-bar-filter="completed">Done</button>
+              </div>
+            </div>
+            <div class="tasks-bar-scroll" id="allTasksBar">
+              <div class="tasks-bar-empty">No tasks yet</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ MY TASKS PANEL ══ -->
+        <div id="panel-my-tasks" class="t-panel">
+          <div class="my-tasks-header">
+            <div>
+              <h2>My Assigned Tasks</h2>
+              <p>Tasks assigned to you — start, complete, and write progress reports</p>
+            </div>
+          </div>
+          <div class="my-tasks-grid" id="myTasksGrid"></div>
+        </div>
+
+      </div><!-- /t-content -->
+    </div><!-- /teamShell -->
+
+    <!-- Mobile Bottom Nav -->
+    <nav class="mobile-bottom-nav" id="mobileBottomNav" style="display:none">
+      <div class="nav-inner">
+        <a href="index.html" class="mobile-nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <span>Home</span>
+        </a>
+        <button class="mobile-nav-item active" data-tab="all-tasks">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          <span>All Tasks</span>
+        </button>
+        <button class="mobile-nav-item" data-tab="my-tasks">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span>My Tasks</span>
+        </button>
+        <button class="mobile-nav-item" id="mobileLogout">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span>Sign Out</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Report Modal -->
+    <div class="modal-overlay" id="reportModal">
+      <div class="modal-backdrop" id="reportModalBackdrop"></div>
+      <div class="modal-box">
+        <button class="modal-close" id="reportModalClose">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <h3 id="reportModalTitle">Progress Report</h3>
+        <p class="modal-subtitle" id="reportModalSubtitle"></p>
+
+        <div class="report-form-section">
+          <label class="report-form-label">Write your progress update</label>
+          <textarea class="report-textarea" id="reportTextarea" placeholder="Describe what you've done, any blockers, next steps…" rows="4"></textarea>
+          <button class="btn-submit-report" id="submitReportBtn">Submit Report</button>
+        </div>
+
+        <div id="pastReportsSection">
+          <div class="past-reports-title">Previous Reports</div>
+          <div id="pastReportsList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script src="js/team.js"></script>
+  </body>
+</html>
