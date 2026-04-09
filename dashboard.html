@@ -3,1232 +3,594 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Studio Dashboard — NEJstudios</title>
+    <title>Dashboard — NEJstudios</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500;600&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
     <style>
       :root {
-        --bg: #080808;
-        --bg-2: #0f0f0f;
-        --bg-3: #141414;
-        --bg-4: #1a1a1a;
-        --surface: #1e1e1e;
-        --border: #2a2a2a;
-        --border-l: #333;
-        --gold: #c9a84c;
-        --gold-lt: #e0c06a;
-        --gold-dk: #a0832a;
-        --gold-glow: rgba(201, 168, 76, 0.14);
-        --white: #ffffff;
-        --grey-1: #e8e8e8;
-        --grey-2: #b0b0b0;
-        --grey-3: #707070;
-        --grey-4: #404040;
-        --green: #3ecf8e;
-        --green-bg: rgba(62, 207, 142, 0.1);
-        --blue: #60a5fa;
-        --blue-bg: rgba(96, 165, 250, 0.1);
-        --orange: #fb923c;
-        --orange-bg: rgba(251, 146, 60, 0.1);
-        --red: #f87171;
-        --red-bg: rgba(248, 113, 113, 0.1);
+        --bg: #080808; --bg-2: #0f0f0f; --bg-3: #141414; --bg-4: #1a1a1a;
+        --surface: #1e1e1e; --border: #2a2a2a; --border-l: #333;
+        --gold: #c9a84c; --gold-lt: #e0c06a; --gold-dk: #a0832a;
+        --gold-glow: rgba(201,168,76,.14);
+        --white: #ffffff; --grey-1: #e8e8e8; --grey-2: #b0b0b0;
+        --grey-3: #707070; --grey-4: #404040;
+        --green: #3ecf8e; --green-bg: rgba(62,207,142,.1);
+        --blue: #60a5fa; --blue-bg: rgba(96,165,250,.1);
+        --orange: #fb923c; --orange-bg: rgba(251,146,60,.1);
+        --red: #f87171; --red-bg: rgba(248,113,113,.1);
+        --purple: #a78bfa; --purple-bg: rgba(167,139,250,.1);
         --serif: "Playfair Display", Georgia, serif;
         --sans: "Outfit", system-ui, sans-serif;
-        --trans: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        --trans: 0.25s cubic-bezier(0.4,0,0.2,1);
         --radius: 10px;
       }
-      *,
-      *::before,
-      *::after {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
-      html {
-        scroll-behavior: smooth;
-      }
-      body {
-        background: var(--bg);
-        color: var(--grey-1);
-        font-family: var(--sans);
-        min-height: 100vh;
-      }
-      a {
-        color: inherit;
-        text-decoration: none;
-      }
-      button {
-        cursor: pointer;
-        border: none;
-        background: none;
-        font-family: inherit;
-      }
-      ::-webkit-scrollbar {
-        width: 5px;
-      }
-      ::-webkit-scrollbar-track {
-        background: var(--bg);
-      }
-      ::-webkit-scrollbar-thumb {
-        background: var(--gold);
-        border-radius: 99px;
-      }
-      ::selection {
-        background: var(--gold);
-        color: #000;
-      }
+      *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+      html { scroll-behavior:smooth; }
+      body { background:var(--bg); color:var(--grey-1); font-family:var(--sans); min-height:100vh; }
+      a { color:inherit; text-decoration:none; }
+      button { cursor:pointer; border:none; background:none; font-family:inherit; }
+      ::-webkit-scrollbar { width:5px; }
+      ::-webkit-scrollbar-track { background:var(--bg); }
+      ::-webkit-scrollbar-thumb { background:var(--gold); border-radius:99px; }
+      ::selection { background:var(--gold); color:#000; }
 
-      /* ════════════════════ LOGIN GATE ════════════════════ */
+      /* ════ LOGIN GATE ════ */
       #loginGate {
-        position: fixed;
-        inset: 0;
-        background: var(--bg);
-        z-index: 9999;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-        padding: 24px;
+        position:fixed; inset:0; background:var(--bg); z-index:9999;
+        display:flex; align-items:center; justify-content:center;
+        flex-direction:column; padding:24px;
       }
-      #loginGate.hidden {
-        display: none;
-      }
+      #loginGate.hidden { display:none; }
       .login-box {
-        background: var(--bg-2);
-        border: 1px solid var(--border);
-        border-radius: 20px;
-        padding: 44px 40px;
-        width: 100%;
-        max-width: 420px;
-        text-align: center;
+        background:var(--bg-2); border:1px solid var(--border);
+        border-radius:20px; padding:44px 40px; width:100%; max-width:420px; text-align:center;
       }
-      .login-logo {
-        font-size: 1.5rem;
-        font-weight: 700;
-        margin-bottom: 28px;
-      }
-      .login-logo-nej {
-        color: var(--gold);
-        font-family: var(--serif);
-      }
-      .login-logo-studios {
-        color: var(--white);
-        font-family: var(--sans);
-        font-weight: 300;
-        font-size: 1rem;
-      }
-      .login-box h2 {
-        font-family: var(--serif);
-        font-size: 1.4rem;
-        color: var(--white);
-        margin-bottom: 8px;
-      }
-      .login-box p {
-        font-size: 0.85rem;
-        color: var(--grey-3);
-        margin-bottom: 28px;
-      }
-      .login-input-wrap {
-        position: relative;
-        margin-bottom: 16px;
-      }
+      .login-logo { font-size:1.5rem; font-weight:700; margin-bottom:28px; }
+      .login-logo-nej { color:var(--gold); font-family:var(--serif); }
+      .login-logo-studios { color:var(--white); font-family:var(--sans); font-weight:300; font-size:1rem; }
+      .login-box h2 { font-family:var(--serif); font-size:1.4rem; color:var(--white); margin-bottom:8px; }
+      .login-box > p { font-size:0.85rem; color:var(--grey-3); margin-bottom:28px; }
+      .login-input-wrap { position:relative; margin-bottom:12px; }
       .login-input-wrap input {
-        width: 100%;
-        background: var(--bg-3);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 14px 16px 14px 44px;
-        color: var(--white);
-        font-size: 0.95rem;
-        font-family: var(--sans);
-        outline: none;
-        transition: var(--trans);
+        width:100%; background:var(--bg-3); border:1px solid var(--border);
+        border-radius:8px; padding:14px 16px 14px 44px; color:var(--white);
+        font-size:0.95rem; font-family:var(--sans); outline:none; transition:var(--trans);
       }
-      .login-input-wrap input:focus {
-        border-color: var(--gold);
-        box-shadow: 0 0 0 3px var(--gold-glow);
-      }
+      .login-input-wrap input:focus { border-color:var(--gold); box-shadow:0 0 0 3px var(--gold-glow); }
       .login-input-wrap svg {
-        position: absolute;
-        left: 14px;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 18px;
-        height: 18px;
-        color: var(--grey-4);
+        position:absolute; left:14px; top:50%; transform:translateY(-50%);
+        width:18px; height:18px; color:var(--grey-4);
       }
-      .login-err {
-        font-size: 0.8rem;
-        color: #f87171;
-        margin-bottom: 12px;
-        min-height: 20px;
+      .login-divider {
+        display:flex; align-items:center; gap:10px; margin:8px 0 12px;
+        font-size:0.72rem; color:var(--grey-4); text-transform:uppercase; letter-spacing:0.1em;
       }
+      .login-divider::before,.login-divider::after { content:""; flex:1; height:1px; background:var(--border); }
+      .login-err { font-size:0.8rem; color:#f87171; margin-bottom:12px; min-height:20px; }
       .btn-login {
-        width: 100%;
-        padding: 14px;
-        background: var(--gold);
-        color: #000;
-        font-weight: 700;
-        font-size: 0.85rem;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        border-radius: 8px;
-        transition: var(--trans);
+        width:100%; padding:14px; background:var(--gold); color:#000;
+        font-weight:700; font-size:0.85rem; letter-spacing:0.08em;
+        text-transform:uppercase; border-radius:8px; transition:var(--trans);
       }
-      .btn-login:hover {
-        background: var(--gold-lt);
-      }
-      .login-hint {
-        margin-top: 16px;
-        font-size: 0.72rem;
-        color: var(--grey-4);
+      .btn-login:hover { background:var(--gold-lt); }
+      .login-hint { margin-top:16px; font-size:0.72rem; color:var(--grey-4); }
+      .login-hint strong { color:var(--grey-3); }
+      .login-team-link {
+        display:block; margin-top:12px; font-size:0.78rem;
+        color:var(--gold); text-decoration:underline; cursor:pointer;
       }
 
-      /* ════════════════════ SHELL ════════════════════ */
-      .shell {
-        display: flex;
-        min-height: 100vh;
-      }
+      /* ════ SHELL ════ */
+      .shell { display:flex; min-height:100vh; }
 
       /* ── Sidebar ── */
       .sidebar {
-        width: 240px;
-        flex-shrink: 0;
-        background: var(--bg-2);
-        border-right: 1px solid var(--border);
-        display: flex;
-        flex-direction: column;
-        padding: 0;
-        position: fixed;
-        top: 0;
-        left: 0;
-        bottom: 0;
-        z-index: 200;
-        transition: transform var(--trans);
+        width:240px; flex-shrink:0; background:var(--bg-2);
+        border-right:1px solid var(--border); display:flex; flex-direction:column;
+        position:fixed; top:0; left:0; bottom:0; z-index:200;
+        transition:transform var(--trans);
       }
-      .sidebar__logo {
-        padding: 24px 20px 20px;
-        border-bottom: 1px solid var(--border);
-        font-size: 1.25rem;
-        font-weight: 700;
-      }
-      .sidebar__logo-nej {
-        color: var(--gold);
-        font-family: var(--serif);
-      }
-      .sidebar__logo-studios {
-        color: var(--white);
-        font-family: var(--sans);
-        font-weight: 300;
-        font-size: 0.85rem;
-      }
+      .sidebar__logo { padding:24px 20px 20px; border-bottom:1px solid var(--border); font-size:1.25rem; font-weight:700; }
+      .sidebar__logo-nej { color:var(--gold); font-family:var(--serif); }
+      .sidebar__logo-studios { color:var(--white); font-family:var(--sans); font-weight:300; font-size:0.85rem; }
       .sidebar__badge {
-        display: inline-block;
-        margin-left: 8px;
-        font-size: 0.55rem;
-        font-weight: 700;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        color: #000;
-        background: var(--gold);
-        padding: 2px 7px;
-        border-radius: 99px;
-        vertical-align: middle;
+        display:inline-block; margin-left:8px; font-size:0.55rem; font-weight:700;
+        letter-spacing:0.1em; text-transform:uppercase; color:#000;
+        background:var(--gold); padding:2px 7px; border-radius:99px; vertical-align:middle;
       }
-      .sidebar__nav {
-        flex: 1;
-        padding: 16px 0;
-        overflow-y: auto;
-      }
+      .sidebar__nav { flex:1; padding:16px 0; overflow-y:auto; }
       .nav-section {
-        font-size: 0.62rem;
-        font-weight: 600;
-        letter-spacing: 0.18em;
-        text-transform: uppercase;
-        color: var(--grey-4);
-        padding: 12px 20px 6px;
+        font-size:0.62rem; font-weight:600; letter-spacing:0.18em;
+        text-transform:uppercase; color:var(--grey-4); padding:12px 20px 6px;
       }
       .nav-item {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 11px 20px;
-        font-size: 0.875rem;
-        color: var(--grey-2);
-        transition: var(--trans);
-        cursor: pointer;
-        border-left: 2px solid transparent;
-        width: 100%;
-        text-align: left;
+        display:flex; align-items:center; gap:12px; padding:11px 20px;
+        font-size:0.875rem; color:var(--grey-2); transition:var(--trans);
+        cursor:pointer; border-left:2px solid transparent; width:100%; text-align:left;
       }
-      .nav-item svg {
-        width: 17px;
-        height: 17px;
-        flex-shrink: 0;
+      .nav-item svg { width:17px; height:17px; flex-shrink:0; }
+      .nav-item:hover { color:var(--white); background:rgba(255,255,255,.03); }
+      .nav-item.active { color:var(--gold); border-left-color:var(--gold); background:var(--gold-glow); }
+      .nav-item a { color:inherit; display:flex; align-items:center; gap:12px; width:100%; }
+      .nav-count {
+        margin-left:auto; background:var(--orange); color:#000; font-size:0.6rem;
+        font-weight:700; padding:2px 6px; border-radius:99px; min-width:18px; text-align:center;
       }
-      .nav-item:hover {
-        color: var(--white);
-        background: rgba(255, 255, 255, 0.03);
-      }
-      .nav-item.active {
-        color: var(--gold);
-        border-left-color: var(--gold);
-        background: var(--gold-glow);
-      }
-      .nav-item a {
-        color: inherit;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        width: 100%;
-      }
-
-      .sidebar__footer {
-        padding: 16px 20px;
-        border-top: 1px solid var(--border);
+      .nav-count.hidden { display:none; }
+      .sidebar__footer { padding:16px 20px; border-top:1px solid var(--border); }
+      .sidebar__user {
+        font-size:0.72rem; color:var(--grey-3); margin-bottom:10px;
+        padding:8px 12px; background:var(--bg-3); border:1px solid var(--border);
+        border-radius:6px; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
       }
       .btn-logout {
-        width: 100%;
-        padding: 10px 14px;
-        background: var(--bg-3);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        font-size: 0.78rem;
-        color: var(--grey-3);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        transition: var(--trans);
+        width:100%; padding:10px 14px; background:var(--bg-3); border:1px solid var(--border);
+        border-radius:8px; font-size:0.78rem; color:var(--grey-3);
+        display:flex; align-items:center; justify-content:center; gap:8px; transition:var(--trans);
       }
-      .btn-logout svg {
-        width: 15px;
-        height: 15px;
-      }
-      .btn-logout:hover {
-        color: var(--red);
-        border-color: var(--red);
-      }
+      .btn-logout svg { width:15px; height:15px; }
+      .btn-logout:hover { color:var(--red); border-color:var(--red); }
 
-      /* ── Main content ── */
-      .main {
-        margin-left: 240px;
-        flex: 1;
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
+      /* Sidebar overlay (mobile) */
+      .sidebar-overlay {
+        display:none; position:fixed; inset:0; background:rgba(0,0,0,.7);
+        z-index:199; backdrop-filter:blur(2px);
       }
+      .sidebar-overlay.visible { display:block; }
 
-      /* ── Top header ── */
+      /* ── Main ── */
+      .main { margin-left:240px; flex:1; min-height:100vh; display:flex; flex-direction:column; }
+
+      /* ── Header ── */
       .header {
-        background: var(--bg-2);
-        border-bottom: 1px solid var(--border);
-        padding: 16px 28px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        position: sticky;
-        top: 0;
-        z-index: 100;
+        background:var(--bg-2); border-bottom:1px solid var(--border);
+        padding:14px 28px; display:flex; align-items:center; justify-content:space-between;
+        gap:16px; position:sticky; top:0; z-index:100;
       }
-      .header__title {
-        font-size: 1rem;
-        font-weight: 600;
-        color: var(--white);
+      .header__left { display:flex; align-items:center; gap:12px; }
+      .btn-menu {
+        display:none; width:36px; height:36px; align-items:center; justify-content:center;
+        background:var(--bg-3); border:1px solid var(--border); border-radius:6px;
+        color:var(--grey-2); transition:var(--trans); flex-shrink:0;
       }
-      .header__right {
-        display: flex;
-        align-items: center;
-        gap: 12px;
+      .btn-menu:hover { color:var(--white); border-color:var(--border-l); }
+      .btn-menu svg { width:18px; height:18px; }
+      .header__title { font-size:1rem; font-weight:600; color:var(--white); }
+      .header__right { display:flex; align-items:center; gap:10px; flex-shrink:0; }
+      .btn-home {
+        padding:8px 14px; border:1px solid var(--border); border-radius:6px;
+        font-size:0.72rem; font-weight:500; color:var(--grey-2);
+        display:flex; align-items:center; gap:6px; transition:var(--trans);
       }
+      .btn-home:hover { color:var(--gold); border-color:var(--gold); }
+      .btn-home svg { width:13px; height:13px; }
       .btn-new-booking {
-        padding: 9px 20px;
-        background: var(--gold);
-        color: #000;
-        font-weight: 700;
-        font-size: 0.75rem;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        border-radius: 6px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        transition: var(--trans);
+        padding:9px 18px; background:var(--gold); color:#000; font-weight:700;
+        font-size:0.72rem; letter-spacing:0.08em; text-transform:uppercase;
+        border-radius:6px; display:flex; align-items:center; gap:6px; transition:var(--trans);
       }
-      .btn-new-booking:hover {
-        background: var(--gold-lt);
-      }
-      .btn-new-booking svg {
-        width: 14px;
-        height: 14px;
-      }
+      .btn-new-booking:hover { background:var(--gold-lt); }
+      .btn-new-booking svg { width:14px; height:14px; }
 
-      /* ── Content area ── */
-      .content {
-        padding: 28px;
-        flex: 1;
+      /* ── Tab Nav ── */
+      .tab-nav {
+        background:var(--bg-2); border-bottom:1px solid var(--border);
+        padding:0 28px; display:flex; gap:0; overflow-x:auto;
       }
+      .tab-btn {
+        padding:13px 20px; font-size:0.8rem; font-weight:600; color:var(--grey-3);
+        border-bottom:2px solid transparent; white-space:nowrap; transition:var(--trans);
+        display:flex; align-items:center; gap:8px;
+      }
+      .tab-btn:hover { color:var(--grey-1); }
+      .tab-btn.active { color:var(--gold); border-bottom-color:var(--gold); }
+      .tab-badge {
+        background:var(--orange); color:#000; font-size:0.6rem; font-weight:700;
+        padding:1px 5px; border-radius:99px; min-width:16px; text-align:center;
+      }
+      .tab-badge.zero { background:var(--bg-4); color:var(--grey-4); }
+
+      /* ── Tab Panels ── */
+      .tab-panel { display:none; }
+      .tab-panel.active { display:block; }
+
+      /* ── Content ── */
+      .content { padding:28px; flex:1; }
 
       /* ── Stats row ── */
-      .stats-row {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 16px;
-        margin-bottom: 28px;
-      }
+      .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px; }
       .stat-card {
-        background: var(--bg-2);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 20px 22px;
-        position: relative;
-        overflow: hidden;
+        background:var(--bg-2); border:1px solid var(--border);
+        border-radius:var(--radius); padding:20px 22px;
+        position:relative; overflow:hidden;
       }
-      .stat-card::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 2px;
-      }
-      .stat-card--total::before {
-        background: var(--gold);
-      }
-      .stat-card--studio::before {
-        background: #a78bfa;
-      }
-      .stat-card--events::before {
-        background: var(--blue);
-      }
-      .stat-card--pending::before {
-        background: var(--orange);
-      }
-
-      .stat-card__label {
-        font-size: 0.65rem;
-        font-weight: 600;
-        letter-spacing: 0.16em;
-        text-transform: uppercase;
-        color: var(--grey-3);
-        margin-bottom: 10px;
-      }
-      .stat-card__value {
-        font-family: var(--serif);
-        font-size: 2.25rem;
-        font-weight: 700;
-        color: var(--white);
-        line-height: 1;
-      }
-      .stat-card--total .stat-card__value {
-        color: var(--gold);
-      }
-      .stat-card--studio .stat-card__value {
-        color: #a78bfa;
-      }
-      .stat-card--events .stat-card__value {
-        color: var(--blue);
-      }
-      .stat-card--pending .stat-card__value {
-        color: var(--orange);
-      }
+      .stat-card::before { content:""; position:absolute; top:0; left:0; right:0; height:2px; }
+      .stat-card--total::before { background:var(--gold); }
+      .stat-card--studio::before { background:var(--purple); }
+      .stat-card--events::before { background:var(--blue); }
+      .stat-card--pending::before { background:var(--orange); }
+      .stat-card__label { font-size:0.65rem; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; color:var(--grey-3); margin-bottom:10px; }
+      .stat-card__value { font-family:var(--serif); font-size:2.25rem; font-weight:700; color:var(--white); line-height:1; }
+      .stat-card--total .stat-card__value { color:var(--gold); }
+      .stat-card--studio .stat-card__value { color:var(--purple); }
+      .stat-card--events .stat-card__value { color:var(--blue); }
+      .stat-card--pending .stat-card__value { color:var(--orange); }
 
       /* ── Toolbar ── */
-      .toolbar {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        flex-wrap: wrap;
-        margin-bottom: 20px;
-      }
-      .filter-group {
-        display: flex;
-        gap: 4px;
-        flex-wrap: wrap;
-      }
+      .toolbar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
+      .filter-group { display:flex; gap:4px; flex-wrap:wrap; }
       .filter-btn {
-        padding: 7px 16px;
-        border-radius: 99px;
-        font-size: 0.72rem;
-        font-weight: 500;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-        border: 1px solid var(--border);
-        color: var(--grey-2);
-        transition: var(--trans);
+        padding:7px 16px; border-radius:99px; font-size:0.72rem; font-weight:500;
+        letter-spacing:0.05em; text-transform:uppercase; border:1px solid var(--border);
+        color:var(--grey-2); transition:var(--trans);
       }
-      .filter-btn:hover {
-        border-color: var(--border-l);
-        color: var(--white);
-      }
-      .filter-btn.active {
-        background: var(--gold);
-        color: #000;
-        border-color: var(--gold);
-        font-weight: 600;
-      }
-
-      .search-wrap {
-        flex: 1;
-        max-width: 280px;
-        position: relative;
-      }
+      .filter-btn:hover { border-color:var(--border-l); color:var(--white); }
+      .filter-btn.active { background:var(--gold); color:#000; border-color:var(--gold); font-weight:600; }
+      .search-wrap { flex:1; max-width:280px; position:relative; }
       .search-wrap input {
-        width: 100%;
-        background: var(--bg-2);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 8px 14px 8px 36px;
-        color: var(--white);
-        font-size: 0.85rem;
-        font-family: var(--sans);
-        outline: none;
-        transition: var(--trans);
+        width:100%; background:var(--bg-2); border:1px solid var(--border);
+        border-radius:8px; padding:8px 14px 8px 36px; color:var(--white);
+        font-size:0.85rem; font-family:var(--sans); outline:none; transition:var(--trans);
       }
-      .search-wrap input:focus {
-        border-color: var(--gold);
-      }
-      .search-wrap input::placeholder {
-        color: var(--grey-4);
-      }
-      .search-wrap svg {
-        position: absolute;
-        left: 11px;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 15px;
-        height: 15px;
-        color: var(--grey-4);
-        pointer-events: none;
-      }
+      .search-wrap input:focus { border-color:var(--gold); }
+      .search-wrap input::placeholder { color:var(--grey-4); }
+      .search-wrap svg { position:absolute; left:11px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--grey-4); pointer-events:none; }
 
       /* ── Bookings grid ── */
-      .bookings-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-        gap: 14px;
-      }
-
-      .booking-card {
-        background: var(--bg-2);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 20px;
-        transition: var(--trans);
-        position: relative;
-      }
-      .booking-card:hover {
-        border-color: var(--border-l);
-      }
-
-      .booking-card__top {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 12px;
-        margin-bottom: 14px;
-      }
-      .booking-card__name {
-        font-size: 1rem;
-        font-weight: 600;
-        color: var(--white);
-      }
-      .booking-card__id {
-        font-size: 0.68rem;
-        color: var(--grey-4);
-        font-weight: 400;
-        margin-top: 2px;
-      }
-
-      /* Status badge */
-      .status-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        padding: 4px 10px;
-        border-radius: 99px;
-        font-size: 0.65rem;
-        font-weight: 700;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        flex-shrink: 0;
-      }
-      .status-badge::before {
-        content: "";
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: currentColor;
-      }
-      .status-badge--pending {
-        background: var(--orange-bg);
-        color: var(--orange);
-      }
-      .status-badge--confirmed {
-        background: var(--blue-bg);
-        color: var(--blue);
-      }
-      .status-badge--completed {
-        background: var(--green-bg);
-        color: var(--green);
-      }
-      .status-badge--cancelled {
-        background: var(--red-bg);
-        color: var(--red);
-      }
-
-      .booking-card__meta {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        margin-bottom: 16px;
-        padding-bottom: 16px;
-        border-bottom: 1px solid var(--border);
-      }
-      .meta-row {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.8rem;
-      }
-      .meta-row svg {
-        width: 14px;
-        height: 14px;
-        color: var(--gold);
-        flex-shrink: 0;
-      }
-      .meta-row span {
-        color: var(--grey-2);
-      }
-      .meta-row strong {
-        color: var(--white);
-      }
-
-      /* Kind badge */
-      .kind-badge {
-        display: inline-block;
-        font-size: 0.6rem;
-        font-weight: 700;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        padding: 2px 8px;
-        border-radius: 99px;
-        margin-bottom: 4px;
-      }
-      .kind-badge--studio {
-        background: rgba(167, 139, 250, 0.15);
-        color: #a78bfa;
-        border: 1px solid rgba(167, 139, 250, 0.25);
-      }
-      .kind-badge--event {
-        background: var(--blue-bg);
-        color: var(--blue);
-        border: 1px solid rgba(96, 165, 250, 0.25);
-      }
-
-      /* Session type pill */
-      .session-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        padding: 3px 10px;
-        border-radius: 99px;
-        font-size: 0.68rem;
-        font-weight: 600;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        background: var(--gold-glow);
-        border: 1px solid rgba(201, 168, 76, 0.2);
-        color: var(--gold);
-        margin-bottom: 14px;
-      }
-
-      /* Event-specific fields */
-      .booking-card--event {
-        border-left: 2px solid var(--blue);
-      }
-      .event-pill {
-        background: var(--blue-bg);
-        border-color: rgba(96, 165, 250, 0.2);
-        color: var(--blue);
-      }
-
-      .event-fields {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-        margin-bottom: 14px;
-        padding: 14px;
-        background: var(--bg-3);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-      }
-      .event-field {
-        display: flex;
-        align-items: flex-start;
-        gap: 8px;
-      }
-      .event-field--full {
-        grid-column: 1 / -1;
-      }
-      .event-field svg {
-        width: 14px;
-        height: 14px;
-        color: var(--gold);
-        flex-shrink: 0;
-        margin-top: 2px;
-      }
-      .ef-label {
-        display: block;
-        font-size: 0.62rem;
-        font-weight: 600;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        color: var(--grey-4);
-        margin-bottom: 2px;
-      }
-      .ef-value {
-        display: block;
-        font-size: 0.82rem;
-        color: var(--grey-1);
-        line-height: 1.4;
-      }
-      .ef-deliverables {
-        color: var(--grey-2);
-        font-size: 0.78rem;
-        line-height: 1.5;
-      }
-
-      .booking-card__actions {
-        display: flex;
-        gap: 6px;
-        flex-wrap: wrap;
-      }
-      .action-btn {
-        padding: 6px 14px;
-        border-radius: 6px;
-        font-size: 0.7rem;
-        font-weight: 600;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-        border: 1px solid;
-        transition: var(--trans);
-      }
-      .action-btn--confirm {
-        border-color: var(--blue);
-        color: var(--blue);
-      }
-      .action-btn--confirm:hover {
-        background: var(--blue-bg);
-      }
-      .action-btn--complete {
-        border-color: var(--green);
-        color: var(--green);
-      }
-      .action-btn--complete:hover {
-        background: var(--green-bg);
-      }
-      .action-btn--cancel {
-        border-color: var(--red);
-        color: var(--red);
-      }
-      .action-btn--cancel:hover {
-        background: var(--red-bg);
-      }
-      .action-btn--delete {
-        border-color: var(--border);
-        color: var(--grey-3);
-      }
-      .action-btn--delete:hover {
-        border-color: var(--red);
-        color: var(--red);
-      }
-      .action-btn--pending {
-        border-color: var(--orange);
-        color: var(--orange);
-      }
-      .action-btn--pending:hover {
-        background: var(--orange-bg);
-      }
+      .bookings-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:14px; }
+      .booking-card { background:var(--bg-2); border:1px solid var(--border); border-radius:var(--radius); padding:20px; transition:var(--trans); position:relative; }
+      .booking-card:hover { border-color:var(--border-l); }
+      .booking-card__top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:14px; }
+      .booking-card__name { font-size:1rem; font-weight:600; color:var(--white); }
+      .booking-card__id { font-size:0.68rem; color:var(--grey-4); font-weight:400; margin-top:2px; }
+      .status-badge { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:99px; font-size:0.65rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; flex-shrink:0; }
+      .status-badge::before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; }
+      .status-badge--pending { background:var(--orange-bg); color:var(--orange); }
+      .status-badge--confirmed { background:var(--blue-bg); color:var(--blue); }
+      .status-badge--completed { background:var(--green-bg); color:var(--green); }
+      .status-badge--cancelled { background:var(--red-bg); color:var(--red); }
+      .status-badge--in-progress { background:var(--purple-bg); color:var(--purple); }
+      .booking-card__meta { display:flex; flex-direction:column; gap:6px; margin-bottom:16px; padding-bottom:16px; border-bottom:1px solid var(--border); }
+      .meta-row { display:flex; align-items:center; gap:8px; font-size:0.8rem; }
+      .meta-row svg { width:14px; height:14px; color:var(--gold); flex-shrink:0; }
+      .meta-row span { color:var(--grey-2); }
+      .meta-row strong { color:var(--white); }
+      .kind-badge { display:inline-block; font-size:0.6rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; padding:2px 8px; border-radius:99px; margin-bottom:4px; }
+      .kind-badge--studio { background:rgba(167,139,250,.15); color:var(--purple); border:1px solid rgba(167,139,250,.25); }
+      .kind-badge--event { background:var(--blue-bg); color:var(--blue); border:1px solid rgba(96,165,250,.25); }
+      .session-pill { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:99px; font-size:0.68rem; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; background:var(--gold-glow); border:1px solid rgba(201,168,76,.2); color:var(--gold); margin-bottom:14px; }
+      .booking-card--event { border-left:2px solid var(--blue); }
+      .event-pill { background:var(--blue-bg); border-color:rgba(96,165,250,.2); color:var(--blue); }
+      .event-fields { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; padding:14px; background:var(--bg-3); border:1px solid var(--border); border-radius:8px; }
+      .event-field { display:flex; align-items:flex-start; gap:8px; }
+      .event-field--full { grid-column:1/-1; }
+      .event-field svg { width:14px; height:14px; color:var(--gold); flex-shrink:0; margin-top:2px; }
+      .ef-label { display:block; font-size:0.62rem; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--grey-4); margin-bottom:2px; }
+      .ef-value { display:block; font-size:0.82rem; color:var(--grey-1); line-height:1.4; }
+      .ef-deliverables { color:var(--grey-2); font-size:0.78rem; line-height:1.5; }
+      .booking-card__actions { display:flex; gap:6px; flex-wrap:wrap; }
+      .action-btn { padding:6px 14px; border-radius:6px; font-size:0.7rem; font-weight:600; letter-spacing:0.05em; text-transform:uppercase; border:1px solid; transition:var(--trans); }
+      .action-btn--confirm { border-color:var(--blue); color:var(--blue); }
+      .action-btn--confirm:hover { background:var(--blue-bg); }
+      .action-btn--complete { border-color:var(--green); color:var(--green); }
+      .action-btn--complete:hover { background:var(--green-bg); }
+      .action-btn--cancel { border-color:var(--red); color:var(--red); }
+      .action-btn--cancel:hover { background:var(--red-bg); }
+      .action-btn--delete { border-color:var(--border); color:var(--grey-3); }
+      .action-btn--delete:hover { border-color:var(--red); color:var(--red); }
+      .action-btn--pending { border-color:var(--orange); color:var(--orange); }
+      .action-btn--pending:hover { background:var(--orange-bg); }
 
       /* ── Empty state ── */
-      .empty-state {
-        grid-column: 1/-1;
-        text-align: center;
-        padding: 60px 24px;
-        color: var(--grey-3);
+      .empty-state { grid-column:1/-1; text-align:center; padding:60px 24px; color:var(--grey-3); }
+      .empty-state svg { width:48px; height:48px; margin:0 auto 16px; opacity:.4; }
+      .empty-state h3 { font-family:var(--serif); color:var(--grey-2); margin-bottom:8px; }
+      .empty-state a { display:inline-flex; align-items:center; gap:8px; margin-top:20px; padding:10px 24px; background:var(--gold); color:#000; font-weight:700; font-size:0.78rem; letter-spacing:0.08em; text-transform:uppercase; border-radius:6px; transition:var(--trans); }
+      .empty-state a:hover { background:var(--gold-lt); }
+
+      /* ════ TASKS PANEL ════ */
+      .panel-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; flex-wrap:wrap; gap:12px; }
+      .panel-header h2 { font-family:var(--serif); font-size:1.3rem; color:var(--white); }
+      .panel-header p { font-size:0.8rem; color:var(--grey-3); margin-top:2px; }
+
+      .task-create-wrap { background:var(--bg-2); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:28px; overflow:hidden; }
+      .task-create-toggle {
+        width:100%; padding:16px 20px; display:flex; align-items:center; justify-content:space-between;
+        font-size:0.85rem; font-weight:600; color:var(--grey-2); transition:var(--trans);
       }
-      .empty-state svg {
-        width: 48px;
-        height: 48px;
-        margin: 0 auto 16px;
-        opacity: 0.4;
+      .task-create-toggle:hover { color:var(--white); background:rgba(255,255,255,.02); }
+      .task-create-toggle svg { width:16px; height:16px; transition:transform var(--trans); }
+      .task-create-toggle.open svg { transform:rotate(45deg); }
+      .task-create-body { display:none; padding:0 20px 20px; border-top:1px solid var(--border); }
+      .task-create-body.open { display:block; }
+      .task-form { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding-top:16px; }
+      .task-form .full { grid-column:1/-1; }
+      .form-field { display:flex; flex-direction:column; gap:6px; }
+      .form-label { font-size:0.68rem; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--grey-3); }
+      .form-input, .form-select, .form-textarea {
+        background:var(--bg-3); border:1px solid var(--border); border-radius:8px;
+        padding:10px 14px; color:var(--white); font-size:0.875rem; font-family:var(--sans);
+        outline:none; transition:var(--trans);
       }
-      .empty-state h3 {
-        font-family: var(--serif);
-        color: var(--grey-2);
-        margin-bottom: 8px;
+      .form-input:focus,.form-select:focus,.form-textarea:focus { border-color:var(--gold); box-shadow:0 0 0 3px var(--gold-glow); }
+      .form-input::placeholder,.form-textarea::placeholder { color:var(--grey-4); }
+      .form-textarea { resize:vertical; min-height:80px; }
+      .form-select { appearance:none; }
+      option { background:var(--bg-3); }
+      .btn-create-task {
+        grid-column:1/-1; padding:11px; background:var(--gold); color:#000;
+        font-weight:700; font-size:0.8rem; letter-spacing:0.08em; text-transform:uppercase;
+        border-radius:8px; transition:var(--trans);
       }
-      .empty-state a {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        margin-top: 20px;
-        padding: 10px 24px;
-        background: var(--gold);
-        color: #000;
-        font-weight: 700;
-        font-size: 0.78rem;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        border-radius: 6px;
-        transition: var(--trans);
+      .btn-create-task:hover { background:var(--gold-lt); }
+
+      /* Tasks filter bar */
+      .tasks-filter { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:20px; }
+      .tasks-filter-btn {
+        padding:6px 14px; border-radius:99px; font-size:0.72rem; font-weight:500;
+        letter-spacing:0.05em; text-transform:uppercase; border:1px solid var(--border);
+        color:var(--grey-2); transition:var(--trans);
       }
-      .empty-state a:hover {
-        background: var(--gold-lt);
+      .tasks-filter-btn:hover { border-color:var(--border-l); color:var(--white); }
+      .tasks-filter-btn.active { background:var(--gold); color:#000; border-color:var(--gold); font-weight:600; }
+
+      /* Task cards */
+      .tasks-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; }
+      .task-card { background:var(--bg-2); border:1px solid var(--border); border-radius:var(--radius); padding:20px; transition:var(--trans); }
+      .task-card:hover { border-color:var(--border-l); }
+      .task-card--pending { border-left:2px solid var(--orange); }
+      .task-card--in-progress { border-left:2px solid var(--purple); }
+      .task-card--completed { border-left:2px solid var(--green); opacity:.75; }
+
+      .task-card__top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:10px; }
+      .task-card__badges { display:flex; gap:5px; flex-wrap:wrap; }
+      .priority-badge { display:inline-flex; align-items:center; padding:3px 8px; border-radius:99px; font-size:0.58rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; }
+      .priority-badge--high { background:rgba(248,113,113,.15); color:var(--red); }
+      .priority-badge--medium { background:var(--orange-bg); color:var(--orange); }
+      .priority-badge--low { background:var(--green-bg); color:var(--green); }
+
+      .task-card__title { font-size:0.95rem; font-weight:600; color:var(--white); margin-bottom:6px; line-height:1.4; }
+      .task-card__desc { font-size:0.78rem; color:var(--grey-3); line-height:1.5; margin-bottom:14px; }
+      .task-card__info { padding:12px 0; border-top:1px solid var(--border); border-bottom:1px solid var(--border); margin-bottom:12px; display:flex; flex-direction:column; gap:6px; }
+      .task-info-row { display:flex; align-items:center; gap:8px; font-size:0.76rem; color:var(--grey-3); }
+      .task-info-row strong { color:var(--grey-1); }
+      .task-info-row svg { width:13px; height:13px; color:var(--gold); flex-shrink:0; }
+      .task-card__assignee { display:flex; align-items:center; gap:8px; font-size:0.78rem; color:var(--grey-2); margin-bottom:12px; }
+      .assignee-avatar {
+        width:24px; height:24px; border-radius:50%; background:var(--gold-glow);
+        border:1px solid rgba(201,168,76,.3); display:flex; align-items:center; justify-content:center;
+        font-size:0.6rem; font-weight:700; color:var(--gold); flex-shrink:0;
       }
+
+      .task-reports-preview { padding:10px 12px; background:var(--bg-3); border:1px solid var(--border); border-radius:6px; font-size:0.75rem; color:var(--grey-3); margin-bottom:12px; }
+      .task-reports-preview strong { color:var(--grey-2); }
+      .task-card__actions { display:flex; gap:6px; flex-wrap:wrap; }
+      .task-action-btn { padding:6px 12px; border-radius:6px; font-size:0.68rem; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; border:1px solid; transition:var(--trans); }
+      .task-action-btn--delete { border-color:var(--border); color:var(--grey-3); }
+      .task-action-btn--delete:hover { border-color:var(--red); color:var(--red); }
+      .task-action-btn--reports { border-color:var(--border-l); color:var(--grey-2); }
+      .task-action-btn--reports:hover { border-color:var(--gold); color:var(--gold); }
+      .task-action-btn--reassign { border-color:var(--border-l); color:var(--grey-2); }
+      .task-action-btn--reassign:hover { border-color:var(--blue); color:var(--blue); }
+
+      /* ════ TEAM PANEL ════ */
+      .team-layout { display:grid; grid-template-columns:380px 1fr; gap:28px; align-items:start; }
+      .team-form-card { background:var(--bg-2); border:1px solid var(--border); border-radius:var(--radius); padding:24px; position:sticky; top:100px; }
+      .team-form-card h3 { font-family:var(--serif); font-size:1.1rem; color:var(--white); margin-bottom:6px; }
+      .team-form-card p { font-size:0.78rem; color:var(--grey-3); margin-bottom:20px; }
+      .team-form { display:flex; flex-direction:column; gap:12px; }
+      .team-form-actions { display:flex; gap:8px; margin-top:4px; }
+      .btn-add-member {
+        flex:1; padding:11px; background:var(--gold); color:#000; font-weight:700;
+        font-size:0.8rem; letter-spacing:0.08em; text-transform:uppercase;
+        border-radius:8px; transition:var(--trans);
+      }
+      .btn-add-member:hover { background:var(--gold-lt); }
+      .btn-cancel-edit { padding:11px 16px; border:1px solid var(--border); border-radius:8px; font-size:0.8rem; color:var(--grey-3); transition:var(--trans); display:none; }
+      .btn-cancel-edit:hover { border-color:var(--border-l); color:var(--grey-1); }
+      .btn-cancel-edit.visible { display:block; }
+
+      .team-members-section h3 { font-family:var(--serif); font-size:1.1rem; color:var(--white); margin-bottom:16px; }
+      .team-grid { display:flex; flex-direction:column; gap:10px; }
+      .member-card {
+        background:var(--bg-2); border:1px solid var(--border); border-radius:var(--radius);
+        padding:16px 20px; display:flex; align-items:center; gap:16px; transition:var(--trans);
+      }
+      .member-card:hover { border-color:var(--border-l); }
+      .member-avatar {
+        width:42px; height:42px; border-radius:50%; background:var(--gold-glow);
+        border:1px solid rgba(201,168,76,.3); display:flex; align-items:center; justify-content:center;
+        font-family:var(--serif); font-size:1rem; font-weight:600; color:var(--gold); flex-shrink:0;
+      }
+      .member-info { flex:1; min-width:0; }
+      .member-name { font-size:0.9rem; font-weight:600; color:var(--white); }
+      .member-username { font-size:0.75rem; color:var(--grey-3); margin-top:2px; }
+      .member-meta { font-size:0.68rem; color:var(--grey-4); margin-top:4px; }
+      .member-actions { display:flex; gap:6px; flex-shrink:0; }
+      .member-action-btn { padding:6px 12px; border-radius:6px; font-size:0.68rem; font-weight:600; border:1px solid var(--border); color:var(--grey-3); transition:var(--trans); }
+      .member-action-btn:hover { border-color:var(--border-l); color:var(--grey-1); }
+      .member-action-btn--edit:hover { border-color:var(--gold); color:var(--gold); }
+      .member-action-btn--delete:hover { border-color:var(--red); color:var(--red); }
 
       /* ── Detail modal ── */
-      .modal-overlay {
-        position: fixed;
-        inset: 0;
-        z-index: 9000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 24px;
-        pointer-events: none;
-        opacity: 0;
-        transition: opacity 0.25s;
-      }
-      .modal-overlay.open {
-        pointer-events: all;
-        opacity: 1;
-      }
-      .modal-backdrop {
-        position: absolute;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.8);
-        backdrop-filter: blur(6px);
-      }
-      .modal-box {
-        position: relative;
-        z-index: 1;
-        background: var(--bg-2);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        padding: 36px;
-        width: 100%;
-        max-width: 500px;
-        transform: scale(0.96);
-        transition: transform 0.25s;
-      }
-      .modal-overlay.open .modal-box {
-        transform: scale(1);
-      }
-      .modal-close {
-        position: absolute;
-        top: 16px;
-        right: 16px;
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        background: var(--bg-3);
-        border: 1px solid var(--border);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--grey-2);
-        transition: var(--trans);
-      }
-      .modal-close:hover {
-        background: var(--gold);
-        color: #000;
-      }
-      .modal-close svg {
-        width: 14px;
-        height: 14px;
-      }
-      .modal-box h3 {
-        font-family: var(--serif);
-        font-size: 1.4rem;
-        color: var(--white);
-        margin-bottom: 20px;
-      }
-      .detail-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        padding: 12px 0;
-        border-bottom: 1px solid var(--border);
-        gap: 16px;
-      }
-      .detail-row:last-of-type {
-        border-bottom: none;
-      }
-      .detail-row__key {
-        font-size: 0.72rem;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        color: var(--grey-3);
-        flex-shrink: 0;
-      }
-      .detail-row__val {
-        font-size: 0.9rem;
-        color: var(--white);
-        text-align: right;
-        word-break: break-all;
-      }
+      .modal-overlay { position:fixed; inset:0; z-index:9000; display:flex; align-items:center; justify-content:center; padding:24px; pointer-events:none; opacity:0; transition:opacity 0.25s; }
+      .modal-overlay.open { pointer-events:all; opacity:1; }
+      .modal-backdrop { position:absolute; inset:0; background:rgba(0,0,0,.8); backdrop-filter:blur(6px); }
+      .modal-box { position:relative; z-index:1; background:var(--bg-2); border:1px solid var(--border); border-radius:16px; padding:36px; width:100%; max-width:500px; transform:scale(0.96); transition:transform 0.25s; max-height:90vh; overflow-y:auto; }
+      .modal-overlay.open .modal-box { transform:scale(1); }
+      .modal-close { position:absolute; top:16px; right:16px; width:32px; height:32px; border-radius:50%; background:var(--bg-3); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--grey-2); transition:var(--trans); }
+      .modal-close:hover { background:var(--gold); color:#000; }
+      .modal-close svg { width:14px; height:14px; }
+      .modal-box h3 { font-family:var(--serif); font-size:1.4rem; color:var(--white); margin-bottom:20px; }
+      .detail-row { display:flex; justify-content:space-between; align-items:flex-start; padding:12px 0; border-bottom:1px solid var(--border); gap:16px; }
+      .detail-row:last-of-type { border-bottom:none; }
+      .detail-row__key { font-size:0.72rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--grey-3); flex-shrink:0; }
+      .detail-row__val { font-size:0.9rem; color:var(--white); text-align:right; word-break:break-all; }
+
+      /* Reports modal */
+      .reports-list { display:flex; flex-direction:column; gap:12px; margin-top:4px; }
+      .report-item { background:var(--bg-3); border:1px solid var(--border); border-radius:8px; padding:14px; }
+      .report-item__header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+      .report-item__author { font-size:0.75rem; font-weight:600; color:var(--gold); }
+      .report-item__date { font-size:0.68rem; color:var(--grey-4); }
+      .report-item__body { font-size:0.82rem; color:var(--grey-2); line-height:1.6; white-space:pre-wrap; }
+      .no-reports { text-align:center; padding:32px 16px; color:var(--grey-3); font-size:0.85rem; }
 
       /* ── Toast ── */
-      .toast {
-        position: fixed;
-        bottom: 28px;
-        right: 28px;
-        z-index: 99999;
-        background: var(--bg-2);
-        border: 1px solid var(--border);
-        border-left: 3px solid var(--gold);
-        border-radius: 8px;
-        padding: 14px 20px;
-        font-size: 0.85rem;
-        color: var(--grey-1);
-        transform: translateY(16px);
-        opacity: 0;
-        transition: var(--trans);
-        pointer-events: none;
-        max-width: 320px;
+      .toast { position:fixed; bottom:28px; right:28px; z-index:99999; background:var(--bg-2); border:1px solid var(--border); border-left:3px solid var(--gold); border-radius:8px; padding:14px 20px; font-size:0.85rem; color:var(--grey-1); transform:translateY(16px); opacity:0; transition:var(--trans); pointer-events:none; max-width:320px; }
+      .toast.show { transform:translateY(0); opacity:1; }
+
+      /* ════ MOBILE BOTTOM NAV ════ */
+      .mobile-bottom-nav {
+        display:none; position:fixed; bottom:0; left:0; right:0; z-index:300;
+        background:var(--bg-2); border-top:1px solid var(--border);
+        padding:0 4px env(safe-area-inset-bottom);
       }
-      .toast.show {
-        transform: translateY(0);
-        opacity: 1;
+      .mobile-bottom-nav .nav-inner { display:flex; }
+      .mobile-nav-item {
+        flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+        gap:4px; padding:10px 4px; font-size:0.62rem; font-weight:500; letter-spacing:0.04em;
+        text-transform:uppercase; color:var(--grey-3); transition:var(--trans); position:relative;
+      }
+      .mobile-nav-item svg { width:20px; height:20px; }
+      .mobile-nav-item.active { color:var(--gold); }
+      .mobile-nav-item .mnav-badge {
+        position:absolute; top:6px; right:calc(50% - 14px); background:var(--orange);
+        color:#000; font-size:0.5rem; font-weight:700; padding:1px 4px; border-radius:99px;
+        min-width:14px; text-align:center; pointer-events:none;
       }
 
-      /* ── Responsive ── */
-      @media (max-width: 900px) {
-        .sidebar {
-          transform: translateX(-100%);
-        }
-        .sidebar.open {
-          transform: none;
-        }
-        .main {
-          margin-left: 0;
-        }
-        .stats-row {
-          grid-template-columns: repeat(2, 1fr);
-        }
+      /* ════ RESPONSIVE ════ */
+      @media (max-width:1100px) {
+        .team-layout { grid-template-columns:1fr; }
+        .team-form-card { position:static; }
       }
-      @media (max-width: 520px) {
-        .stats-row {
-          grid-template-columns: 1fr 1fr;
-        }
-        .content {
-          padding: 16px;
-        }
-        .header {
-          padding: 14px 16px;
-        }
+      @media (max-width:900px) {
+        .sidebar { transform:translateX(-100%); }
+        .sidebar.open { transform:none; }
+        .main { margin-left:0; }
+        .stats-row { grid-template-columns:repeat(2,1fr); }
+        .btn-menu { display:flex; }
+        .mobile-bottom-nav { display:flex; flex-direction:column; }
+        .content { padding-bottom:80px; }
+        .tab-nav { padding:0 16px; }
+      }
+      @media (max-width:600px) {
+        .content { padding:16px; padding-bottom:80px; }
+        .header { padding:12px 16px; }
+        .stats-row { grid-template-columns:1fr 1fr; }
+        .task-form { grid-template-columns:1fr; }
+        .task-form .full { grid-column:1; }
+        .btn-new-booking span { display:none; }
+        .btn-home span { display:none; }
       }
     </style>
   </head>
   <body>
+
     <!-- ══ LOGIN GATE ══ -->
     <div id="loginGate">
       <div class="login-box">
         <div class="login-logo">
-          <span class="login-logo-nej">NEJ</span
-          ><span class="login-logo-studios">studios</span>
+          <span class="login-logo-nej">NEJ</span><span class="login-logo-studios">studios</span>
         </div>
-        <h2>Studio Dashboard</h2>
-        <p>Enter your dashboard PIN to continue</p>
+        <h2>Staff Login</h2>
+        <p>Sign in with your credentials to continue</p>
+
         <div class="login-input-wrap">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <rect x="3" y="11" width="18" height="11" rx="2" />
-            <path d="M7 11V7a5 5 0 0110 0v4" />
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
           </svg>
-          <input
-            type="password"
-            id="pinInput"
-            placeholder="Enter PIN"
-            autocomplete="off"
-            maxlength="20"
-          />
+          <input type="text" id="usernameInput" placeholder="Username (blank = admin)" autocomplete="off" />
+        </div>
+        <div class="login-input-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
+          </svg>
+          <input type="password" id="pinInput" placeholder="Enter PIN" autocomplete="off" maxlength="20" />
         </div>
         <div class="login-err" id="loginErr"></div>
-        <button class="btn-login" id="loginBtn">Unlock Dashboard</button>
-        <p class="login-hint">
-          Default PIN: <strong>nej2026</strong> — change it in dashboard.js
-        </p>
+        <button class="btn-login" id="loginBtn">Sign In</button>
+        <p class="login-hint">Admin: leave username blank, PIN <strong>nej2026</strong><br/>Team members: enter your username &amp; PIN</p>
+        <a class="login-team-link" href="team.html">Team member portal →</a>
       </div>
     </div>
 
-    <!-- ══ DASHBOARD SHELL ══ -->
-    <div class="shell" id="dashShell" style="display: none">
+    <!-- ══ DASHBOARD SHELL (admin) ══ -->
+    <div class="shell" id="dashShell" style="display:none">
+
       <!-- Sidebar -->
       <aside class="sidebar" id="sidebar">
         <div class="sidebar__logo">
-          <span class="sidebar__logo-nej">NEJ</span
-          ><span class="sidebar__logo-studios">studios</span>
-          <span class="sidebar__badge">Dashboard</span>
+          <span class="sidebar__logo-nej">NEJ</span><span class="sidebar__logo-studios">studios</span>
+          <span class="sidebar__badge">Admin</span>
         </div>
+
         <nav class="sidebar__nav">
-          <div class="nav-section">Overview</div>
+          <div class="nav-section">Bookings</div>
           <button class="nav-item active" data-view="all" data-kind="all">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <rect x="3" y="3" width="7" height="7" />
-              <rect x="14" y="3" width="7" height="7" />
-              <rect x="3" y="14" width="7" height="7" />
-              <rect x="14" y="14" width="7" height="7" />
-            </svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
             All Bookings
           </button>
           <button class="nav-item" data-view="pending" data-kind="all">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
-            </svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             Pending
           </button>
           <button class="nav-item" data-view="confirmed" data-kind="all">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
-              <polyline points="22 4 12 14.01 9 11.01" />
-            </svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
             Confirmed
           </button>
           <button class="nav-item" data-view="completed" data-kind="all">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
             Completed
           </button>
           <button class="nav-item" data-view="cancelled" data-kind="all">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <line x1="15" y1="9" x2="9" y2="15" />
-              <line x1="9" y1="9" x2="15" y2="15" />
-            </svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
             Cancelled
           </button>
 
-          <div class="nav-section" style="margin-top: 8px">Studio Sessions</div>
+          <div class="nav-section" style="margin-top:8px">Studio Sessions</div>
           <button class="nav-item" data-view="all" data-kind="studio">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <circle cx="12" cy="12" r="3" />
-              <path d="M20.188 10.934a8 8 0 10-8.375 8.375" />
-              <path d="M22 22l-3-3" />
-              <circle cx="20" cy="20" r="2" />
-            </svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M20.188 10.934a8 8 0 10-8.375 8.375"/><path d="M22 22l-3-3"/><circle cx="20" cy="20" r="2"/></svg>
             All Studio
           </button>
-          <button class="nav-item" data-type="Birthday" data-kind="studio">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-            Birthday
+          <button class="nav-item" data-type="Birthday" data-kind="studio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Birthday</button>
+          <button class="nav-item" data-type="Family" data-kind="studio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Family</button>
+          <button class="nav-item" data-type="Creative" data-kind="studio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Creative</button>
+          <button class="nav-item" data-type="Fashion" data-kind="studio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>Fashion</button>
+          <button class="nav-item" data-type="Product" data-kind="studio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>Product</button>
+
+          <div class="nav-section" style="margin-top:8px">Events &amp; Weddings</div>
+          <button class="nav-item" data-view="all" data-kind="event"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>All Events</button>
+          <button class="nav-item" data-etype="traditional-wedding" data-kind="event"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>Traditional Wedding</button>
+          <button class="nav-item" data-etype="white-wedding" data-kind="event"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>White Wedding</button>
+          <button class="nav-item" data-etype="brand-film" data-kind="event"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="9" width="20" height="13" rx="2"/><path d="M16 3l-4 6-4-6"/></svg>Brand Film</button>
+          <button class="nav-item" data-etype="corporate-event" data-kind="event"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>Corporate Event</button>
+          <button class="nav-item" data-etype="music-video" data-kind="event"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>Music Video</button>
+
+          <div class="nav-section" style="margin-top:8px">Management</div>
+          <button class="nav-item nav-panel-trigger" data-panel="tasks">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+            Tasks
+            <span class="nav-count hidden" id="navPendingTasks">0</span>
           </button>
-          <button class="nav-item" data-type="Family" data-kind="studio">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M23 21v-2a4 4 0 00-3-3.87" />
-              <path d="M16 3.13a4 4 0 010 7.75" />
-            </svg>
-            Family
-          </button>
-          <button class="nav-item" data-type="Creative" data-kind="studio">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <polygon
-                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-              />
-            </svg>
-            Creative
-          </button>
-          <button class="nav-item" data-type="Fashion" data-kind="studio">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"
-              />
-            </svg>
-            Fashion
-          </button>
-          <button class="nav-item" data-type="Product" data-kind="studio">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"
-              />
-            </svg>
-            Product
+          <button class="nav-item nav-panel-trigger" data-panel="team">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            Team Members
           </button>
 
-          <div class="nav-section" style="margin-top: 8px">
-            Events &amp; Weddings
-          </div>
-          <button class="nav-item" data-view="all" data-kind="event">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <rect x="3" y="4" width="18" height="18" rx="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
-            All Events
-          </button>
-          <button
-            class="nav-item"
-            data-etype="traditional-wedding"
-            data-kind="event"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"
-              />
-            </svg>
-            Traditional Wedding
-          </button>
-          <button class="nav-item" data-etype="white-wedding" data-kind="event">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"
-              />
-            </svg>
-            White Wedding
-          </button>
-          <button class="nav-item" data-etype="brand-film" data-kind="event">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <rect x="3" y="9" width="20" height="13" rx="2" />
-              <path d="M16 3l-4 6-4-6" />
-            </svg>
-            Brand Film
-          </button>
-          <button
-            class="nav-item"
-            data-etype="corporate-event"
-            data-kind="event"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <rect x="2" y="7" width="20" height="14" rx="2" />
-              <path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" />
-            </svg>
-            Corporate Event
-          </button>
-          <button class="nav-item" data-etype="music-video" data-kind="event">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M9 18V5l12-2v13" />
-              <circle cx="6" cy="18" r="3" />
-              <circle cx="18" cy="16" r="3" />
-            </svg>
-            Music Video
-          </button>
+          <div class="nav-section" style="margin-top:8px">Site</div>
+          <a class="nav-item" href="index.html">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Return to Website
+          </a>
         </nav>
+
         <div class="sidebar__footer">
+          <div class="sidebar__user" id="sidebarUser">Admin</div>
           <button class="btn-logout" id="logoutBtn">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" y1="12" x2="9" y2="12" />
-            </svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             Sign Out
           </button>
         </div>
@@ -1237,107 +599,219 @@
       <!-- Main -->
       <div class="main">
         <div class="header">
-          <div class="header__title" id="headerTitle">All Sessions</div>
+          <div class="header__left">
+            <button class="btn-menu" id="menuBtn" aria-label="Toggle menu">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+            <div class="header__title" id="headerTitle">All Bookings</div>
+          </div>
           <div class="header__right">
+            <a href="index.html" class="btn-home">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              <span>Home</span>
+            </a>
             <a href="booking.html" target="_blank" class="btn-new-booking">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              New Booking
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>New Booking</span>
             </a>
           </div>
         </div>
 
-        <div class="content">
-          <!-- Stats -->
-          <div class="stats-row">
-            <div class="stat-card stat-card--total">
-              <div class="stat-card__label">Total Bookings</div>
-              <div class="stat-card__value" id="statTotal">0</div>
-            </div>
-            <div class="stat-card stat-card--studio">
-              <div class="stat-card__label">Studio Sessions</div>
-              <div class="stat-card__value" id="statStudio">0</div>
-            </div>
-            <div class="stat-card stat-card--events">
-              <div class="stat-card__label">Events &amp; Weddings</div>
-              <div class="stat-card__value" id="statEvents">0</div>
-            </div>
-            <div class="stat-card stat-card--pending">
-              <div class="stat-card__label">Pending Review</div>
-              <div class="stat-card__value" id="statPending">0</div>
-            </div>
-          </div>
-
-          <!-- Toolbar -->
-          <div class="toolbar">
-            <div class="filter-group" id="kindFilters">
-              <button class="filter-btn active" data-kind-f="all">All</button>
-              <button class="filter-btn" data-kind-f="studio">Studio</button>
-              <button class="filter-btn" data-kind-f="event">Events</button>
-            </div>
-            <div class="filter-group" id="statusFilters">
-              <button class="filter-btn active" data-status="all">
-                All Status
-              </button>
-              <button class="filter-btn" data-status="pending">Pending</button>
-              <button class="filter-btn" data-status="confirmed">
-                Confirmed
-              </button>
-              <button class="filter-btn" data-status="completed">
-                Completed
-              </button>
-              <button class="filter-btn" data-status="cancelled">
-                Cancelled
-              </button>
-            </div>
-            <div class="search-wrap">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-              <input
-                type="text"
-                id="searchInput"
-                placeholder="Search name, ID, location…"
-              />
-            </div>
-          </div>
-
-          <!-- Bookings grid -->
-          <div class="bookings-grid" id="bookingsGrid"></div>
+        <!-- Tab nav -->
+        <div class="tab-nav" id="tabNav">
+          <button class="tab-btn active" data-tab="bookings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Bookings
+          </button>
+          <button class="tab-btn" data-tab="tasks">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+            Tasks
+            <span class="tab-badge zero" id="tabTasksBadge">0</span>
+          </button>
+          <button class="tab-btn" data-tab="team">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            Team
+          </button>
         </div>
+
+        <div class="content">
+
+          <!-- ══ BOOKINGS PANEL ══ -->
+          <div id="panel-bookings" class="tab-panel active">
+            <div class="stats-row">
+              <div class="stat-card stat-card--total"><div class="stat-card__label">Total Bookings</div><div class="stat-card__value" id="statTotal">0</div></div>
+              <div class="stat-card stat-card--studio"><div class="stat-card__label">Studio Sessions</div><div class="stat-card__value" id="statStudio">0</div></div>
+              <div class="stat-card stat-card--events"><div class="stat-card__label">Events &amp; Weddings</div><div class="stat-card__value" id="statEvents">0</div></div>
+              <div class="stat-card stat-card--pending"><div class="stat-card__label">Pending Review</div><div class="stat-card__value" id="statPending">0</div></div>
+            </div>
+            <div class="toolbar">
+              <div class="filter-group" id="kindFilters">
+                <button class="filter-btn active" data-kind-f="all">All</button>
+                <button class="filter-btn" data-kind-f="studio">Studio</button>
+                <button class="filter-btn" data-kind-f="event">Events</button>
+              </div>
+              <div class="filter-group" id="statusFilters">
+                <button class="filter-btn active" data-status="all">All Status</button>
+                <button class="filter-btn" data-status="pending">Pending</button>
+                <button class="filter-btn" data-status="confirmed">Confirmed</button>
+                <button class="filter-btn" data-status="completed">Completed</button>
+                <button class="filter-btn" data-status="cancelled">Cancelled</button>
+              </div>
+              <div class="search-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="searchInput" placeholder="Search name, ID, location…" />
+              </div>
+            </div>
+            <div class="bookings-grid" id="bookingsGrid"></div>
+          </div>
+
+          <!-- ══ TASKS PANEL ══ -->
+          <div id="panel-tasks" class="tab-panel">
+            <div class="panel-header">
+              <div>
+                <h2>Task Management</h2>
+                <p>Create tasks, assign to team members, track progress and reports</p>
+              </div>
+            </div>
+
+            <!-- Create task -->
+            <div class="task-create-wrap">
+              <button class="task-create-toggle" id="taskCreateToggle">
+                <span>+ Create New Task</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
+              <div class="task-create-body" id="taskCreateBody">
+                <form class="task-form" id="taskForm">
+                  <div class="form-field full">
+                    <label class="form-label">Task Title *</label>
+                    <input class="form-input" id="taskTitle" type="text" placeholder="e.g. Edit wedding photos for Chidi Nwosu" required />
+                  </div>
+                  <div class="form-field full">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-textarea" id="taskDesc" placeholder="Describe the task, deliverables, notes…"></textarea>
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label">Assign To</label>
+                    <select class="form-select" id="taskAssignee">
+                      <option value="">— Unassigned —</option>
+                    </select>
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label">Priority</label>
+                    <select class="form-select" id="taskPriority">
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                      <option value="low">Low</option>
+                    </select>
+                  </div>
+                  <button class="btn-create-task full" type="submit">Create Task</button>
+                </form>
+              </div>
+            </div>
+
+            <!-- Tasks filter -->
+            <div class="tasks-filter">
+              <button class="tasks-filter-btn active" data-task-status="all">All Tasks</button>
+              <button class="tasks-filter-btn" data-task-status="pending">Pending</button>
+              <button class="tasks-filter-btn" data-task-status="in-progress">In Progress</button>
+              <button class="tasks-filter-btn" data-task-status="completed">Completed</button>
+            </div>
+
+            <div class="tasks-grid" id="tasksGrid"></div>
+          </div>
+
+          <!-- ══ TEAM PANEL ══ -->
+          <div id="panel-team" class="tab-panel">
+            <div class="panel-header">
+              <div>
+                <h2>Team Members</h2>
+                <p>Manage team accounts — each member gets a custom username and PIN</p>
+              </div>
+            </div>
+
+            <div class="team-layout">
+              <div class="team-form-card">
+                <h3 id="teamFormTitle">Add Team Member</h3>
+                <p>Set a unique username and PIN for each team member</p>
+                <form class="team-form" id="teamForm">
+                  <input type="hidden" id="editMemberId" />
+                  <div class="form-field">
+                    <label class="form-label">Full Name *</label>
+                    <input class="form-input" id="tmName" type="text" placeholder="e.g. Kemi Adeyemi" required />
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label">Username *</label>
+                    <input class="form-input" id="tmUsername" type="text" placeholder="e.g. kemi.a" autocomplete="off" required />
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label">PIN *</label>
+                    <input class="form-input" id="tmPin" type="password" placeholder="4–8 digits" autocomplete="off" required maxlength="8" />
+                  </div>
+                  <div class="team-form-actions">
+                    <button class="btn-add-member" type="submit" id="teamFormSubmit">Add Member</button>
+                    <button class="btn-cancel-edit" type="button" id="cancelEditBtn">Cancel</button>
+                  </div>
+                </form>
+              </div>
+
+              <div class="team-members-section">
+                <h3>Current Team (<span id="teamCount">0</span>)</h3>
+                <div class="team-grid" id="teamGrid"></div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /content -->
+      </div><!-- /main -->
+    </div><!-- /shell -->
+
+    <!-- Sidebar overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Mobile Bottom Nav -->
+    <nav class="mobile-bottom-nav" id="mobileBottomNav">
+      <div class="nav-inner">
+        <a href="index.html" class="mobile-nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <span>Home</span>
+        </a>
+        <button class="mobile-nav-item active" data-tab="bookings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span>Bookings</span>
+        </button>
+        <button class="mobile-nav-item" data-tab="tasks">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          <span>Tasks</span>
+          <span class="mnav-badge" id="mnavTasksBadge" style="display:none">0</span>
+        </button>
+        <button class="mobile-nav-item" data-tab="team">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          <span>Team</span>
+        </button>
       </div>
-    </div>
+    </nav>
 
     <!-- Detail Modal -->
     <div class="modal-overlay" id="detailModal">
       <div class="modal-backdrop" id="modalBackdrop"></div>
       <div class="modal-box">
         <button class="modal-close" id="modalClose">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
         <h3>Booking Details</h3>
         <div id="modalContent"></div>
+      </div>
+    </div>
+
+    <!-- Reports Modal -->
+    <div class="modal-overlay" id="reportsModal">
+      <div class="modal-backdrop" id="reportsModalBackdrop"></div>
+      <div class="modal-box">
+        <button class="modal-close" id="reportsModalClose">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <h3 id="reportsModalTitle">Task Reports</h3>
+        <div id="reportsModalContent"></div>
       </div>
     </div>
 
