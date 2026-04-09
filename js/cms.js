@@ -303,15 +303,19 @@ function populateAbout() {
 /* ── STUDIO GALLERY ── */
 function populateStudioGallery() {
   renderImageList('studioGallery', 'studioGalleryList');
-  setupAddForm('addStudioImg', 'addStudioForm', 'sg-add-btn', 'sg-cancel-btn', () => {
-    const item = { url: val('sg-url'), label: val('sg-label'), cat: val('sg-cat'), tall: checked('sg-tall') };
-    if (!item.url) return toast('Image URL required', 'err');
-    const arr = getArr('studioGallery');
-    arr.push(item);
-    cmsData.studioGallery = arr;
-    save();
+  setupAddForm('addStudioImg', 'addStudioForm', 'sg-add-btn', 'sg-cancel-btn', async () => {
+    const url = await resolveImageUrl('sg-file', 'sg-url');
+    if (!url) return toast('Please upload an image or paste a URL', 'err');
+    const item = { url, label: val('sg-label'), cat: val('sg-cat'), tall: checked('sg-tall') };
+    try {
+      const arr = getArr('studioGallery');
+      arr.push(item);
+      cmsData.studioGallery = arr;
+      save();
+    } catch (e) { return toast('Storage full — use an image URL instead of uploading.', 'err'); }
     renderImageList('studioGallery', 'studioGalleryList');
     clearForm(['sg-url','sg-label']);
+    const fi = document.getElementById('sg-file'); if (fi) fi.value = '';
     setChecked('sg-tall', false);
     toast('Photo added');
   });
@@ -322,15 +326,19 @@ function populateWeddingGallery() {
   renderImageList('weddingPhotos', 'weddingPhotoList');
   renderVideoList('weddingVideos', 'weddingVideoList');
 
-  setupAddForm('addWeddingPhoto', 'addWeddingPhotoForm', 'wp-add-btn', 'wp-cancel-btn', () => {
-    const item = { url: val('wp-url'), label: val('wp-label'), cat: val('wp-cat'), tall: checked('wp-tall'), wide: checked('wp-wide') };
-    if (!item.url) return toast('Image URL required', 'err');
-    const arr = getArr('weddingPhotos');
-    arr.push(item);
-    cmsData.weddingPhotos = arr;
-    save();
+  setupAddForm('addWeddingPhoto', 'addWeddingPhotoForm', 'wp-add-btn', 'wp-cancel-btn', async () => {
+    const url = await resolveImageUrl('wp-file', 'wp-url');
+    if (!url) return toast('Please upload an image or paste a URL', 'err');
+    const item = { url, label: val('wp-label'), cat: val('wp-cat'), tall: checked('wp-tall'), wide: checked('wp-wide') };
+    try {
+      const arr = getArr('weddingPhotos');
+      arr.push(item);
+      cmsData.weddingPhotos = arr;
+      save();
+    } catch (e) { return toast('Storage full — use an image URL instead of uploading.', 'err'); }
     renderImageList('weddingPhotos', 'weddingPhotoList');
     clearForm(['wp-url','wp-label']);
+    const fi = document.getElementById('wp-file'); if (fi) fi.value = '';
     setChecked('wp-tall', false); setChecked('wp-wide', false);
     toast('Photo added');
   });
@@ -730,6 +738,39 @@ function resetSection(key) {
   save();
   populateAll();
   toast('Section reset to defaults.');
+}
+
+/* ── FILE UPLOAD HELPER ── */
+/**
+ * readFileAsDataURL(fileInputId) → Promise<string|null>
+ * Converts a selected image file to a base64 data URL.
+ * Returns null if no file is selected.
+ */
+function readFileAsDataURL(fileInputId) {
+  return new Promise((resolve) => {
+    const input = document.getElementById(fileInputId);
+    if (!input || !input.files || !input.files[0]) { resolve(null); return; }
+    const file = input.files[0];
+    if (!file.type.startsWith('image/')) { toast('Please select an image file (JPG, PNG, WEBP)', 'err'); resolve(null); return; }
+    if (file.size > 3 * 1024 * 1024) {
+      toast('Image is larger than 3 MB — please use a URL instead for large files.', 'err');
+      resolve(null); return;
+    }
+    const reader = new FileReader();
+    reader.onload  = (e) => resolve(e.target.result);
+    reader.onerror = ()  => { toast('Could not read file.', 'err'); resolve(null); };
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * resolveImageUrl(fileInputId, urlInputId) → Promise<string>
+ * Prefers an uploaded file; falls back to the typed URL.
+ */
+async function resolveImageUrl(fileInputId, urlInputId) {
+  const fromFile = await readFileAsDataURL(fileInputId);
+  if (fromFile) return fromFile;
+  return val(urlInputId);
 }
 
 /* ── XSS HELPERS ── */

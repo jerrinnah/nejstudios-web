@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Booking Confirmation — NEJstudios</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:#080808;--bg-2:#0f0f0f;--bg-3:#141414;--border:#2a2a2a;
+      --gold:#c9a84c;--gold-lt:#e0c06a;--gold-glow:rgba(201,168,76,.12);
+      --white:#fff;--grey-1:#e8e8e8;--grey-2:#b0b0b0;--grey-3:#707070;--grey-4:#404040;
+      --green:#3ecf8e;--green-bg:rgba(62,207,142,.1);
+      --blue:#60a5fa;--orange:#fb923c;--purple:#a78bfa;
+      --serif:'Playfair Display',Georgia,serif;
+      --sans:'Outfit',system-ui,sans-serif;
+      --r:12px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{background:var(--bg);color:var(--grey-1);font-family:var(--sans);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+    a{color:inherit;text-decoration:none}
+    button{cursor:pointer;border:none;font-family:inherit}
+    ::-webkit-scrollbar{width:4px}
+    ::-webkit-scrollbar-thumb{background:var(--gold);border-radius:99px}
+
+    /* ── HEADER ── */
+    .page-logo{font-size:1.3rem;font-weight:700;margin-bottom:32px;text-align:center}
+    .ln{color:var(--gold);font-family:var(--serif)}
+    .ls{color:var(--white);font-family:var(--sans);font-weight:300;font-size:.85rem}
+
+    /* ── CARD ── */
+    .view-card{background:var(--bg-2);border:1px solid var(--border);border-radius:20px;padding:36px 40px;width:100%;max-width:520px;position:relative;overflow:hidden}
+    .view-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold),var(--gold-lt),var(--gold))}
+
+    /* ── SUCCESS ICON ── */
+    .check-wrap{width:60px;height:60px;border-radius:50%;background:var(--green-bg);border:2px solid var(--green);display:flex;align-items:center;justify-content:center;margin:0 auto 20px}
+    .check-wrap svg{width:28px;height:28px;color:var(--green)}
+
+    /* ── HEADING ── */
+    .view-title{font-family:var(--serif);font-size:1.7rem;font-weight:600;color:var(--white);text-align:center;margin-bottom:6px}
+    .view-sub{font-size:.82rem;color:var(--grey-3);text-align:center;margin-bottom:24px}
+
+    /* ── BOOKING ID ── */
+    .booking-id-box{background:var(--bg-3);border:1px solid var(--border);border-radius:var(--r);padding:14px 20px;text-align:center;margin-bottom:24px}
+    .booking-id-label{font-size:.6rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--grey-4);margin-bottom:6px}
+    .booking-id-val{font-size:1.4rem;font-weight:700;color:var(--gold);letter-spacing:.08em;font-family:var(--sans)}
+
+    /* ── STATUS BADGE ── */
+    .status-row{display:flex;justify-content:center;margin-bottom:24px}
+    .status-pill{padding:5px 16px;border-radius:99px;font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+    .status-pill--pending   {background:rgba(251,146,60,.12);color:var(--orange);border:1px solid rgba(251,146,60,.3)}
+    .status-pill--confirmed {background:rgba(96,165,250,.12);color:var(--blue);border:1px solid rgba(96,165,250,.3)}
+    .status-pill--completed {background:rgba(62,207,142,.12);color:var(--green);border:1px solid rgba(62,207,142,.3)}
+    .status-pill--cancelled {background:rgba(248,113,113,.12);color:#f87171;border:1px solid rgba(248,113,113,.3)}
+
+    /* ── DETAIL ROWS ── */
+    .detail-list{display:flex;flex-direction:column;gap:0;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:24px}
+    .detail-row{display:flex;padding:12px 16px;border-bottom:1px solid var(--border);gap:12px}
+    .detail-row:last-child{border-bottom:none}
+    .detail-row__key{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--grey-4);min-width:110px;flex-shrink:0;padding-top:2px}
+    .detail-row__val{font-size:.875rem;color:var(--grey-1);flex:1;word-break:break-word}
+
+    /* ── FOOTER ACTIONS ── */
+    .view-actions{display:flex;flex-direction:column;gap:10px}
+    .btn-gold{width:100%;padding:13px;background:var(--gold);color:#000;font-weight:700;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;border-radius:var(--r);transition:.25s;display:block;text-align:center}
+    .btn-gold:hover{background:var(--gold-lt)}
+    .btn-ghost{width:100%;padding:12px;background:transparent;border:1px solid var(--border);color:var(--grey-2);font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;border-radius:var(--r);transition:.25s}
+    .btn-ghost:hover{border-color:var(--gold);color:var(--gold)}
+
+    /* ── ERROR STATE ── */
+    .error-state{text-align:center;padding:32px}
+    .error-state svg{width:48px;height:48px;color:var(--grey-4);margin-bottom:16px}
+    .error-state h2{font-family:var(--serif);color:var(--white);margin-bottom:8px}
+    .error-state p{font-size:.85rem;color:var(--grey-3)}
+
+    /* ── KIND CHIP ── */
+    .kind-chip{display:inline-block;padding:3px 10px;border-radius:99px;font-size:.62rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+    .kind-chip--studio{background:rgba(167,139,250,.12);color:var(--purple);border:1px solid rgba(167,139,250,.3)}
+    .kind-chip--event {background:rgba(96,165,250,.12);color:var(--blue);border:1px solid rgba(96,165,250,.3)}
+
+    /* ── NOTICE ── */
+    .notice{background:var(--gold-glow);border:1px solid rgba(201,168,76,.2);border-radius:var(--r);padding:12px 16px;font-size:.78rem;color:var(--grey-2);margin-bottom:20px;line-height:1.6}
+    .notice strong{color:var(--gold)}
+
+    @media(max-width:540px){
+      .view-card{padding:28px 20px}
+      .detail-row__key{min-width:90px}
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-logo">
+  <span class="ln">NEJ</span><span class="ls">studios</span>
+</div>
+
+<div class="view-card" id="viewCard">
+  <!-- Populated by JS -->
+</div>
+
+<script>
+(function () {
+  const EVENT_TYPE_LABELS = {
+    'brand-film':'Brand Film','music-video':'Music Video','documentary':'Documentary',
+    'corporate-event':'Corporate Event','other-production':'Production',
+    'traditional-wedding':'Traditional Wedding','white-wedding':'White Wedding',
+    'full-wedding':'Full Wedding','engagement':'Engagement Shoot',
+    'Birthday':'Birthday Session','Family':'Family Session',
+    'Creative':'Creative Session','Fashion':'Fashion Session','Product':'Product Session',
+  };
+
+  const STATUS_LABELS = { pending:'Pending Review', confirmed:'Confirmed', completed:'Completed', cancelled:'Cancelled' };
+
+  function fmtDate(dateStr) {
+    if (!dateStr) return '—';
+    try { return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-NG', { dateStyle: 'long' }); } catch { return dateStr; }
+  }
+  function fmtTs(ts) {
+    if (!ts) return '—';
+    try { return new Date(ts).toLocaleDateString('en-NG', { dateStyle: 'long' }); } catch { return '—'; }
+  }
+
+  const card = document.getElementById('viewCard');
+
+  /* ── Parse URL param ── */
+  const params = new URLSearchParams(location.search);
+  const raw = params.get('b');
+
+  if (!raw) { renderError('No booking data found in this link.'); return; }
+
+  let data;
+  try {
+    data = JSON.parse(decodeURIComponent(atob(raw)));
+  } catch (e) {
+    renderError('This booking link appears to be invalid or expired.');
+    return;
+  }
+
+  /* ── Try to enrich from localStorage (same device) ── */
+  try {
+    const stored = JSON.parse(localStorage.getItem('nej_bookings') || '[]');
+    const match = stored.find(b => b.id === data.id);
+    if (match) {
+      data.name     = match.clientName || data.name;
+      data.email    = match.email    || '';
+      data.phone    = match.phone    || '';
+      data.date     = match.eventDate || data.date;
+      data.location = match.location || data.location;
+      data.status   = match.status   || data.status;
+      data.type     = match.eventType || match.sessionType || data.type;
+    }
+  } catch {}
+
+  renderBooking(data);
+
+  function renderBooking(d) {
+    const isEvent  = d.kind === 'event';
+    const typeLabel = EVENT_TYPE_LABELS[d.type] || d.type || (isEvent ? 'Event' : 'Studio Session');
+    const statusKey = d.status || 'pending';
+    const statusLabel = STATUS_LABELS[statusKey] || statusKey;
+
+    const rows = [
+      ['Name',         d.name  || '—'],
+      ['Session Type', typeLabel],
+      ...(d.date     ? [['Event Date', fmtDate(d.date)]]         : []),
+      ...(d.location ? [['Location',   d.location]]              : []),
+      ...(d.email    ? [['Email',      d.email]]                 : []),
+      ...(d.phone    ? [['Phone',      d.phone]]                 : []),
+      ['Submitted',    fmtTs(d.ts)],
+    ];
+
+    card.innerHTML = `
+      <div class="check-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+
+      <h1 class="view-title">Booking ${statusKey === 'confirmed' ? 'Confirmed' : statusKey === 'completed' ? 'Completed' : 'Received'}</h1>
+      <p class="view-sub">NEJstudios has received this booking request.</p>
+
+      <div class="booking-id-box">
+        <div class="booking-id-label">Booking Reference</div>
+        <div class="booking-id-val">${esc(d.id || '—')}</div>
+      </div>
+
+      <div class="status-row">
+        <span class="kind-chip kind-chip--${isEvent ? 'event' : 'studio'}">${isEvent ? 'Event / Wedding' : 'Studio Session'}</span>
+        &nbsp;
+        <span class="status-pill status-pill--${statusKey}">${statusLabel}</span>
+      </div>
+
+      <div class="notice">
+        <strong>What happens next?</strong> Our team will reach out within <strong>24 hours</strong> to confirm your booking date, discuss details, and answer any questions.
+      </div>
+
+      <div class="detail-list">
+        ${rows.map(([k, v]) => `
+          <div class="detail-row">
+            <span class="detail-row__key">${k}</span>
+            <span class="detail-row__val">${esc(String(v))}</span>
+          </div>`).join('')}
+      </div>
+
+      <div class="view-actions">
+        <a href="index.html" class="btn-gold">Back to NEJstudios</a>
+        <button class="btn-ghost" onclick="copyThisLink()">Copy This Link</button>
+      </div>
+    `;
+  }
+
+  function renderError(msg) {
+    card.innerHTML = `
+      <div class="error-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <h2>Booking Not Found</h2>
+        <p>${msg}</p>
+        <br/>
+        <a href="index.html" style="color:var(--gold)">← Back to NEJstudios</a>
+      </div>`;
+  }
+
+  window.copyThisLink = function() {
+    navigator.clipboard.writeText(location.href)
+      .then(() => alert('Link copied to clipboard!'))
+      .catch(() => prompt('Copy this link:', location.href));
+  };
+
+  function esc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+})();
+</script>
+</body>
+</html>

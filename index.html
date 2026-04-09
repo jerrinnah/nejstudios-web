@@ -808,6 +808,12 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
           <h3>Request Sent!</h3>
           <p>Thank you! We've received your enquiry and will be in touch within 24 hours.</p>
+          <p class="success-booking-id" id="eventSuccessId" style="font-size:.78rem;color:var(--grey-3);margin-top:6px;letter-spacing:.06em"></p>
+          <button class="btn btn--ghost btn--sm" id="eventShareBtn" style="margin-top:14px;display:none" onclick="copyEventShareLink()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;margin-right:6px"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            Share Booking Link
+          </button>
+          <span id="eventShareCopied" style="display:none;font-size:.72rem;color:#3ecf8e;margin-left:10px">✓ Link copied!</span>
         </div>
       </form>
     </div>
@@ -903,7 +909,7 @@
       </div>
       <div class="footer__bottom">
         <span>© 2026 NEJstudios. All rights reserved.</span>
-        <span>Designed with craft in Lagos, Nigeria. &nbsp;·&nbsp; <a href="dashboard.html" style="color:var(--grey-4);transition:.3s" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--grey-4)'">Studio Dashboard</a> &nbsp;·&nbsp; <a href="cms.html" style="color:var(--grey-4);transition:.3s" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--grey-4)'">Website Manager</a></span>
+        <span>Designed with craft in Lagos, Nigeria.</span>
       </div>
     </div>
   </footer>
@@ -984,6 +990,7 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
   </button>
 
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="js/site-content.js"></script>
   <script src="js/main.js"></script>
 </body>

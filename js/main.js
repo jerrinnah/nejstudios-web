@@ -343,9 +343,20 @@
     });
   }
 
+  /* ── EVENT BOOKING — EmailJS config ── */
+  /* Mirror these from booking.js if you want event emails too */
+  const EVT_EMAILJS_PUBLIC_KEY      = 'YOUR_PUBLIC_KEY';
+  const EVT_EMAILJS_SERVICE_ID      = 'YOUR_SERVICE_ID';
+  const EVT_EMAILJS_STUDIO_TEMPLATE = 'YOUR_EVENT_STUDIO_TEMPLATE_ID';
+  const EVT_EMAILJS_CLIENT_TEMPLATE = 'YOUR_EVENT_CLIENT_TEMPLATE_ID';
+
   /* ── BOOKING FORM (Event / Wedding) ── */
   const bookingForm = document.getElementById('bookingForm');
   const formSuccess = document.getElementById('formSuccess');
+
+  /* Shared event booking ID so share link can reference it */
+  let _lastEventBookingId = null;
+  let _lastEventBooking   = null;
 
   function genBookingId() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -361,15 +372,42 @@
     localStorage.setItem(key, JSON.stringify(existing));
   }
 
+  function makeShareUrl(booking) {
+    const share = {
+      id:       booking.id,
+      name:     booking.clientName,
+      kind:     booking.bookingKind,
+      type:     booking.eventType || booking.sessionType || '',
+      date:     booking.eventDate || '',
+      location: booking.location  || '',
+      status:   booking.status,
+      ts:       booking.createdAt,
+    };
+    try {
+      const encoded = btoa(encodeURIComponent(JSON.stringify(share)));
+      return `${location.origin}/booking-view.html?b=${encoded}`;
+    } catch { return ''; }
+  }
+
+  /* Global so the inline onclick can reach it */
+  window.copyEventShareLink = function () {
+    if (!_lastEventBooking) return;
+    const url = makeShareUrl(_lastEventBooking);
+    navigator.clipboard.writeText(url).then(() => {
+      const copied = document.getElementById('eventShareCopied');
+      if (copied) { copied.style.display = 'inline'; setTimeout(() => { copied.style.display = 'none'; }, 2500); }
+    }).catch(() => { prompt('Copy this link:', url); });
+  };
+
   if (bookingForm) {
-    bookingForm.addEventListener('submit', (e) => {
+    bookingForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
       const required = bookingForm.querySelectorAll('[required]');
       let valid = true;
       required.forEach((field) => {
         field.style.borderColor = '';
-        field.style.boxShadow = '';
+        field.style.boxShadow   = '';
         if (!field.value.trim() || (field.type === 'checkbox' && !field.checked)) {
           field.style.borderColor = '#e05555';
           if (valid) field.focus();
@@ -382,41 +420,75 @@
       submitBtn.disabled = true;
       submitBtn.querySelector('.btn-text').textContent = 'Sending…';
 
-      // Collect all form fields and save to shared localStorage
-      const val = (id) => (document.getElementById(id) || {}).value || '';
-      const firstName  = val('firstName');
-      const lastName   = val('lastName');
+      const fv    = (id) => (document.getElementById(id) || {}).value || '';
+      const firstName  = fv('firstName');
+      const lastName   = fv('lastName');
       const clientName = [firstName, lastName].filter(Boolean).join(' ');
+      const bookingId  = genBookingId();
+      const now        = Date.now();
 
-      saveEventBooking({
-        id:           genBookingId(),
-        bookingKind:  'event',
-        firstName,
-        lastName,
-        clientName,
-        phone:        val('phone'),
-        email:        val('email'),
-        eventType:    val('eventType'),
-        package:      val('package'),
-        eventDate:    val('eventDate'),
-        location:     val('eventLocation'),
-        budget:       val('budget'),
-        deliverables: val('message'),
-        status:       'pending',
-        createdAt:    Date.now(),
-      });
+      const booking = {
+        id:          bookingId,
+        bookingKind: 'event',
+        firstName, lastName, clientName,
+        phone:       fv('phone'),
+        email:       fv('email'),
+        eventType:   fv('eventType'),
+        package:     fv('package'),
+        eventDate:   fv('eventDate'),
+        location:    fv('eventLocation'),
+        budget:      fv('budget'),
+        deliverables:fv('message'),
+        status:      'pending',
+        createdAt:   now,
+      };
+
+      saveEventBooking(booking);
+      _lastEventBookingId = bookingId;
+      _lastEventBooking   = booking;
+
+      /* ── Send emails if EmailJS is configured ── */
+      const emailReady = EVT_EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY';
+      if (emailReady && typeof emailjs !== 'undefined') {
+        try {
+          emailjs.init({ publicKey: EVT_EMAILJS_PUBLIC_KEY });
+          const params = {
+            booking_id:        bookingId,
+            client_name:       clientName,
+            client_first_name: firstName,
+            client_email:      booking.email,
+            phone:             booking.phone,
+            event_type:        booking.eventType,
+            event_date:        booking.eventDate,
+            location:          booking.location,
+            package:           booking.package,
+            submitted_at:      new Date(now).toLocaleString('en-NG'),
+          };
+          await Promise.allSettled([
+            emailjs.send(EVT_EMAILJS_SERVICE_ID, EVT_EMAILJS_STUDIO_TEMPLATE, params),
+            emailjs.send(EVT_EMAILJS_SERVICE_ID, EVT_EMAILJS_CLIENT_TEMPLATE, params),
+          ]);
+        } catch (err) { console.warn('Event EmailJS error:', err); }
+      }
 
       setTimeout(() => {
         bookingForm.style.display = 'none';
         formSuccess.style.display = 'block';
+
+        /* Populate booking ID + share button */
+        const idEl  = document.getElementById('eventSuccessId');
+        const share = document.getElementById('eventShareBtn');
+        if (idEl)  idEl.textContent = `Booking reference: ${bookingId}`;
+        if (share) share.style.display = 'inline-flex';
+
         formSuccess.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 1200);
+      }, 1000);
     });
 
     bookingForm.addEventListener('input', (e) => {
       if (e.target.style.borderColor) {
         e.target.style.borderColor = '';
-        e.target.style.boxShadow = '';
+        e.target.style.boxShadow   = '';
       }
     });
   }
