@@ -462,6 +462,62 @@
         min-width:14px; text-align:center; pointer-events:none;
       }
 
+      /* ════ SCHEDULE PANEL ════ */
+      .shoot-create-wrap { background:var(--bg-2); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:28px; overflow:hidden; }
+      .shoot-create-toggle {
+        width:100%; padding:16px 20px; display:flex; align-items:center; justify-content:space-between;
+        font-size:0.85rem; font-weight:600; color:var(--grey-2); transition:var(--trans);
+      }
+      .shoot-create-toggle:hover { color:var(--white); background:rgba(255,255,255,.02); }
+      .shoot-create-toggle svg { width:16px; height:16px; transition:transform var(--trans); }
+      .shoot-create-toggle.open svg { transform:rotate(45deg); }
+      .shoot-create-body { display:none; padding:0 20px 20px; border-top:1px solid var(--border); }
+      .shoot-create-body.open { display:block; }
+      .shoot-form { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding-top:16px; }
+      .shoot-form .full  { grid-column:1/-1; }
+      .shoot-form-actions { grid-column:1/-1; display:flex; gap:10px; }
+      .btn-add-shoot { flex:1; padding:12px; background:var(--gold); color:#000; font-weight:700; font-size:0.78rem; letter-spacing:0.08em; text-transform:uppercase; border-radius:8px; transition:var(--trans); }
+      .btn-add-shoot:hover { background:var(--gold-lt); }
+      .btn-cancel-shoot { padding:12px 18px; border:1px solid var(--border); border-radius:8px; font-size:0.78rem; color:var(--grey-3); transition:var(--trans); display:none; }
+      .btn-cancel-shoot.visible { display:block; }
+      .btn-cancel-shoot:hover { color:var(--red); border-color:var(--red); }
+      .schedule-stats { display:flex; align-items:center; gap:16px; margin-bottom:20px; }
+      .schedule-stat { background:var(--bg-2); border:1px solid var(--border); border-radius:8px; padding:12px 18px; }
+      .schedule-stat__label { font-size:0.62rem; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:var(--grey-3); margin-bottom:4px; }
+      .schedule-stat__val { font-size:1.6rem; font-weight:700; color:var(--gold); font-family:var(--serif); line-height:1; }
+      .sch-grid { display:flex; flex-direction:column; gap:12px; }
+      .sch-card { display:flex; gap:16px; padding:16px 20px; background:var(--bg-2); border:1px solid var(--border); border-radius:var(--radius); transition:var(--trans); }
+      .sch-card:hover { border-color:var(--border-l); }
+      .sch-card--today { border-color:var(--gold); background:rgba(201,168,76,.04); }
+      .sch-card--past { opacity:0.5; }
+      .sch-date-block { flex-shrink:0; width:44px; text-align:center; background:var(--bg-3); border:1px solid var(--border); border-radius:8px; padding:8px 4px; }
+      .sch-date-block__day { font-size:1.35rem; font-weight:700; color:var(--white); font-family:var(--serif); line-height:1; }
+      .sch-date-block__month { font-size:0.58rem; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--grey-3); margin-top:2px; }
+      .sch-card--today .sch-date-block { background:var(--gold-glow); border-color:rgba(201,168,76,.3); }
+      .sch-card--today .sch-date-block__day { color:var(--gold); }
+      .sch-body { flex:1; min-width:0; }
+      .sch-body__top { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px; }
+      .sch-type-badge { display:inline-block; font-size:0.6rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; padding:2px 8px; border-radius:99px; }
+      .sch-type--studio     { background:rgba(167,139,250,.15); color:var(--purple); }
+      .sch-type--wedding    { background:rgba(248,113,113,.12); color:var(--red); }
+      .sch-type--event      { background:var(--blue-bg); color:var(--blue); }
+      .sch-type--production { background:var(--orange-bg); color:var(--orange); }
+      .sch-type--meeting    { background:var(--green-bg); color:var(--green); }
+      .sch-today-pill { font-size:0.6rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; padding:2px 8px; border-radius:99px; background:var(--gold); color:#000; }
+      .sch-booking-pill { font-size:0.6rem; font-weight:600; padding:2px 8px; border-radius:99px; background:var(--green-bg); color:var(--green); border:1px solid rgba(62,207,142,.2); }
+      .sch-body__title { font-size:0.9rem; font-weight:600; color:var(--white); margin-bottom:4px; }
+      .sch-body__meta { display:flex; flex-wrap:wrap; gap:10px; font-size:0.78rem; color:var(--grey-3); margin-bottom:8px; }
+      .sch-body__notes { font-size:0.78rem; color:var(--grey-3); line-height:1.5; border-top:1px solid var(--border); padding-top:8px; margin-top:4px; }
+      .sch-section-label { font-size:0.62rem; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; color:var(--grey-4); margin:16px 0 8px; }
+      .sch-admin-actions { display:flex; gap:8px; margin-top:10px; }
+      .sch-admin-btn { padding:5px 12px; border-radius:5px; font-size:0.68rem; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; border:1px solid; transition:var(--trans); }
+      .sch-admin-btn--edit   { border-color:var(--blue); color:var(--blue); }
+      .sch-admin-btn--edit:hover { background:var(--blue-bg); }
+      .sch-admin-btn--delete { border-color:var(--border); color:var(--grey-3); }
+      .sch-admin-btn--delete:hover { border-color:var(--red); color:var(--red); }
+      .action-btn--schedule { border-color:var(--green); color:var(--green); }
+      .action-btn--schedule:hover { background:var(--green-bg); }
+
       /* ════ RESPONSIVE ════ */
       @media (max-width:1100px) {
         .team-layout { grid-template-columns:1fr; }
@@ -580,6 +636,10 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
             Team Members
           </button>
+          <button class="nav-item nav-panel-trigger" data-panel="schedule">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/></svg>
+            Shoot Schedule
+          </button>
 
           <div class="nav-section" style="margin-top:8px">Site</div>
           <a class="nav-item" href="/">
@@ -632,6 +692,10 @@
           <button class="tab-btn" data-tab="team">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
             Team
+          </button>
+          <button class="tab-btn" data-tab="schedule">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/></svg>
+            Schedule
           </button>
         </div>
 
@@ -762,6 +826,76 @@
             </div>
           </div>
 
+          <!-- ══ SCHEDULE PANEL ══ -->
+          <div id="panel-schedule" class="tab-panel">
+            <div class="panel-header">
+              <div>
+                <h2>Shoot Schedule</h2>
+                <p>Add upcoming shoots and events — they appear live in the Team Portal</p>
+              </div>
+            </div>
+
+            <div class="schedule-stats">
+              <div class="schedule-stat">
+                <div class="schedule-stat__label">Upcoming Shoots</div>
+                <div class="schedule-stat__val" id="scheduleUpcomingCount">0</div>
+              </div>
+            </div>
+
+            <!-- Add / Edit shoot form -->
+            <div class="shoot-create-wrap">
+              <button class="shoot-create-toggle" id="shootCreateToggle">
+                <span>+ Add Shoot / Event</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
+              <div class="shoot-create-body" id="shootCreateBody">
+                <form class="shoot-form" id="shootForm">
+                  <div class="form-field">
+                    <label class="form-label">Date *</label>
+                    <input class="form-input" id="shootDate" type="date" required />
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label">Type *</label>
+                    <select class="form-select" id="shootType">
+                      <option value="studio">Studio Session</option>
+                      <option value="wedding">Wedding</option>
+                      <option value="event">Event</option>
+                      <option value="production">Production / Film</option>
+                      <option value="meeting">Team Meeting</option>
+                    </select>
+                  </div>
+                  <div class="form-field full">
+                    <label class="form-label">Title *</label>
+                    <input class="form-input" id="shootTitle" type="text" placeholder="e.g. David & Ada White Wedding" required />
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label">Time</label>
+                    <input class="form-input" id="shootTime" type="text" placeholder="e.g. 10:00 AM" />
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label">Client Name</label>
+                    <input class="form-input" id="shootClient" type="text" placeholder="e.g. David Okonkwo" />
+                  </div>
+                  <div class="form-field full">
+                    <label class="form-label">Location</label>
+                    <input class="form-input" id="shootLocation" type="text" placeholder="e.g. Eko Hotel, Lagos" />
+                  </div>
+                  <div class="form-field full">
+                    <label class="form-label">Notes for Team</label>
+                    <textarea class="form-textarea" id="shootNotes" placeholder="Deliverables, special instructions, what to bring…"></textarea>
+                  </div>
+                  <div class="shoot-form-actions full">
+                    <button class="btn-add-shoot" type="submit" id="shootFormSubmit">Add to Schedule</button>
+                    <button class="btn-cancel-shoot" type="button" id="cancelShootEditBtn">Cancel</button>
+                  </div>
+                  <input type="hidden" id="shootFormTitle" />
+                </form>
+              </div>
+            </div>
+
+            <div class="sch-grid" id="scheduleAdminGrid"></div>
+          </div>
+
         </div><!-- /content -->
       </div><!-- /main -->
     </div><!-- /shell -->
@@ -788,6 +922,10 @@
         <button class="mobile-nav-item" data-tab="team">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
           <span>Team</span>
+        </button>
+        <button class="mobile-nav-item" data-tab="schedule">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/></svg>
+          <span>Schedule</span>
         </button>
       </div>
     </nav>
@@ -819,6 +957,11 @@
     <!-- Toast -->
     <div class="toast" id="toast"></div>
 
+    <!-- Firebase SDK (compat) — loaded before app scripts -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="js/firebase-config.js"></script>
     <script src="js/dashboard.js"></script>
   </body>
 </html>

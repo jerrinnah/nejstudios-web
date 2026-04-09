@@ -1,7 +1,7 @@
 /* ══════════════════════════════════════════════
    NEJstudios — Team Portal JS
-   Auth: team member username+PIN
-   Features: all tasks bar, my tasks, start/end, reports
+   Auth: Firestore PIN validation (localStorage fallback)
+   Features: schedule (live), all tasks, my tasks, reports
    ══════════════════════════════════════════════ */
 
 const TASKS_KEY    = 'nej_tasks';
@@ -10,9 +10,8 @@ const SESSION_KEY  = 'nej_session';
 const SCHEDULE_KEY = 'nej_schedule';
 
 /* ════════════════════════════════════════════
-   TEAM CONFIG  ← add / edit team members here
-   These work on ALL devices without needing localStorage.
-   Format: { id, name, username, pin }
+   TEAM CONFIG  ← fallback / seed data
+   Used when Firebase is not configured.
    ════════════════════════════════════════════ */
 const TEAM_CONFIG = [
   { id: 'TM-001', name: 'Light',   username: 'light',   pin: '1234', role: 'team'  },
@@ -23,21 +22,27 @@ const TEAM_CONFIG = [
 ];
 
 /* ════════════════════════════════════════════
+   IN-MEMORY STATE (Firestore real-time cache)
+   ════════════════════════════════════════════ */
+let _tasks         = [];
+let _schedule      = [];
+let _unsubTasks    = null;
+let _unsubSchedule = null;
+
+/* ════════════════════════════════════════════
    STORAGE HELPERS
    ════════════════════════════════════════════ */
-function getTasks()        { return JSON.parse(localStorage.getItem(TASKS_KEY)    || '[]'); }
-function saveTasks(arr)    { localStorage.setItem(TASKS_KEY, JSON.stringify(arr)); }
-function getSchedule()     { return JSON.parse(localStorage.getItem(SCHEDULE_KEY) || '[]'); }
+function getTasks()    { return db ? _tasks    : JSON.parse(localStorage.getItem(TASKS_KEY)    || '[]'); }
+function getSchedule() { return db ? _schedule : JSON.parse(localStorage.getItem(SCHEDULE_KEY) || '[]'); }
+function saveTasks(arr){ if (!db) localStorage.setItem(TASKS_KEY, JSON.stringify(arr)); }
 
-// Merges hardcoded TEAM_CONFIG with any members added via the admin UI (localStorage).
-// TEAM_CONFIG entries take precedence so credentials always work cross-device.
+// Merges hardcoded TEAM_CONFIG with localStorage members (fallback only)
 function getTeam() {
   const stored = JSON.parse(localStorage.getItem(TEAM_KEY) || '[]');
-  const merged = [...TEAM_CONFIG];
+  const merged  = [...TEAM_CONFIG];
   stored.forEach(m => {
-    if (!merged.find(c => c.id === m.id || c.username.toLowerCase() === m.username.toLowerCase())) {
+    if (!merged.find(c => c.id === m.id || c.username.toLowerCase() === m.username.toLowerCase()))
       merged.push(m);
-    }
   });
   return merged;
 }
@@ -52,6 +57,34 @@ function setSession(obj) {
 }
 
 /* ════════════════════════════════════════════
+   FIRESTORE REAL-TIME LISTENERS
+   Called after login — keeps tasks + schedule live
+   ════════════════════════════════════════════ */
+function setupFirestoreListeners() {
+  if (!db) return;
+
+  _unsubTasks = db.collection('tasks').onSnapshot(snap => {
+    _tasks = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+    if (activeTab === 'all-tasks') renderAllTasksBar();
+    if (activeTab === 'my-tasks')  renderMyTasks();
+    updateBadges();
+  }, err => console.error('[NEJ] Tasks listener:', err));
+
+  _unsubSchedule = db.collection('schedule')
+    .orderBy('date', 'asc')
+    .onSnapshot(snap => {
+      _schedule = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+      if (activeTab === 'schedule') renderSchedule();
+      updateBadges();
+    }, err => console.error('[NEJ] Schedule listener:', err));
+}
+
+function teardownListeners() {
+  if (_unsubTasks)    { _unsubTasks();    _unsubTasks    = null; }
+  if (_unsubSchedule) { _unsubSchedule(); _unsubSchedule = null; }
+}
+
+/* ════════════════════════════════════════════
    FORMATTERS
    ════════════════════════════════════════════ */
 function fmtDate(ts)  { if (!ts) return '—'; return new Date(ts).toLocaleDateString('en-NG', { dateStyle:'medium' }); }
@@ -61,7 +94,7 @@ function fmtShort(ts) { if (!ts) return '—'; return new Date(ts).toLocaleDateS
 /* ════════════════════════════════════════════
    SESSION / CURRENT MEMBER
    ════════════════════════════════════════════ */
-let currentMember = null; // populated after login / session restore
+let currentMember = null;
 
 /* ════════════════════════════════════════════
    LOGIN
@@ -80,42 +113,68 @@ function showPortal(member) {
   teamShell.style.display = 'flex';
   mobileNav.style.display = 'flex';
   document.getElementById('userBadgeName').textContent = member.name;
+  setupFirestoreListeners();
   switchTab('schedule');
-  updateBadges();
+  if (!db) updateBadges();
 }
 
-function tryLogin() {
+async function tryLogin() {
   const username = usernameInput.value.trim().toLowerCase();
   const pin      = pinInput.value.trim();
   if (!pin) { loginErr.textContent = 'Enter your PIN.'; return; }
 
-  const team = getTeam();
-  // Match by PIN alone, or PIN + username if username was provided
-  const member = username
-    ? team.find(m => m.pin === pin && m.username.toLowerCase() === username)
-    : team.find(m => m.pin === pin);
+  loginBtn.disabled     = true;
+  loginBtn.textContent  = 'Signing in…';
+  loginErr.textContent  = '';
 
-  if (member) {
-    loginErr.textContent = '';
-    if (member.role === 'admin') {
-      setSession({ role:'admin', username:member.username, memberId:member.id, name:member.name, loginAt:Date.now() });
-      window.location.href = 'dashboard';
+  try {
+    let member = null;
+
+    if (db) {
+      // Fetch all team members from Firestore and match PIN (small collection, safe to fetch all)
+      const snap = await db.collection('team_members').get();
+      const all  = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      member = username
+        ? all.find(m => m.pin === pin && m.username.toLowerCase() === username)
+        : all.find(m => m.pin === pin);
     } else {
-      setSession({ role:'team', username:member.username, memberId:member.id, name:member.name, loginAt:Date.now() });
-      showPortal(member);
+      const team = getTeam();
+      member = username
+        ? team.find(m => m.pin === pin && m.username.toLowerCase() === username)
+        : team.find(m => m.pin === pin);
     }
-  } else {
-    loginErr.textContent = 'PIN not recognised. Check with your admin.';
-    pinInput.value = ''; pinInput.focus();
+
+    if (member) {
+      if (member.role === 'admin') {
+        setSession({ role:'admin', username:member.username, memberId:member.id, name:member.name, loginAt:Date.now() });
+        window.location.href = 'dashboard';
+      } else {
+        setSession({ role:'team', username:member.username, memberId:member.id, name:member.name, loginAt:Date.now() });
+        showPortal(member);
+      }
+    } else {
+      loginErr.textContent = 'PIN not recognised. Check with your admin.';
+      pinInput.value = '';
+      pinInput.focus();
+    }
+  } catch (err) {
+    console.error('[NEJ] Login error:', err);
+    loginErr.textContent = 'Connection error — please try again.';
+  } finally {
+    loginBtn.disabled    = false;
+    loginBtn.textContent = 'Sign In';
   }
 }
 
 loginBtn.addEventListener('click', tryLogin);
-pinInput.addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(); });
+pinInput.addEventListener('keydown',      e => { if (e.key === 'Enter') tryLogin(); });
 usernameInput.addEventListener('keydown', e => { if (e.key === 'Enter') pinInput.focus(); });
 
-// Logout
-function doLogout() { setSession(null); location.reload(); }
+function doLogout() {
+  teardownListeners();
+  setSession(null);
+  location.reload();
+}
 document.getElementById('logoutBtn').addEventListener('click', doLogout);
 document.getElementById('mobileLogout').addEventListener('click', doLogout);
 
@@ -124,44 +183,47 @@ document.getElementById('mobileLogout').addEventListener('click', doLogout);
   const params  = new URLSearchParams(location.search);
   const payload = params.get('setup');
   if (!payload) return;
-
   try {
     const creds = JSON.parse(atob(payload));
     if (!creds.id || !creds.pin) return;
-
-    // Save member to this device's local team store
     const stored = JSON.parse(localStorage.getItem(TEAM_KEY) || '[]');
-    const exists = stored.find(m => m.id === creds.id);
-    if (!exists) {
+    if (!stored.find(m => m.id === creds.id)) {
       stored.push({ id: creds.id, name: creds.name, username: creds.username || '', pin: creds.pin });
       localStorage.setItem(TEAM_KEY, JSON.stringify(stored));
     }
-
-    // Auto-fill the PIN field and show a welcome message
     pinInput.value = creds.pin;
     loginErr.style.color = 'var(--green)';
     loginErr.textContent = `Welcome ${creds.name}! Your account is set up — click Sign In.`;
-
-    // Clean the URL without reloading
     history.replaceState(null, '', location.pathname);
-  } catch { /* malformed payload — ignore */ }
+  } catch { /* malformed — ignore */ }
 })();
 
-// On page load: check existing session
-const sess = getSession();
-if (sess && sess.role === 'team') {
-  const team   = getTeam();
-  const member = team.find(m => m.id === sess.memberId);
-  if (member) {
-    showPortal(member);
-  } else if (sess.name && sess.memberId) {
-    // Member not in this device's team list but session is valid — trust it
-    showPortal({ id: sess.memberId, name: sess.name, username: sess.username || '' });
-  } else {
-    setSession(null);
+// ── Session restore on page load ──
+function initAuth() {
+  const sess = getSession();
+  if (sess && sess.role === 'team') {
+    if (db) {
+      showPortal({ id: sess.memberId, name: sess.name, username: sess.username || '', role: 'team' });
+    } else {
+      const team   = getTeam();
+      const member = team.find(m => m.id === sess.memberId);
+      if (member) {
+        showPortal(member);
+      } else if (sess.name && sess.memberId) {
+        showPortal({ id: sess.memberId, name: sess.name, username: sess.username || '' });
+      } else {
+        setSession(null);
+      }
+    }
+  } else if (sess && sess.role === 'admin') {
+    window.location.href = 'dashboard';
   }
-} else if (sess && sess.role === 'admin') {
-  window.location.href = 'dashboard';
+}
+
+if (db) {
+  auth.onAuthStateChanged(user => { if (user) initAuth(); });
+} else {
+  initAuth();
 }
 
 /* ════════════════════════════════════════════
@@ -209,7 +271,7 @@ function renderSchedule() {
           <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
           <line x1="3" y1="10" x2="21" y2="10"/>
         </svg>
-        <h3>No upcoming shots yet</h3>
+        <h3>No upcoming shoots yet</h3>
         <p>Ask your admin to add upcoming shoots and events.</p>
       </div>`;
     return;
@@ -251,7 +313,7 @@ function renderSchedule() {
     html += upcoming.map(s => buildCard(s, false)).join('');
   } else {
     html += `<div class="sch-empty" style="padding:32px 0">
-      <p style="color:var(--grey-3);font-size:0.85rem">No upcoming shots scheduled.</p>
+      <p style="color:var(--grey-3);font-size:0.85rem">No upcoming shoots scheduled.</p>
     </div>`;
   }
   if (past.length > 0) {
@@ -280,9 +342,9 @@ function renderAllTasksBar() {
   let tasks = getTasks();
   if (barFilter !== 'all') tasks = tasks.filter(t => t.status === barFilter);
 
-  const bar       = document.getElementById('allTasksBar');
-  const countEl   = document.getElementById('allTasksCount');
-  const allTasks  = getTasks();
+  const bar      = document.getElementById('allTasksBar');
+  const countEl  = document.getElementById('allTasksCount');
+  const allTasks = getTasks();
 
   countEl.textContent = allTasks.length + ' task' + (allTasks.length !== 1 ? 's' : '');
 
@@ -329,13 +391,11 @@ function renderMyTasks() {
     return;
   }
 
-  // Sort: in-progress first, then pending, then completed
   const order = { 'in-progress': 0, pending: 1, completed: 2 };
   myTasks.sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9));
 
   grid.innerHTML = myTasks.map(t => buildMyTaskCard(t)).join('');
 
-  // Attach action listeners
   grid.querySelectorAll('[data-my-action]').forEach(btn => {
     btn.addEventListener('click', () => handleMyTaskAction(btn.dataset.id, btn.dataset.myAction));
   });
@@ -372,7 +432,7 @@ function buildMyTaskCard(t) {
       </div>
 
       <div class="my-task-card__actions">
-        ${canStart    ? `<button class="btn-start" data-id="${t.id}" data-my-action="start"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Start Task</button>` : ''}
+        ${canStart    ? `<button class="btn-start"    data-id="${t.id}" data-my-action="start"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Start Task</button>` : ''}
         ${canComplete ? `<button class="btn-complete" data-id="${t.id}" data-my-action="complete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Complete Task</button>` : ''}
         ${!isCompleted ? `<button class="btn-report" data-id="${t.id}" data-my-action="report"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Write Report</button>` : ''}
         ${isCompleted  ? `<button class="btn-report" data-id="${t.id}" data-my-action="report"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> View Reports</button>` : ''}
@@ -386,37 +446,55 @@ function buildMyTaskCard(t) {
 }
 
 function handleMyTaskAction(id, action) {
-  if (action === 'start')    { startTask(id); return; }
-  if (action === 'complete') { completeTask(id); return; }
+  if (action === 'start')    { startTask(id);       return; }
+  if (action === 'complete') { completeTask(id);    return; }
   if (action === 'report')   { openReportModal(id); return; }
 }
 
-function startTask(id) {
-  const tasks = getTasks();
-  const idx   = tasks.findIndex(t => t.id === id);
-  if (idx === -1) return;
-  if (tasks[idx].status !== 'pending') return;
-  tasks[idx].status    = 'in-progress';
-  tasks[idx].startedAt = Date.now();
-  saveTasks(tasks);
-  renderMyTasks();
-  renderAllTasksBar();
-  updateBadges();
-  showToast('Task started — good luck!');
+async function startTask(id) {
+  try {
+    if (db) {
+      await db.collection('tasks').doc(id).update({ status: 'in-progress', startedAt: Date.now() });
+      // onSnapshot will re-render
+    } else {
+      const tasks = getTasks();
+      const idx   = tasks.findIndex(t => t.id === id);
+      if (idx === -1 || tasks[idx].status !== 'pending') return;
+      tasks[idx].status    = 'in-progress';
+      tasks[idx].startedAt = Date.now();
+      saveTasks(tasks);
+      renderMyTasks();
+      renderAllTasksBar();
+      updateBadges();
+    }
+    showToast('Task started — good luck!');
+  } catch (err) {
+    console.error('[NEJ] startTask error:', err);
+    showToast('Error updating task. Try again.');
+  }
 }
 
-function completeTask(id) {
-  const tasks = getTasks();
-  const idx   = tasks.findIndex(t => t.id === id);
-  if (idx === -1) return;
-  if (tasks[idx].status !== 'in-progress') return;
-  tasks[idx].status      = 'completed';
-  tasks[idx].completedAt = Date.now();
-  saveTasks(tasks);
-  renderMyTasks();
-  renderAllTasksBar();
-  updateBadges();
-  showToast('Task completed!');
+async function completeTask(id) {
+  try {
+    if (db) {
+      await db.collection('tasks').doc(id).update({ status: 'completed', completedAt: Date.now() });
+      // onSnapshot will re-render
+    } else {
+      const tasks = getTasks();
+      const idx   = tasks.findIndex(t => t.id === id);
+      if (idx === -1 || tasks[idx].status !== 'in-progress') return;
+      tasks[idx].status      = 'completed';
+      tasks[idx].completedAt = Date.now();
+      saveTasks(tasks);
+      renderMyTasks();
+      renderAllTasksBar();
+      updateBadges();
+    }
+    showToast('Task completed!');
+  } catch (err) {
+    console.error('[NEJ] completeTask error:', err);
+    showToast('Error updating task. Try again.');
+  }
 }
 
 /* ════════════════════════════════════════════
@@ -437,12 +515,11 @@ function openReportModal(taskId) {
   const task = getTasks().find(t => t.id === taskId);
   if (!task) return;
 
-  activeReportTaskId = taskId;
-  reportModalTitle.textContent    = task.title;
-  reportModalSubtitle.textContent = `Task ID: ${taskId} · Status: ${task.status}`;
-  reportTextarea.value            = '';
+  activeReportTaskId               = taskId;
+  reportModalTitle.textContent     = task.title;
+  reportModalSubtitle.textContent  = `Task ID: ${taskId} · Status: ${task.status}`;
+  reportTextarea.value             = '';
 
-  // Hide write section for completed tasks
   const formSection = reportModal.querySelector('.report-form-section');
   if (task.status === 'completed') {
     formSection.style.display = 'none';
@@ -474,28 +551,48 @@ function renderPastReports(task) {
   }</div>`;
 }
 
-submitReportBtn.addEventListener('click', () => {
+submitReportBtn.addEventListener('click', async () => {
   const content = reportTextarea.value.trim();
   if (!content) { reportTextarea.focus(); return; }
   if (!currentMember || !activeReportTaskId) return;
 
-  const tasks = getTasks();
-  const idx   = tasks.findIndex(t => t.id === activeReportTaskId);
-  if (idx === -1) return;
-
-  if (!tasks[idx].reports) tasks[idx].reports = [];
-  tasks[idx].reports.push({
+  const newReport = {
     memberId:   currentMember.id,
     memberName: currentMember.name,
     content,
     createdAt:  Date.now(),
-  });
+  };
 
-  saveTasks(tasks);
-  reportTextarea.value = '';
-  renderPastReports(tasks[idx]);
-  renderMyTasks();
-  showToast('Report submitted');
+  submitReportBtn.disabled    = true;
+  submitReportBtn.textContent = 'Submitting…';
+
+  try {
+    if (db) {
+      await db.collection('tasks').doc(activeReportTaskId).update({
+        reports: firebase.firestore.FieldValue.arrayUnion(newReport)
+      });
+      // Re-read task for updated modal display
+      const snap = await db.collection('tasks').doc(activeReportTaskId).get();
+      if (snap.exists) renderPastReports({ id: snap.id, ...snap.data() });
+    } else {
+      const tasks = getTasks();
+      const idx   = tasks.findIndex(t => t.id === activeReportTaskId);
+      if (idx === -1) return;
+      if (!tasks[idx].reports) tasks[idx].reports = [];
+      tasks[idx].reports.push(newReport);
+      saveTasks(tasks);
+      renderPastReports(tasks[idx]);
+      renderMyTasks();
+    }
+    reportTextarea.value = '';
+    showToast('Report submitted');
+  } catch (err) {
+    console.error('[NEJ] Submit report error:', err);
+    showToast('Error submitting report. Try again.');
+  } finally {
+    submitReportBtn.disabled    = false;
+    submitReportBtn.textContent = 'Submit Report';
+  }
 });
 
 function closeReportModal() {
@@ -514,20 +611,17 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeReportM
 function updateBadges() {
   const allTasks = getTasks();
 
-  // Schedule badge: count today's shots
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr   = new Date().toISOString().slice(0, 10);
   const todayCount = getSchedule().filter(s => s.date === todayStr).length;
-  const schBadge = document.getElementById('scheduleBadge');
+  const schBadge   = document.getElementById('scheduleBadge');
   schBadge.textContent = todayCount;
   schBadge.classList.toggle('hidden', todayCount === 0);
 
-  // All tasks badge: count pending
   const pendingCount = allTasks.filter(t => t.status === 'pending').length;
-  const allBadge = document.getElementById('allTasksBadge');
+  const allBadge     = document.getElementById('allTasksBadge');
   allBadge.textContent = pendingCount;
   allBadge.classList.toggle('hidden', pendingCount === 0);
 
-  // My tasks badge: count my active tasks
   if (currentMember) {
     const myActive = allTasks.filter(t => t.assignedTo === currentMember.id && t.status !== 'completed').length;
     const myBadge  = document.getElementById('myTasksBadge');
@@ -549,17 +643,16 @@ function showToast(msg) {
 }
 
 /* ════════════════════════════════════════════
-   CROSS-TAB SYNC
+   CROSS-TAB SYNC (localStorage fallback only)
    ════════════════════════════════════════════ */
 window.addEventListener('storage', e => {
-  if (!currentMember) return;
+  if (!currentMember || db) return; // Firestore handles sync when db is active
   if (e.key === TASKS_KEY) {
     renderAllTasksBar();
     renderMyTasks();
     updateBadges();
   }
   if (e.key === TEAM_KEY) {
-    // If current member was removed by admin, force logout
     const team   = getTeam();
     const exists = team.find(m => m.id === currentMember.id);
     if (!exists) { doLogout(); }

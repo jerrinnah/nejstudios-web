@@ -1,18 +1,18 @@
 /* ══════════════════════════════════════════════
    NEJstudios — Dashboard JS (Admin)
-   Auth: username+PIN multi-role · Bookings · Tasks · Team
+   Auth: Firestore PIN validation (localStorage fallback)
+   Data: Firestore (bookings, tasks, team, schedule)
    ══════════════════════════════════════════════ */
 
-const ADMIN_PIN     = 'nej2026';      // ← change this
-const STORAGE_KEY   = 'nej_bookings';
-const TASKS_KEY     = 'nej_tasks';
-const TEAM_KEY      = 'nej_team';
-const SESSION_KEY   = 'nej_session';
+const ADMIN_PIN   = 'nej2026';
+const STORAGE_KEY = 'nej_bookings';
+const TASKS_KEY   = 'nej_tasks';
+const TEAM_KEY    = 'nej_team';
+const SESSION_KEY = 'nej_session';
+const SCHEDULE_KEY = 'nej_schedule';
 
 /* ════════════════════════════════════════════
-   TEAM CONFIG  ← add / edit team members here
-   These work on ALL devices without needing localStorage.
-   Format: { id, name, username, pin }
+   TEAM CONFIG  ← fallback / seed data
    ════════════════════════════════════════════ */
 const TEAM_CONFIG = [
   { id: 'TM-001', name: 'Light',   username: 'light',   pin: '1234', role: 'team'  },
@@ -23,23 +23,35 @@ const TEAM_CONFIG = [
 ];
 
 /* ════════════════════════════════════════════
+   IN-MEMORY STATE (Firestore real-time cache)
+   ════════════════════════════════════════════ */
+let _bookings = [];
+let _tasks    = [];
+let _team     = [];
+let _schedule = [];
+let _unsubBookings = null;
+let _unsubTasks    = null;
+let _unsubTeam     = null;
+let _unsubSchedule = null;
+
+/* ════════════════════════════════════════════
    STORAGE HELPERS
    ════════════════════════════════════════════ */
-function getBookings()     { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
-function saveBookings(arr) { localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); }
-function getTasks()        { return JSON.parse(localStorage.getItem(TASKS_KEY) || '[]'); }
-function saveTasks(arr)    { localStorage.setItem(TASKS_KEY, JSON.stringify(arr)); }
-function saveTeam(arr)     { localStorage.setItem(TEAM_KEY, JSON.stringify(arr)); }
+function getBookings()     { return db ? _bookings : JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+function getTasks()        { return db ? _tasks    : JSON.parse(localStorage.getItem(TASKS_KEY)   || '[]'); }
+function getScheduleItems(){ return db ? _schedule : JSON.parse(localStorage.getItem(SCHEDULE_KEY) || '[]'); }
 
-// Merges hardcoded TEAM_CONFIG with members added via the UI (localStorage).
-// TEAM_CONFIG entries take precedence so credentials always work cross-device.
+function saveBookings(arr) { if (!db) localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); }
+function saveTasks(arr)    { if (!db) localStorage.setItem(TASKS_KEY,   JSON.stringify(arr)); }
+function saveTeamLS(arr)   { if (!db) localStorage.setItem(TEAM_KEY,    JSON.stringify(arr)); }
+
 function getTeam() {
+  if (db) return _team;
   const stored = JSON.parse(localStorage.getItem(TEAM_KEY) || '[]');
-  const merged = [...TEAM_CONFIG];
+  const merged  = [...TEAM_CONFIG];
   stored.forEach(m => {
-    if (!merged.find(c => c.id === m.id || c.username.toLowerCase() === m.username.toLowerCase())) {
+    if (!merged.find(c => c.id === m.id || c.username.toLowerCase() === m.username.toLowerCase()))
       merged.push(m);
-    }
   });
   return merged;
 }
@@ -54,10 +66,56 @@ function setSession(obj) {
 }
 
 /* ════════════════════════════════════════════
+   FIRESTORE REAL-TIME LISTENERS
+   ════════════════════════════════════════════ */
+function setupFirestoreListeners() {
+  if (!db) return;
+
+  _unsubBookings = db.collection('bookings')
+    .orderBy('createdAt', 'desc')
+    .onSnapshot(snap => {
+      _bookings = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+      if (activeTab === 'bookings') renderBookings();
+    }, err => console.error('[NEJ] Bookings listener:', err));
+
+  _unsubTasks = db.collection('tasks').onSnapshot(snap => {
+    _tasks = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+    if (activeTab === 'tasks') renderTasks();
+    renderTasksBadge();
+  }, err => console.error('[NEJ] Tasks listener:', err));
+
+  _unsubTeam = db.collection('team_members').onSnapshot(snap => {
+    _team = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+    if (activeTab === 'team') renderTeam();
+    populateAssigneeSelect();
+  }, err => console.error('[NEJ] Team listener:', err));
+
+  _unsubSchedule = db.collection('schedule')
+    .orderBy('date', 'asc')
+    .onSnapshot(snap => {
+      _schedule = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+      if (activeTab === 'schedule') renderSchedulePanel();
+    }, err => console.error('[NEJ] Schedule listener:', err));
+}
+
+function teardownListeners() {
+  if (_unsubBookings) { _unsubBookings(); _unsubBookings = null; }
+  if (_unsubTasks)    { _unsubTasks();    _unsubTasks    = null; }
+  if (_unsubTeam)     { _unsubTeam();     _unsubTeam     = null; }
+  if (_unsubSchedule) { _unsubSchedule(); _unsubSchedule = null; }
+}
+
+/* ════════════════════════════════════════════
    SEED DEMO BOOKINGS
    ════════════════════════════════════════════ */
-function seedIfEmpty() {
-  if (getBookings().length > 0) return;
+async function seedIfEmpty() {
+  if (db) {
+    const snap = await db.collection('bookings').limit(1).get();
+    if (!snap.empty) return;
+  } else {
+    if (getBookings().length > 0) return;
+  }
+
   const now = Date.now(), day = 86400000;
   const demos = [
     { bookingKind:'studio', firstName:'Amaka',  middleName:'Chioma',  clientName:'Amaka Chioma',  phone:'+234 801 000 0001', email:'amaka@example.com',  sessionType:'Birthday', status:'pending',   createdAt: now - day*0 },
@@ -69,7 +127,37 @@ function seedIfEmpty() {
     { bookingKind:'event', firstName:'Kemi', lastName:'Afolabi', clientName:'Kemi Afolabi', phone:'+234 807 000 0007', email:'kemi@example.com', eventType:'brand-film', package:'premium', eventDate:'2026-05-10', location:'Victoria Island', budget:'350-600', deliverables:'5-minute brand campaign film, 3 social cuts.', status:'completed', createdAt: now - day*10 },
     { bookingKind:'event', firstName:'Emeka', lastName:'Obi', clientName:'Emeka Obi', phone:'+234 808 000 0008', email:'emeka@example.com', eventType:'corporate-event', package:'essential', eventDate:'2026-05-28', location:'Abuja', budget:'150-350', deliverables:'4-hour event coverage, recap video.', status:'pending', createdAt: now - day*0 },
   ];
-  saveBookings(demos.map(b => ({ id: 'NEJ-' + Math.random().toString(36).slice(2,8).toUpperCase(), ...b })));
+
+  const withIds = demos.map(b => ({ id: 'NEJ-' + Math.random().toString(36).slice(2,8).toUpperCase(), ...b }));
+
+  if (db) {
+    const batch = db.batch();
+    withIds.forEach(b => {
+      const ref = db.collection('bookings').doc(b.id);
+      batch.set(ref, b);
+    });
+    await batch.commit();
+  } else {
+    saveBookings(withIds);
+  }
+}
+
+/* ════════════════════════════════════════════
+   SEED TEAM MEMBERS TO FIRESTORE
+   One-time setup: pushes TEAM_CONFIG to Firestore
+   ════════════════════════════════════════════ */
+async function seedTeamToFirestore() {
+  if (!db) return;
+  const snap = await db.collection('team_members').limit(1).get();
+  if (!snap.empty) return; // already seeded
+
+  const batch = db.batch();
+  TEAM_CONFIG.forEach(m => {
+    const ref = db.collection('team_members').doc(m.id);
+    batch.set(ref, { name: m.name, username: m.username, pin: m.pin, role: m.role, createdAt: Date.now() });
+  });
+  await batch.commit();
+  console.log('[NEJ] Team members seeded to Firestore');
 }
 
 /* ════════════════════════════════════════════
@@ -102,99 +190,141 @@ function kindBadge(kind) {
 /* ════════════════════════════════════════════
    STATE
    ════════════════════════════════════════════ */
-let activeStatus  = 'all';
-let activeKind    = 'all';
-let activeType    = null;
-let activeEtype   = null;
-let searchQuery   = '';
+let activeStatus     = 'all';
+let activeKind       = 'all';
+let activeType       = null;
+let activeEtype      = null;
+let searchQuery      = '';
 let activeTaskStatus = 'all';
 let editingMemberId  = null;
+let activeTab        = 'bookings';
 
 /* ════════════════════════════════════════════
    LOGIN / AUTH
    ════════════════════════════════════════════ */
-const loginGate   = document.getElementById('loginGate');
-const dashShell   = document.getElementById('dashShell');
+const loginGate     = document.getElementById('loginGate');
+const dashShell     = document.getElementById('dashShell');
 const usernameInput = document.getElementById('usernameInput');
-const pinInput    = document.getElementById('pinInput');
-const loginBtn    = document.getElementById('loginBtn');
-const loginErr    = document.getElementById('loginErr');
-const logoutBtn   = document.getElementById('logoutBtn');
+const pinInput      = document.getElementById('pinInput');
+const loginBtn      = document.getElementById('loginBtn');
+const loginErr      = document.getElementById('loginErr');
+const logoutBtn     = document.getElementById('logoutBtn');
 
 function isAdminAuthed() {
   const s = getSession();
   return s && s.role === 'admin';
 }
 
-function showDash() {
+async function showDash() {
   loginGate.classList.add('hidden');
   dashShell.style.display = 'flex';
   const s = getSession();
   document.getElementById('sidebarUser').textContent = s ? `Admin — ${s.username || 'admin'}` : 'Admin';
-  seedIfEmpty();
-  renderBookings();
-  renderTasksBadge();
+  setupFirestoreListeners();
+  if (db) {
+    await seedTeamToFirestore();
+    await seedIfEmpty();
+  } else {
+    seedIfEmpty();
+    renderBookings();
+    renderTasksBadge();
+  }
 }
 
-function tryLogin() {
+async function tryLogin() {
   const username = usernameInput.value.trim().toLowerCase();
   const pin      = pinInput.value.trim();
 
   if (!pin) { loginErr.textContent = 'Please enter your PIN.'; return; }
 
-  // Admin login: blank username or "admin", correct PIN
-  if (username === '' || username === 'admin') {
-    if (pin === ADMIN_PIN) {
-      loginErr.textContent = '';
-      setSession({ role:'admin', username:'admin', memberId:null, loginAt:Date.now() });
-      showDash();
-    } else {
-      loginErr.textContent = 'Incorrect PIN. Try again.';
-      pinInput.value = ''; pinInput.focus();
-    }
-    return;
-  }
+  loginBtn.disabled    = true;
+  loginBtn.textContent = 'Signing in…';
+  loginErr.textContent = '';
 
-  // Team / admin member login: look up by username + PIN
-  const team   = getTeam();
-  const member = team.find(m => m.username.toLowerCase() === username && m.pin === pin);
-  if (member) {
-    loginErr.textContent = '';
-    if (member.role === 'admin') {
-      setSession({ role:'admin', username:member.username, memberId:member.id, name:member.name, loginAt:Date.now() });
-      showDash();
-    } else {
-      setSession({ role:'team', username:member.username, memberId:member.id, name:member.name, loginAt:Date.now() });
-      window.location.href = 'team';
-    }
-    return;
-  }
+  try {
+    if (db) {
+      const snap   = await db.collection('team_members').get();
+      const all    = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-  // Wrong credentials
-  loginErr.textContent = 'Username or PIN not found. Try again.';
-  pinInput.value = ''; pinInput.focus();
+      // Admin master PIN (blank/admin username)
+      if ((username === '' || username === 'admin') && pin === ADMIN_PIN) {
+        setSession({ role:'admin', username:'admin', memberId:null, loginAt:Date.now() });
+        showDash();
+        return;
+      }
+
+      const member = all.find(m => m.username.toLowerCase() === username && m.pin === pin);
+      if (member) {
+        if (member.role === 'admin') {
+          setSession({ role:'admin', username:member.username, memberId:member.id, name:member.name, loginAt:Date.now() });
+          showDash();
+        } else {
+          setSession({ role:'team', username:member.username, memberId:member.id, name:member.name, loginAt:Date.now() });
+          window.location.href = 'team';
+        }
+      } else {
+        loginErr.textContent = 'Username or PIN not found. Try again.';
+        pinInput.value = ''; pinInput.focus();
+      }
+
+    } else {
+      // localStorage fallback
+      if ((username === '' || username === 'admin') && pin === ADMIN_PIN) {
+        setSession({ role:'admin', username:'admin', memberId:null, loginAt:Date.now() });
+        showDash();
+        return;
+      }
+      const team   = getTeam();
+      const member = team.find(m => m.username.toLowerCase() === username && m.pin === pin);
+      if (member) {
+        if (member.role === 'admin') {
+          setSession({ role:'admin', username:member.username, memberId:member.id, name:member.name, loginAt:Date.now() });
+          showDash();
+        } else {
+          setSession({ role:'team', username:member.username, memberId:member.id, name:member.name, loginAt:Date.now() });
+          window.location.href = 'team';
+        }
+      } else {
+        loginErr.textContent = 'Username or PIN not found. Try again.';
+        pinInput.value = ''; pinInput.focus();
+      }
+    }
+  } catch (err) {
+    console.error('[NEJ] Login error:', err);
+    loginErr.textContent = 'Connection error — please try again.';
+  } finally {
+    loginBtn.disabled    = false;
+    loginBtn.textContent = 'Sign In';
+  }
 }
 
 loginBtn.addEventListener('click', tryLogin);
-pinInput.addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(); });
+pinInput.addEventListener('keydown',      e => { if (e.key === 'Enter') tryLogin(); });
 usernameInput.addEventListener('keydown', e => { if (e.key === 'Enter') pinInput.focus(); });
 
-logoutBtn.addEventListener('click', () => { setSession(null); location.reload(); });
+logoutBtn.addEventListener('click', () => { teardownListeners(); setSession(null); location.reload(); });
 
-// On load: check session
-const sess = getSession();
-if (sess && sess.role === 'admin') {
-  showDash();
-} else if (sess && sess.role === 'team') {
-  window.location.href = 'team';
+function initAuth() {
+  const sess = getSession();
+  if (sess && sess.role === 'admin') {
+    showDash();
+  } else if (sess && sess.role === 'team') {
+    window.location.href = 'team';
+  }
+}
+
+if (db) {
+  auth.onAuthStateChanged(user => { if (user) initAuth(); });
+} else {
+  initAuth();
 }
 
 /* ════════════════════════════════════════════
    MOBILE SIDEBAR TOGGLE
    ════════════════════════════════════════════ */
-const sidebar         = document.getElementById('sidebar');
-const sidebarOverlay  = document.getElementById('sidebarOverlay');
-const menuBtn         = document.getElementById('menuBtn');
+const sidebar        = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+const menuBtn        = document.getElementById('menuBtn');
 
 function openSidebar()  { sidebar.classList.add('open'); sidebarOverlay.classList.add('visible'); document.body.style.overflow = 'hidden'; }
 function closeSidebar() { sidebar.classList.remove('open'); sidebarOverlay.classList.remove('visible'); document.body.style.overflow = ''; }
@@ -206,20 +336,17 @@ sidebarOverlay.addEventListener('click', closeSidebar);
    TAB SWITCHING
    ════════════════════════════════════════════ */
 function switchTab(name) {
-  // Tab nav buttons
+  activeTab = name;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
-  // Panels
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   const panel = document.getElementById('panel-' + name);
   if (panel) panel.classList.add('active');
-  // Mobile bottom nav
   document.querySelectorAll('.mobile-bottom-nav [data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
-  // Header title
-  const titles = { bookings:'All Bookings', tasks:'Task Management', team:'Team Members' };
+  const titles = { bookings:'All Bookings', tasks:'Task Management', team:'Team Members', schedule:'Shoot Schedule' };
   document.getElementById('headerTitle').textContent = titles[name] || 'Dashboard';
-  // Load panel content
-  if (name === 'tasks')  renderTasks();
-  if (name === 'team')   renderTeam();
+  if (name === 'tasks')    renderTasks();
+  if (name === 'team')     renderTeam();
+  if (name === 'schedule') renderSchedulePanel();
   closeSidebar();
 }
 
@@ -230,7 +357,6 @@ document.querySelectorAll('.mobile-bottom-nav [data-tab]').forEach(btn => {
   btn.addEventListener('click', () => switchTab(btn.dataset.tab));
 });
 
-// Sidebar panel triggers (Tasks / Team nav items)
 document.querySelectorAll('.nav-panel-trigger').forEach(item => {
   item.addEventListener('click', () => {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -262,9 +388,13 @@ function actionButtons(b) {
   if (b.status === 'confirmed') {
     btns.push(`<button class="action-btn action-btn--complete" data-id="${b.id}" data-action="completed">Mark Done</button>`);
     btns.push(`<button class="action-btn action-btn--cancel"   data-id="${b.id}" data-action="cancelled">Cancel</button>`);
+    // Event bookings with a date get "Add to Schedule" button
+    if (b.bookingKind === 'event' && b.eventDate) {
+      btns.push(`<button class="action-btn action-btn--schedule" data-id="${b.id}" data-action="add-schedule" title="Add this event to team schedule">📅 Schedule</button>`);
+    }
   }
   if (['cancelled','completed'].includes(b.status)) {
-    btns.push(`<button class="action-btn action-btn--pending"  data-id="${b.id}" data-action="pending">Reopen</button>`);
+    btns.push(`<button class="action-btn action-btn--pending" data-id="${b.id}" data-action="pending">Reopen</button>`);
   }
   btns.push(`<button class="action-btn action-btn--delete" data-id="${b.id}" data-action="delete">Delete</button>`);
   btns.push(`<button class="action-btn" style="border-color:var(--border);color:var(--grey-3)" data-id="${b.id}" data-action="detail">Details</button>`);
@@ -321,11 +451,11 @@ function buildEventCard(b) {
 function renderBookings() {
   updateStats();
   let bookings = getBookings();
-  if (activeKind === 'studio') bookings = bookings.filter(b => b.bookingKind !== 'event');
-  if (activeKind === 'event')  bookings = bookings.filter(b => b.bookingKind === 'event');
-  if (activeStatus !== 'all')  bookings = bookings.filter(b => b.status === activeStatus);
-  if (activeType)   bookings = bookings.filter(b => b.sessionType === activeType);
-  if (activeEtype)  bookings = bookings.filter(b => b.eventType === activeEtype);
+  if (activeKind === 'studio')  bookings = bookings.filter(b => b.bookingKind !== 'event');
+  if (activeKind === 'event')   bookings = bookings.filter(b => b.bookingKind === 'event');
+  if (activeStatus !== 'all')   bookings = bookings.filter(b => b.status === activeStatus);
+  if (activeType)  bookings = bookings.filter(b => b.sessionType === activeType);
+  if (activeEtype) bookings = bookings.filter(b => b.eventType === activeEtype);
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
     bookings = bookings.filter(b =>
@@ -347,22 +477,94 @@ function renderBookings() {
   });
 }
 
-function handleBookingAction(id, action) {
-  if (action === 'detail') { openDetail(id); return; }
-  if (action === 'delete') { deleteBooking(id); return; }
-  const bookings = getBookings(), idx = bookings.findIndex(b => b.id === id);
-  if (idx === -1) return;
-  bookings[idx].status = action;
-  saveBookings(bookings);
-  showToast(`${bookings[idx].clientName} marked as ${STATUS_LABELS[action]}`);
-  renderBookings();
+async function handleBookingAction(id, action) {
+  if (action === 'detail')       { openDetail(id); return; }
+  if (action === 'delete')       { deleteBooking(id); return; }
+  if (action === 'add-schedule') { addBookingToSchedule(id); return; }
+
+  try {
+    if (db) {
+      await db.collection('bookings').doc(id).update({ status: action });
+      const b = getBookings().find(b => b.id === id);
+      if (b) showToast(`${b.clientName} marked as ${STATUS_LABELS[action]}`);
+      // onSnapshot will re-render
+    } else {
+      const bookings = getBookings(), idx = bookings.findIndex(b => b.id === id);
+      if (idx === -1) return;
+      bookings[idx].status = action;
+      saveBookings(bookings);
+      showToast(`${bookings[idx].clientName} marked as ${STATUS_LABELS[action]}`);
+      renderBookings();
+    }
+  } catch (err) {
+    console.error('[NEJ] Booking action error:', err);
+    showToast('Error updating booking.');
+  }
 }
 
-function deleteBooking(id) {
+async function deleteBooking(id) {
   if (!confirm(`Delete booking ${id}? This cannot be undone.`)) return;
-  saveBookings(getBookings().filter(b => b.id !== id));
-  showToast('Booking deleted');
-  renderBookings();
+  try {
+    if (db) {
+      await db.collection('bookings').doc(id).delete();
+    } else {
+      saveBookings(getBookings().filter(b => b.id !== id));
+      renderBookings();
+    }
+    showToast('Booking deleted');
+  } catch (err) {
+    console.error('[NEJ] Delete booking error:', err);
+    showToast('Error deleting booking.');
+  }
+}
+
+/* ════════════════════════════════════════════
+   ADD BOOKING TO SCHEDULE
+   ════════════════════════════════════════════ */
+async function addBookingToSchedule(bookingId) {
+  const b = getBookings().find(b => b.id === bookingId);
+  if (!b || !b.eventDate) return;
+
+  // Check if already on schedule
+  const existing = getScheduleItems().find(s => s.bookingId === bookingId);
+  if (existing) {
+    showToast('Already on the schedule');
+    switchTab('schedule');
+    return;
+  }
+
+  const typeMap = {
+    'white-wedding':'wedding','traditional-wedding':'wedding','full-wedding':'wedding','engagement':'wedding',
+    'brand-film':'production','music-video':'production','documentary':'production',
+    'corporate-event':'event','other-production':'production',
+  };
+
+  const item = {
+    date:       b.eventDate,
+    title:      (EVENT_TYPE_LABELS[b.eventType] || b.eventType || 'Event').replace(/^[^\w]*/, ''),
+    type:       typeMap[b.eventType] || 'event',
+    time:       null,
+    clientName: b.clientName,
+    location:   b.location || null,
+    notes:      b.deliverables ? `Deliverables: ${b.deliverables.slice(0, 100)}` : null,
+    bookingId,
+    createdAt:  Date.now(),
+  };
+
+  try {
+    if (db) {
+      await db.collection('schedule').add(item);
+    } else {
+      const sched = getScheduleItems();
+      sched.push({ id: 'SCH-' + Math.random().toString(36).slice(2,8).toUpperCase(), ...item });
+      localStorage.setItem(SCHEDULE_KEY, JSON.stringify(sched));
+    }
+    showToast(`${b.clientName} added to team schedule`);
+    switchTab('schedule');
+  } catch (err) {
+    console.error('[NEJ] Add to schedule error:', err);
+    showToast('Error adding to schedule.');
+  }
 }
 
 /* ════════════════════════════════════════════
@@ -384,7 +586,6 @@ document.querySelectorAll('.nav-item[data-view], .nav-item[data-type], .nav-item
       activeKind === 'studio' ? 'All Studio Sessions' :
       activeKind === 'event'  ? 'All Events & Weddings' :
       titles[activeStatus] || 'All Bookings';
-    // Switch to bookings tab
     switchTab('bookings');
     syncKindFilters();
     document.querySelectorAll('.filter-btn[data-status]').forEach(b => b.classList.toggle('active', b.dataset.status === activeStatus));
@@ -456,8 +657,6 @@ modalBackdrop.addEventListener('click', closeDetail);
 /* ════════════════════════════════════════════
    TASKS
    ════════════════════════════════════════════ */
-
-// Create task toggle
 const taskCreateToggle = document.getElementById('taskCreateToggle');
 const taskCreateBody   = document.getElementById('taskCreateBody');
 taskCreateToggle.addEventListener('click', () => {
@@ -465,8 +664,7 @@ taskCreateToggle.addEventListener('click', () => {
   taskCreateToggle.classList.toggle('open', open);
 });
 
-// Task form
-document.getElementById('taskForm').addEventListener('submit', e => {
+document.getElementById('taskForm').addEventListener('submit', async e => {
   e.preventDefault();
   const title    = document.getElementById('taskTitle').value.trim();
   const desc     = document.getElementById('taskDesc').value.trim();
@@ -474,33 +672,41 @@ document.getElementById('taskForm').addEventListener('submit', e => {
   const priority = document.getElementById('taskPriority').value;
   if (!title) return;
 
-  const team = getTeam();
+  const team   = getTeam();
   const member = team.find(m => m.id === assignee);
   const task = {
-    id:          'TASK-' + Math.random().toString(36).slice(2,8).toUpperCase(),
+    id:           'TASK-' + Math.random().toString(36).slice(2,8).toUpperCase(),
     title, desc,
-    assignedTo:  assignee || null,
+    assignedTo:   assignee || null,
     assignedName: member ? member.name : null,
     priority,
-    status:      'pending',
-    createdAt:   Date.now(),
-    startedAt:   null,
-    completedAt: null,
-    reports:     [],
+    status:       'pending',
+    createdAt:    Date.now(),
+    startedAt:    null,
+    completedAt:  null,
+    reports:      [],
   };
 
-  const tasks = getTasks();
-  tasks.unshift(task);
-  saveTasks(tasks);
-  e.target.reset();
-  taskCreateBody.classList.remove('open');
-  taskCreateToggle.classList.remove('open');
-  renderTasks();
-  renderTasksBadge();
-  showToast('Task created');
+  try {
+    if (db) {
+      await db.collection('tasks').doc(task.id).set(task);
+    } else {
+      const tasks = getTasks();
+      tasks.unshift(task);
+      saveTasks(tasks);
+      renderTasks();
+      renderTasksBadge();
+    }
+    e.target.reset();
+    taskCreateBody.classList.remove('open');
+    taskCreateToggle.classList.remove('open');
+    showToast('Task created');
+  } catch (err) {
+    console.error('[NEJ] Create task error:', err);
+    showToast('Error creating task.');
+  }
 });
 
-// Task status filter
 document.querySelectorAll('[data-task-status]').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('[data-task-status]').forEach(b => b.classList.remove('active'));
@@ -519,19 +725,14 @@ function renderTasks() {
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg><h3>No tasks yet</h3><p>Create a task above to get started.</p></div>`;
     return;
   }
-
   grid.innerHTML = tasks.map(t => buildTaskCard(t)).join('');
   grid.querySelectorAll('[data-task-action]').forEach(btn => {
-    btn.addEventListener('click', e => {
-      e.stopPropagation();
-      handleTaskAction(btn.dataset.id, btn.dataset.taskAction);
-    });
+    btn.addEventListener('click', e => { e.stopPropagation(); handleTaskAction(btn.dataset.id, btn.dataset.taskAction); });
   });
 }
 
 function buildTaskCard(t) {
-  const priorityMap = { high:'high', medium:'medium', low:'low' };
-  const prClass = priorityMap[t.priority] || 'medium';
+  const prClass    = t.priority || 'medium';
   const lastReport = t.reports && t.reports.length > 0 ? t.reports[t.reports.length - 1] : null;
   const reportCount = t.reports ? t.reports.length : 0;
 
@@ -546,47 +747,49 @@ function buildTaskCard(t) {
       <div class="task-card__title">${t.title}</div>
       ${t.desc ? `<div class="task-card__desc">${t.desc.slice(0,120)}${t.desc.length>120?'…':''}</div>` : ''}
       <div class="task-card__info">
-        <div class="task-info-row">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          Assigned: <strong>${t.assignedName || 'Unassigned'}</strong>
-        </div>
-        <div class="task-info-row">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          Created: <strong>${fmtDateShort(t.createdAt)}</strong>
-          ${t.startedAt ? `&nbsp;·&nbsp; Started: <strong>${fmtDateShort(t.startedAt)}</strong>` : ''}
-          ${t.completedAt ? `&nbsp;·&nbsp; Done: <strong>${fmtDateShort(t.completedAt)}</strong>` : ''}
-        </div>
+        <div class="task-info-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Assigned: <strong>${t.assignedName || 'Unassigned'}</strong></div>
+        <div class="task-info-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Created: <strong>${fmtDateShort(t.createdAt)}</strong>${t.startedAt ? ` &nbsp;·&nbsp; Started: <strong>${fmtDateShort(t.startedAt)}</strong>` : ''}${t.completedAt ? ` &nbsp;·&nbsp; Done: <strong>${fmtDateShort(t.completedAt)}</strong>` : ''}</div>
       </div>
       ${lastReport ? `<div class="task-reports-preview"><strong>${reportCount} report${reportCount>1?'s':''}</strong> — "${lastReport.content.slice(0,80)}${lastReport.content.length>80?'…':''}"</div>` : ''}
       <div class="task-card__actions">
-        <button class="task-action-btn task-action-btn--reports" data-id="${t.id}" data-task-action="reports">Reports (${reportCount})</button>
+        <button class="task-action-btn task-action-btn--reports"  data-id="${t.id}" data-task-action="reports">Reports (${reportCount})</button>
         <button class="task-action-btn task-action-btn--reassign" data-id="${t.id}" data-task-action="reassign">Reassign</button>
-        <button class="task-action-btn task-action-btn--delete" data-id="${t.id}" data-task-action="delete">Delete</button>
+        <button class="task-action-btn task-action-btn--delete"   data-id="${t.id}" data-task-action="delete">Delete</button>
       </div>
     </div>`;
 }
 
-function handleTaskAction(id, action) {
+async function handleTaskAction(id, action) {
   if (action === 'delete') {
     if (!confirm('Delete this task?')) return;
-    saveTasks(getTasks().filter(t => t.id !== id));
-    renderTasks(); renderTasksBadge();
-    showToast('Task deleted');
+    try {
+      if (db) {
+        await db.collection('tasks').doc(id).delete();
+      } else {
+        saveTasks(getTasks().filter(t => t.id !== id));
+        renderTasks();
+        renderTasksBadge();
+      }
+      showToast('Task deleted');
+    } catch (err) {
+      console.error('[NEJ] Delete task error:', err);
+      showToast('Error deleting task.');
+    }
     return;
   }
-  if (action === 'reports') { openReportsModal(id); return; }
+  if (action === 'reports')  { openReportsModal(id); return; }
   if (action === 'reassign') { openReassignModal(id); return; }
 }
 
 function renderTasksBadge() {
-  const count = getTasks().filter(t => t.status === 'pending').length;
-  const badge = document.getElementById('tabTasksBadge');
+  const count    = getTasks().filter(t => t.status === 'pending').length;
+  const badge    = document.getElementById('tabTasksBadge');
   const navCount = document.getElementById('navPendingTasks');
   const mnavBadge = document.getElementById('mnavTasksBadge');
   badge.textContent = count;
   badge.classList.toggle('zero', count === 0);
-  if (navCount) { navCount.textContent = count; navCount.classList.toggle('hidden', count === 0); }
-  if (mnavBadge) { mnavBadge.textContent = count; mnavBadge.style.display = count > 0 ? 'block' : 'none'; }
+  if (navCount)   { navCount.textContent = count;  navCount.classList.toggle('hidden', count === 0); }
+  if (mnavBadge)  { mnavBadge.textContent = count; mnavBadge.style.display = count > 0 ? 'block' : 'none'; }
 }
 
 /* ════════════════════════════════════════════
@@ -603,7 +806,7 @@ function openReportsModal(taskId) {
   if (!task) return;
   reportsModalTitle.textContent = `Reports — ${task.title}`;
   if (!task.reports || task.reports.length === 0) {
-    reportsModalContent.innerHTML = `<p class="no-reports">No reports written yet. Team members can submit progress reports from the Team Portal.</p>`;
+    reportsModalContent.innerHTML = `<p class="no-reports">No reports written yet. Team members submit progress reports from the Team Portal.</p>`;
   } else {
     reportsModalContent.innerHTML = `<div class="reports-list">${task.reports.map(r => `
       <div class="report-item">
@@ -623,30 +826,41 @@ reportsModalClose.addEventListener('click', closeReportsModal);
 reportsModalBack.addEventListener('click', closeReportsModal);
 
 /* ════════════════════════════════════════════
-   REASSIGN MODAL (inline prompt)
+   REASSIGN MODAL
    ════════════════════════════════════════════ */
-function openReassignModal(taskId) {
+async function openReassignModal(taskId) {
   const task = getTasks().find(t => t.id === taskId);
   if (!task) return;
   const team = getTeam();
   if (team.length === 0) { showToast('Add team members first'); return; }
 
-  // Build options string for prompt
   const options = ['0: Unassigned', ...team.map((m, i) => `${i+1}: ${m.name} (@${m.username})`)].join('\n');
-  const choice = prompt(`Reassign "${task.title}"\n\n${options}\n\nEnter number:`);
+  const choice  = prompt(`Reassign "${task.title}"\n\n${options}\n\nEnter number:`);
   if (choice === null) return;
   const idx = parseInt(choice, 10);
   if (isNaN(idx) || idx < 0 || idx > team.length) { showToast('Invalid choice'); return; }
 
   const member = idx === 0 ? null : team[idx - 1];
-  const tasks = getTasks();
-  const tIdx  = tasks.findIndex(t => t.id === taskId);
-  if (tIdx === -1) return;
-  tasks[tIdx].assignedTo   = member ? member.id : null;
-  tasks[tIdx].assignedName = member ? member.name : null;
-  saveTasks(tasks);
-  renderTasks();
-  showToast(member ? `Assigned to ${member.name}` : 'Unassigned');
+  try {
+    if (db) {
+      await db.collection('tasks').doc(taskId).update({
+        assignedTo:   member ? member.id   : null,
+        assignedName: member ? member.name : null,
+      });
+    } else {
+      const tasks = getTasks();
+      const tIdx  = tasks.findIndex(t => t.id === taskId);
+      if (tIdx === -1) return;
+      tasks[tIdx].assignedTo   = member ? member.id   : null;
+      tasks[tIdx].assignedName = member ? member.name : null;
+      saveTasks(tasks);
+      renderTasks();
+    }
+    showToast(member ? `Assigned to ${member.name}` : 'Unassigned');
+  } catch (err) {
+    console.error('[NEJ] Reassign error:', err);
+    showToast('Error reassigning task.');
+  }
 }
 
 /* ════════════════════════════════════════════
@@ -664,7 +878,7 @@ function populateAssigneeSelect() {
 /* ════════════════════════════════════════════
    TEAM MEMBERS
    ════════════════════════════════════════════ */
-document.getElementById('teamForm').addEventListener('submit', e => {
+document.getElementById('teamForm').addEventListener('submit', async e => {
   e.preventDefault();
   const name     = document.getElementById('tmName').value.trim();
   const username = document.getElementById('tmUsername').value.trim().toLowerCase();
@@ -675,43 +889,47 @@ document.getElementById('teamForm').addEventListener('submit', e => {
   if (pin.length < 4) { showToast('PIN must be at least 4 characters'); return; }
 
   const team = getTeam();
-
-  // Check username uniqueness (exclude self when editing)
   const duplicate = team.find(m => m.username.toLowerCase() === username && m.id !== editId);
   if (duplicate) { showToast('Username already exists'); return; }
 
-  if (editId) {
-    // Edit existing
-    const idx = team.findIndex(m => m.id === editId);
-    if (idx !== -1) { team[idx] = { ...team[idx], name, username, pin }; }
-  } else {
-    // Add new
-    team.push({
-      id:        'TM-' + Math.random().toString(36).slice(2,8).toUpperCase(),
-      name, username, pin,
-      createdAt: Date.now(),
-    });
+  try {
+    if (db) {
+      if (editId) {
+        await db.collection('team_members').doc(editId).update({ name, username, pin });
+      } else {
+        const newId = 'TM-' + Math.random().toString(36).slice(2,8).toUpperCase();
+        await db.collection('team_members').doc(newId).set({ name, username, pin, role: 'team', createdAt: Date.now() });
+      }
+    } else {
+      if (editId) {
+        const idx = team.findIndex(m => m.id === editId);
+        if (idx !== -1) { team[idx] = { ...team[idx], name, username, pin }; }
+      } else {
+        team.push({ id: 'TM-' + Math.random().toString(36).slice(2,8).toUpperCase(), name, username, pin, createdAt: Date.now() });
+      }
+      saveTeamLS(team);
+      renderTeam();
+      populateAssigneeSelect();
+    }
+    e.target.reset();
+    cancelEdit();
+    showToast(editId ? 'Member updated' : `${name} added to team`);
+  } catch (err) {
+    console.error('[NEJ] Team save error:', err);
+    showToast('Error saving team member.');
   }
-
-  saveTeam(team);
-  e.target.reset();
-  cancelEdit();
-  renderTeam();
-  populateAssigneeSelect();
-  showToast(editId ? 'Member updated' : `${name} added to team`);
 });
 
 function cancelEdit() {
   editingMemberId = null;
   document.getElementById('editMemberId').value = '';
-  document.getElementById('teamFormTitle').textContent = 'Add Team Member';
+  document.getElementById('teamFormTitle').textContent  = 'Add Team Member';
   document.getElementById('teamFormSubmit').textContent = 'Add Member';
   document.getElementById('cancelEditBtn').classList.remove('visible');
-  document.getElementById('tmName').value = '';
+  document.getElementById('tmName').value     = '';
   document.getElementById('tmUsername').value = '';
-  document.getElementById('tmPin').value = '';
+  document.getElementById('tmPin').value      = '';
 }
-
 document.getElementById('cancelEditBtn').addEventListener('click', cancelEdit);
 
 function renderTeam() {
@@ -725,7 +943,7 @@ function renderTeam() {
   }
 
   grid.innerHTML = team.map(m => {
-    const initials = m.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
+    const initials  = m.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
     const taskCount = getTasks().filter(t => t.assignedTo === m.id).length;
     return `
       <div class="member-card">
@@ -736,8 +954,8 @@ function renderTeam() {
           <div class="member-meta">${taskCount} task${taskCount !== 1 ? 's' : ''} assigned · Added ${fmtDateShort(m.createdAt)}</div>
         </div>
         <div class="member-actions">
-          <button class="member-action-btn member-action-btn--link" data-mid="${m.id}" title="Copy login link to share with ${m.name}">🔗 Login Link</button>
-          <button class="member-action-btn member-action-btn--edit" data-mid="${m.id}">Edit</button>
+          <button class="member-action-btn member-action-btn--link"   data-mid="${m.id}" title="Copy login link">🔗 Login Link</button>
+          <button class="member-action-btn member-action-btn--edit"   data-mid="${m.id}">Edit</button>
           <button class="member-action-btn member-action-btn--delete" data-mid="${m.id}" data-mname="${m.name}">Remove</button>
         </div>
       </div>`;
@@ -760,34 +978,234 @@ function copyLoginLink(id) {
   const payload = btoa(JSON.stringify({ id: m.id, name: m.name, username: m.username, pin: m.pin }));
   const url = `${location.origin}/team?setup=${payload}`;
   navigator.clipboard.writeText(url)
-    .then(() => showToast(`Login link for ${m.name} copied — send it to them`))
-    .catch(() => prompt(`Copy this link and send to ${m.name}:`, url));
+    .then(() => showToast(`Login link for ${m.name} copied`))
+    .catch(() => prompt(`Copy and send to ${m.name}:`, url));
 }
 
 function editMember(id) {
   const m = getTeam().find(m => m.id === id);
   if (!m) return;
   editingMemberId = id;
-  document.getElementById('editMemberId').value = id;
-  document.getElementById('tmName').value     = m.name;
-  document.getElementById('tmUsername').value = m.username;
-  document.getElementById('tmPin').value      = m.pin;
+  document.getElementById('editMemberId').value  = id;
+  document.getElementById('tmName').value        = m.name;
+  document.getElementById('tmUsername').value    = m.username;
+  document.getElementById('tmPin').value         = m.pin;
   document.getElementById('teamFormTitle').textContent  = 'Edit Team Member';
   document.getElementById('teamFormSubmit').textContent = 'Save Changes';
   document.getElementById('cancelEditBtn').classList.add('visible');
   document.querySelector('.team-form-card').scrollIntoView({ behavior:'smooth', block:'nearest' });
 }
 
-function removeMember(id, name) {
+async function removeMember(id, name) {
   if (!confirm(`Remove ${name} from the team? Their tasks will become unassigned.`)) return;
-  // Unassign their tasks
-  const tasks = getTasks().map(t => t.assignedTo === id ? { ...t, assignedTo:null, assignedName:null } : t);
-  saveTasks(tasks);
-  saveTeam(getTeam().filter(m => m.id !== id));
-  renderTeam();
-  renderTasks();
-  populateAssigneeSelect();
-  showToast(`${name} removed`);
+  try {
+    if (db) {
+      // Unassign their tasks
+      const myTasks = getTasks().filter(t => t.assignedTo === id);
+      const batch   = db.batch();
+      myTasks.forEach(t => {
+        batch.update(db.collection('tasks').doc(t.id), { assignedTo: null, assignedName: null });
+      });
+      batch.delete(db.collection('team_members').doc(id));
+      await batch.commit();
+    } else {
+      const tasks = getTasks().map(t => t.assignedTo === id ? { ...t, assignedTo:null, assignedName:null } : t);
+      saveTasks(tasks);
+      saveTeamLS(getTeam().filter(m => m.id !== id));
+      renderTeam();
+      renderTasks();
+      populateAssigneeSelect();
+    }
+    showToast(`${name} removed`);
+  } catch (err) {
+    console.error('[NEJ] Remove member error:', err);
+    showToast('Error removing member.');
+  }
+}
+
+/* ════════════════════════════════════════════
+   SCHEDULE PANEL (admin management)
+   ════════════════════════════════════════════ */
+let editingShootId = null;
+
+const shootCreateToggle = document.getElementById('shootCreateToggle');
+const shootCreateBody   = document.getElementById('shootCreateBody');
+shootCreateToggle.addEventListener('click', () => {
+  const open = shootCreateBody.classList.toggle('open');
+  shootCreateToggle.classList.toggle('open', open);
+});
+
+document.getElementById('shootForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const date       = document.getElementById('shootDate').value;
+  const title      = document.getElementById('shootTitle').value.trim();
+  const type       = document.getElementById('shootType').value;
+  const time       = document.getElementById('shootTime').value.trim() || null;
+  const clientName = document.getElementById('shootClient').value.trim() || null;
+  const location   = document.getElementById('shootLocation').value.trim() || null;
+  const notes      = document.getElementById('shootNotes').value.trim() || null;
+
+  if (!date || !title) return;
+
+  const item = { date, title, type, time, clientName, location, notes, createdAt: Date.now() };
+
+  try {
+    if (db) {
+      if (editingShootId) {
+        await db.collection('schedule').doc(editingShootId).update({ date, title, type, time, clientName, location, notes });
+      } else {
+        await db.collection('schedule').add(item);
+      }
+    } else {
+      const sched = getScheduleItems();
+      if (editingShootId) {
+        const idx = sched.findIndex(s => s.id === editingShootId);
+        if (idx !== -1) Object.assign(sched[idx], { date, title, type, time, clientName, location, notes });
+      } else {
+        sched.push({ id: 'SCH-' + Math.random().toString(36).slice(2,8).toUpperCase(), ...item });
+      }
+      localStorage.setItem(SCHEDULE_KEY, JSON.stringify(sched));
+      renderSchedulePanel();
+    }
+    e.target.reset();
+    cancelShootEdit();
+    showToast(editingShootId ? 'Shoot updated' : 'Shoot added to schedule');
+  } catch (err) {
+    console.error('[NEJ] Save shoot error:', err);
+    showToast('Error saving shoot.');
+  }
+});
+
+function cancelShootEdit() {
+  editingShootId = null;
+  document.getElementById('shootFormTitle').textContent  = 'Add Shoot / Event';
+  document.getElementById('shootFormSubmit').textContent = 'Add to Schedule';
+  document.getElementById('cancelShootEditBtn').classList.remove('visible');
+  document.getElementById('shootDate').value     = '';
+  document.getElementById('shootTitle').value    = '';
+  document.getElementById('shootTime').value     = '';
+  document.getElementById('shootClient').value   = '';
+  document.getElementById('shootLocation').value = '';
+  document.getElementById('shootNotes').value    = '';
+  shootCreateBody.classList.remove('open');
+  shootCreateToggle.classList.remove('open');
+}
+document.getElementById('cancelShootEditBtn').addEventListener('click', cancelShootEdit);
+
+function renderSchedulePanel() {
+  const grid     = document.getElementById('scheduleAdminGrid');
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const items    = getScheduleItems().slice().sort((a, b) => a.date.localeCompare(b.date));
+
+  const upcoming = items.filter(s => s.date >= todayStr);
+  const past     = items.filter(s => s.date < todayStr).slice(-10).reverse();
+
+  document.getElementById('scheduleUpcomingCount').textContent = upcoming.length;
+
+  if (items.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        <h3>No shoots scheduled yet</h3>
+        <p>Add a shoot above — it will instantly appear in the Team Portal.</p>
+      </div>`;
+    return;
+  }
+
+  const typeLabel = { studio:'Studio', wedding:'Wedding', event:'Event', production:'Production', meeting:'Meeting' };
+
+  function buildAdminCard(s, isPast) {
+    const d       = new Date(s.date + 'T00:00:00');
+    const day     = d.getDate();
+    const month   = d.toLocaleString('en-NG', { month:'short' }).toUpperCase();
+    const isToday = s.date === todayStr;
+    const cls     = isToday ? 'sch-card--today' : (isPast ? 'sch-card--past' : '');
+    const lbl     = typeLabel[s.type] || s.type;
+    return `
+      <div class="sch-card ${cls}">
+        <div class="sch-date-block">
+          <div class="sch-date-block__day">${day}</div>
+          <div class="sch-date-block__month">${month}</div>
+        </div>
+        <div class="sch-body">
+          <div class="sch-body__top">
+            <span class="sch-type-badge sch-type--${s.type}">${lbl}</span>
+            ${isToday ? '<span class="sch-today-pill">Today</span>' : ''}
+            ${s.bookingId ? '<span class="sch-booking-pill">From Booking</span>' : ''}
+          </div>
+          <div class="sch-body__title">${s.title}</div>
+          <div class="sch-body__meta">
+            ${s.time       ? `<span>🕐 ${s.time}</span>`       : ''}
+            ${s.clientName ? `<span>👤 ${s.clientName}</span>` : ''}
+            ${s.location   ? `<span>📍 ${s.location}</span>`   : ''}
+          </div>
+          ${s.notes ? `<div class="sch-body__notes">${s.notes}</div>` : ''}
+          <div class="sch-admin-actions">
+            <button class="sch-admin-btn sch-admin-btn--edit"   data-sid="${s.id}">Edit</button>
+            <button class="sch-admin-btn sch-admin-btn--delete" data-sid="${s.id}">Delete</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  let html = '';
+  if (upcoming.length > 0) {
+    html += upcoming.map(s => buildAdminCard(s, false)).join('');
+  } else {
+    html += `<div class="sch-section-label" style="margin-bottom:8px">No upcoming shoots. Add one above.</div>`;
+  }
+  if (past.length > 0) {
+    html += `<div class="sch-section-label">Past</div>`;
+    html += past.map(s => buildAdminCard(s, true)).join('');
+  }
+
+  grid.innerHTML = html;
+
+  grid.querySelectorAll('.sch-admin-btn--edit').forEach(btn => {
+    btn.addEventListener('click', () => editShoot(btn.dataset.sid));
+  });
+  grid.querySelectorAll('.sch-admin-btn--delete').forEach(btn => {
+    btn.addEventListener('click', () => deleteShoot(btn.dataset.sid));
+  });
+}
+
+function editShoot(id) {
+  const s = getScheduleItems().find(s => s.id === id);
+  if (!s) return;
+  editingShootId = id;
+  document.getElementById('shootDate').value     = s.date     || '';
+  document.getElementById('shootTitle').value    = s.title    || '';
+  document.getElementById('shootType').value     = s.type     || 'studio';
+  document.getElementById('shootTime').value     = s.time     || '';
+  document.getElementById('shootClient').value   = s.clientName || '';
+  document.getElementById('shootLocation').value = s.location || '';
+  document.getElementById('shootNotes').value    = s.notes    || '';
+  document.getElementById('shootFormTitle').textContent  = 'Edit Shoot';
+  document.getElementById('shootFormSubmit').textContent = 'Save Changes';
+  document.getElementById('cancelShootEditBtn').classList.add('visible');
+  shootCreateBody.classList.add('open');
+  shootCreateToggle.classList.add('open');
+  document.querySelector('.shoot-create-wrap').scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+async function deleteShoot(id) {
+  if (!confirm('Remove this shoot from the schedule?')) return;
+  try {
+    if (db) {
+      await db.collection('schedule').doc(id).delete();
+    } else {
+      const sched = getScheduleItems().filter(s => s.id !== id);
+      localStorage.setItem(SCHEDULE_KEY, JSON.stringify(sched));
+      renderSchedulePanel();
+    }
+    showToast('Shoot removed from schedule');
+  } catch (err) {
+    console.error('[NEJ] Delete shoot error:', err);
+    showToast('Error removing shoot.');
+  }
 }
 
 /* ════════════════════════════════════════════
@@ -803,12 +1221,13 @@ function showToast(msg) {
 }
 
 /* ════════════════════════════════════════════
-   KEYBOARD + CROSS-TAB SYNC
+   KEYBOARD + CROSS-TAB SYNC (localStorage only)
    ════════════════════════════════════════════ */
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeDetail(); closeReportsModal(); } });
 window.addEventListener('storage', e => {
-  if (!isAdminAuthed()) return;
-  if (e.key === STORAGE_KEY) renderBookings();
-  if (e.key === TASKS_KEY)   { renderTasks(); renderTasksBadge(); }
-  if (e.key === TEAM_KEY)    renderTeam();
+  if (!isAdminAuthed() || db) return;
+  if (e.key === STORAGE_KEY)  renderBookings();
+  if (e.key === TASKS_KEY)    { renderTasks(); renderTasksBadge(); }
+  if (e.key === TEAM_KEY)     renderTeam();
+  if (e.key === SCHEDULE_KEY) renderSchedulePanel();
 });

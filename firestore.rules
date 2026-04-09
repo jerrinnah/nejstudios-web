@@ -1,0 +1,12 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // All collections require authentication (anonymous auth counts).
+    // This prevents public access while keeping the PIN-based UX intact.
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+
+  }
+}
