@@ -8,6 +8,7 @@ const STORAGE_KEY   = 'nej_bookings';
 const TASKS_KEY     = 'nej_tasks';
 const TEAM_KEY      = 'nej_team';
 const SESSION_KEY   = 'nej_session';
+const SCHEDULE_KEY  = 'nej_schedule';
 
 /* ════════════════════════════════════════════
    TEAM CONFIG  ← add / edit team members here
@@ -25,11 +26,13 @@ const TEAM_CONFIG = [
 /* ════════════════════════════════════════════
    STORAGE HELPERS
    ════════════════════════════════════════════ */
-function getBookings()     { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
-function saveBookings(arr) { localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); }
-function getTasks()        { return JSON.parse(localStorage.getItem(TASKS_KEY) || '[]'); }
-function saveTasks(arr)    { localStorage.setItem(TASKS_KEY, JSON.stringify(arr)); }
-function saveTeam(arr)     { localStorage.setItem(TEAM_KEY, JSON.stringify(arr)); }
+function getBookings()      { return JSON.parse(localStorage.getItem(STORAGE_KEY)  || '[]'); }
+function saveBookings(arr)  { localStorage.setItem(STORAGE_KEY,  JSON.stringify(arr)); }
+function getTasks()         { return JSON.parse(localStorage.getItem(TASKS_KEY)    || '[]'); }
+function saveTasks(arr)     { localStorage.setItem(TASKS_KEY,    JSON.stringify(arr)); }
+function saveTeam(arr)      { localStorage.setItem(TEAM_KEY,     JSON.stringify(arr)); }
+function getSchedule()      { return JSON.parse(localStorage.getItem(SCHEDULE_KEY) || '[]'); }
+function saveSchedule(arr)  { localStorage.setItem(SCHEDULE_KEY, JSON.stringify(arr)); }
 
 // Merges hardcoded TEAM_CONFIG with members added via the UI (localStorage).
 // TEAM_CONFIG entries take precedence so credentials always work cross-device.
@@ -215,11 +218,12 @@ function switchTab(name) {
   // Mobile bottom nav
   document.querySelectorAll('.mobile-bottom-nav [data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   // Header title
-  const titles = { bookings:'All Bookings', tasks:'Task Management', team:'Team Members' };
+  const titles = { bookings:'All Bookings', schedule:'Schedule', tasks:'Task Management', team:'Team Members' };
   document.getElementById('headerTitle').textContent = titles[name] || 'Dashboard';
   // Load panel content
-  if (name === 'tasks')  renderTasks();
-  if (name === 'team')   renderTeam();
+  if (name === 'schedule') renderAdminSchedule();
+  if (name === 'tasks')    renderTasks();
+  if (name === 'team')     renderTeam();
   closeSidebar();
 }
 
@@ -452,6 +456,106 @@ function openDetail(id) {
 function closeDetail() { detailModal.classList.remove('open'); document.body.style.overflow = ''; }
 modalClose.addEventListener('click', closeDetail);
 modalBackdrop.addEventListener('click', closeDetail);
+
+/* ════════════════════════════════════════════
+   SCHEDULE
+   ════════════════════════════════════════════ */
+
+// Toggle form
+const schedCreateToggle = document.getElementById('schedCreateToggle');
+const schedCreateBody   = document.getElementById('schedCreateBody');
+schedCreateToggle.addEventListener('click', () => {
+  const open = schedCreateBody.classList.toggle('open');
+  schedCreateToggle.classList.toggle('open', open);
+});
+
+// Submit form
+document.getElementById('schedForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const title    = document.getElementById('schedTitle').value.trim();
+  const date     = document.getElementById('schedDate').value;
+  const time     = document.getElementById('schedTime').value;
+  const type     = document.getElementById('schedType').value;
+  const client   = document.getElementById('schedClient').value.trim();
+  const location = document.getElementById('schedLocation').value.trim();
+  const notes    = document.getElementById('schedNotes').value.trim();
+  if (!title || !date) return;
+
+  const entry = {
+    id:         'SCH-' + Math.random().toString(36).slice(2,8).toUpperCase(),
+    title, date, type,
+    time:       time || null,
+    clientName: client || null,
+    location:   location || null,
+    notes:      notes || null,
+    createdAt:  Date.now(),
+  };
+
+  const sched = getSchedule();
+  sched.unshift(entry);
+  saveSchedule(sched);
+  e.target.reset();
+  schedCreateBody.classList.remove('open');
+  schedCreateToggle.classList.remove('open');
+  renderAdminSchedule();
+  showToast('Added to schedule — team can see it now');
+});
+
+function renderAdminSchedule() {
+  const grid = document.getElementById('adminScheduleGrid');
+  if (!grid) return;
+  const sched = getSchedule().slice().sort((a, b) => a.date.localeCompare(b.date));
+
+  if (sched.length === 0) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <h3>No schedule entries yet</h3>
+      <p>Add upcoming shoots and events above — they'll appear on the team portal.</p>
+    </div>`;
+    return;
+  }
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const typeLabel = { studio:'Studio', wedding:'Wedding', event:'Event', production:'Production', meeting:'Meeting' };
+
+  grid.innerHTML = sched.map(s => {
+    const isPast = s.date < todayStr;
+    const d      = new Date(s.date + 'T00:00:00');
+    const dateStr = d.toLocaleDateString('en-NG', { dateStyle:'medium' });
+    const lbl    = typeLabel[s.type] || s.type;
+    return `
+      <div class="task-card${isPast ? ' task-card--completed' : ''}">
+        <div class="task-card__top">
+          <div class="task-card__badges">
+            <span class="priority-badge priority-badge--${s.type === 'meeting' ? 'low' : s.type === 'studio' ? 'medium' : 'high'}">${lbl}</span>
+            ${isPast ? '<span class="status-badge status-badge--completed">Past</span>' : '<span class="status-badge status-badge--pending">Upcoming</span>'}
+          </div>
+        </div>
+        <div class="task-card__title">${s.title}</div>
+        <div class="task-card__info">
+          <div class="task-info-row">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <strong>${dateStr}${s.time ? ' · ' + s.time : ''}</strong>
+          </div>
+          ${s.clientName ? `<div class="task-info-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>${s.clientName}</div>` : ''}
+          ${s.location   ? `<div class="task-info-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>${s.location}</div>` : ''}
+        </div>
+        ${s.notes ? `<div class="task-reports-preview">${s.notes}</div>` : ''}
+        <div class="task-card__actions">
+          <button class="task-action-btn task-action-btn--delete" data-sched-id="${s.id}">Delete</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  grid.querySelectorAll('[data-sched-id]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!confirm('Remove this schedule entry?')) return;
+      saveSchedule(getSchedule().filter(s => s.id !== btn.dataset.schedId));
+      renderAdminSchedule();
+      showToast('Removed from schedule');
+    });
+  });
+}
 
 /* ════════════════════════════════════════════
    TASKS
@@ -808,7 +912,8 @@ function showToast(msg) {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeDetail(); closeReportsModal(); } });
 window.addEventListener('storage', e => {
   if (!isAdminAuthed()) return;
-  if (e.key === STORAGE_KEY) renderBookings();
-  if (e.key === TASKS_KEY)   { renderTasks(); renderTasksBadge(); }
-  if (e.key === TEAM_KEY)    renderTeam();
+  if (e.key === STORAGE_KEY)  renderBookings();
+  if (e.key === TASKS_KEY)    { renderTasks(); renderTasksBadge(); }
+  if (e.key === TEAM_KEY)     renderTeam();
+  if (e.key === SCHEDULE_KEY) renderAdminSchedule();
 });
