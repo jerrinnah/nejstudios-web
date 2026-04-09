@@ -9,11 +9,33 @@ const TEAM_KEY    = 'nej_team';
 const SESSION_KEY = 'nej_session';
 
 /* ════════════════════════════════════════════
+   TEAM CONFIG  ← add / edit team members here
+   These work on ALL devices without needing localStorage.
+   Format: { id, name, username, pin }
+   ════════════════════════════════════════════ */
+const TEAM_CONFIG = [
+  // { id: 'TM-001', name: 'Kemi Adeyemi',  username: 'kemi',  pin: '1234' },
+  // { id: 'TM-002', name: 'Tunde Bello',   username: 'tunde', pin: '5678' },
+];
+
+/* ════════════════════════════════════════════
    STORAGE HELPERS
    ════════════════════════════════════════════ */
 function getTasks()     { return JSON.parse(localStorage.getItem(TASKS_KEY) || '[]'); }
 function saveTasks(arr) { localStorage.setItem(TASKS_KEY, JSON.stringify(arr)); }
-function getTeam()      { return JSON.parse(localStorage.getItem(TEAM_KEY) || '[]'); }
+
+// Merges hardcoded TEAM_CONFIG with any members added via the admin UI (localStorage).
+// TEAM_CONFIG entries take precedence so credentials always work cross-device.
+function getTeam() {
+  const stored = JSON.parse(localStorage.getItem(TEAM_KEY) || '[]');
+  const merged = [...TEAM_CONFIG];
+  stored.forEach(m => {
+    if (!merged.find(c => c.id === m.id || c.username.toLowerCase() === m.username.toLowerCase())) {
+      merged.push(m);
+    }
+  });
+  return merged;
+}
 
 function getSession() {
   try { return JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null'); }
