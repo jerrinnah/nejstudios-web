@@ -8,6 +8,7 @@ const STORAGE_KEY   = 'nej_bookings';
 const TASKS_KEY     = 'nej_tasks';
 const TEAM_KEY      = 'nej_team';
 const SESSION_KEY   = 'nej_session';
+const APPROVALS_KEY = 'nej_approvals';
 
 /* ════════════════════════════════════════════
    TEAM CONFIG  ← add / edit team members here
@@ -42,6 +43,15 @@ function getTeam() {
     }
   });
   return merged;
+}
+
+function getApprovals()               { return JSON.parse(localStorage.getItem(APPROVALS_KEY) || '{}'); }
+function saveApproval(bookingId, imgId, value) {
+  const all = getApprovals();
+  if (!all[bookingId]) all[bookingId] = {};
+  if (value === null) delete all[bookingId][imgId];
+  else all[bookingId][imgId] = value;
+  localStorage.setItem(APPROVALS_KEY, JSON.stringify(all));
 }
 
 function getSession() {
@@ -428,6 +438,192 @@ const modalContent  = document.getElementById('modalContent');
 const modalClose    = document.getElementById('modalClose');
 const modalBackdrop = document.getElementById('modalBackdrop');
 
+/* ════════════════════════════════════════════
+   CLIENT GALLERY — storage helpers
+   ════════════════════════════════════════════ */
+const GALLERY_KEY = 'nej_gallery';
+
+function getGalleries()      { return JSON.parse(localStorage.getItem(GALLERY_KEY) || '{}'); }
+function getClientGallery(bookingId) { return getGalleries()[bookingId] || []; }
+function saveClientGallery(bookingId, imgs) {
+  const all = getGalleries();
+  all[bookingId] = imgs;
+  localStorage.setItem(GALLERY_KEY, JSON.stringify(all));
+}
+
+function downloadDataUrl(url, filename) {
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+}
+
+async function downloadAsZip(imgs, zipName) {
+  if (!window.JSZip) { showToast('ZIP library not loaded yet, try again.', 'err'); return; }
+  const zip = new JSZip();
+  imgs.forEach((img, i) => {
+    const ext  = img.name.includes('.') ? '' : '.jpg';
+    const name = img.name + ext;
+    // strip data URL header → raw base64
+    const b64  = img.url.split(',')[1];
+    const mime = img.url.match(/data:([^;]+)/)?.[1] || 'image/jpeg';
+    zip.file(name, b64, { base64: true });
+  });
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = zipName + '.zip'; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+function renderGallery(bookingId) {
+  const imgs   = getClientGallery(bookingId);
+  const grid   = document.getElementById('galleryGrid');
+  const count  = document.getElementById('galleryCount');
+  const dlBtn  = document.getElementById('galleryDlBtn');
+  const selBtn = document.getElementById('gallerySelBtn');
+  if (!grid) return;
+
+  const approvals = (getApprovals()[bookingId]) || {};
+
+  if (!imgs.length) {
+    grid.innerHTML = '<div class="gallery-empty">No photos uploaded yet.</div>';
+    if (dlBtn)  { dlBtn.disabled = true; }
+    if (selBtn) { selBtn.disabled = true; }
+  } else {
+    grid.innerHTML = imgs.map(img => {
+      const approval = approvals[img.id];
+      let badgeHtml = '';
+      if (approval === 'keep') {
+        badgeHtml = `<div class="gallery-thumb__approval gallery-thumb__approval--keep" title="Client: Keep">✓</div>`;
+      } else if (approval === 'remove') {
+        badgeHtml = `<div class="gallery-thumb__approval gallery-thumb__approval--remove" title="Client: Remove">✕</div>`;
+      }
+      return `
+      <div class="gallery-thumb" data-id="${img.id}" data-name="${img.name}">
+        <img src="${img.url}" alt="${img.name}" loading="lazy">
+        <div class="gallery-thumb__check">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        ${badgeHtml}
+        <div class="gallery-thumb__overlay">
+          <button class="gallery-thumb__btn dl" title="Download">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </button>
+          <button class="gallery-thumb__btn del" title="Delete">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      </div>`;
+    }).join('');
+
+    // wire thumb buttons
+    grid.querySelectorAll('.gallery-thumb').forEach(thumb => {
+      const id   = thumb.dataset.id;
+      const name = thumb.dataset.name;
+      const img  = imgs.find(i => i.id === id);
+      thumb.querySelector('.dl').addEventListener('click', e => { e.stopPropagation(); downloadDataUrl(img.url, name); });
+      thumb.querySelector('.del').addEventListener('click', e => { e.stopPropagation(); deleteGalleryImg(bookingId, id); });
+      thumb.addEventListener('click', () => {
+        if (grid.classList.contains('select-mode')) {
+          thumb.classList.toggle('selected');
+          updateSelectionUI(bookingId);
+        } else {
+          // Open lightbox
+          openLightbox(bookingId, imgs, imgs.findIndex(i => i.id === id));
+        }
+      });
+    });
+
+    if (dlBtn)  dlBtn.disabled  = false;
+    if (selBtn) selBtn.disabled = false;
+  }
+  if (count) count.textContent = imgs.length ? `· ${imgs.length} photo${imgs.length !== 1 ? 's' : ''}` : '';
+}
+
+function updateSelectionUI(bookingId) {
+  const grid    = document.getElementById('galleryGrid');
+  const dlBtn   = document.getElementById('galleryDlBtn');
+  const selBtn  = document.getElementById('gallerySelBtn');
+  if (!grid) return;
+  const selected = grid.querySelectorAll('.gallery-thumb.selected');
+  const inSelect = grid.classList.contains('select-mode');
+  if (inSelect) {
+    dlBtn.textContent = selected.length ? `↓ Download (${selected.length})` : '↓ Download All';
+  }
+}
+
+function toggleSelectMode(bookingId) {
+  const grid   = document.getElementById('galleryGrid');
+  const selBtn = document.getElementById('gallerySelBtn');
+  const dlBtn  = document.getElementById('galleryDlBtn');
+  if (!grid) return;
+  const on = grid.classList.toggle('select-mode');
+  selBtn.classList.toggle('active', on);
+  selBtn.textContent = on ? 'Done' : 'Select';
+  if (!on) {
+    grid.querySelectorAll('.gallery-thumb.selected').forEach(t => t.classList.remove('selected'));
+    dlBtn.textContent = '↓ Download All';
+  }
+}
+
+function deleteGalleryImg(bookingId, imgId) {
+  const imgs = getClientGallery(bookingId).filter(i => i.id !== imgId);
+  saveClientGallery(bookingId, imgs);
+  renderGallery(bookingId);
+}
+
+function handleGalleryUpload(bookingId, files) {
+  const list = document.getElementById('galleryProgressList');
+  if (!list) return;
+  const fileArr = Array.from(files).filter(f => f.type.startsWith('image/'));
+  if (!fileArr.length) { showToast('Please select image files.', 'err'); return; }
+
+  fileArr.forEach(file => {
+    const itemId = 'prog-' + Math.random().toString(36).slice(2, 8);
+    const item = document.createElement('div');
+    item.className = 'gallery-progress-item';
+    item.id = itemId;
+    item.innerHTML = `
+      <div class="gallery-progress-item__name">${file.name}</div>
+      <div class="gallery-progress-bar"><div class="gallery-progress-bar__fill" style="width:0%"></div></div>
+      <div class="gallery-progress-item__pct">0%</div>`;
+    list.appendChild(item);
+
+    const reader = new FileReader();
+    reader.onprogress = e => {
+      if (!e.lengthComputable) return;
+      const pct = Math.round((e.loaded / e.total) * 90); // go to 90% during read
+      const fill = item.querySelector('.gallery-progress-bar__fill');
+      const pctEl = item.querySelector('.gallery-progress-item__pct');
+      if (fill) fill.style.width = pct + '%';
+      if (pctEl) pctEl.textContent = pct + '%';
+    };
+    reader.onload = e => {
+      const fill = item.querySelector('.gallery-progress-bar__fill');
+      const pctEl = item.querySelector('.gallery-progress-item__pct');
+      if (fill) fill.style.width = '100%';
+      if (pctEl) pctEl.textContent = '100%';
+      item.classList.add('done');
+
+      try {
+        const imgs = getClientGallery(bookingId);
+        imgs.push({ id: 'img-' + Date.now() + '-' + Math.random().toString(36).slice(2,6), name: file.name, url: e.target.result, uploadedAt: Date.now() });
+        saveClientGallery(bookingId, imgs);
+        renderGallery(bookingId);
+      } catch {
+        showToast('Storage full — try smaller or fewer images.', 'err');
+      }
+
+      // Remove progress item after a short delay
+      setTimeout(() => item.remove(), 1200);
+    };
+    reader.onerror = () => {
+      item.querySelector('.gallery-progress-item__pct').textContent = 'Error';
+      setTimeout(() => item.remove(), 2000);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 function openDetail(id) {
   const b = getBookings().find(b => b.id === id);
   if (!b) return;
@@ -444,7 +640,82 @@ function openDetail(id) {
     ] : [['Session Type', `${SESSION_EMOJI[b.sessionType] || ''} ${b.sessionType}`]]),
     ['Submitted', `${fmtDate(b.createdAt)} at ${fmtTime(b.createdAt)}`],
   ];
-  modalContent.innerHTML = rows.map(([k,v]) => `<div class="detail-row"><span class="detail-row__key">${k}</span><span class="detail-row__val">${v}</span></div>`).join('');
+
+  modalContent.innerHTML =
+    rows.map(([k,v]) => `<div class="detail-row"><span class="detail-row__key">${k}</span><span class="detail-row__val">${v}</span></div>`).join('') +
+    `<div class="gallery-section">
+      <div class="gallery-section__header">
+        <div class="gallery-section__title">Client Gallery <span class="gallery-count" id="galleryCount"></span></div>
+        <div class="gallery-section__actions">
+          <button class="gallery-btn" id="galleryWatermarkBtn">Watermark</button>
+          <button class="gallery-btn" id="galleryCopyLinkBtn">Copy Client Link</button>
+          <button class="gallery-btn" id="gallerySelBtn" disabled>Select</button>
+          <button class="gallery-btn" id="galleryDlBtn" disabled>↓ Download All</button>
+        </div>
+      </div>
+      <div class="gallery-dropzone" id="galleryDropzone">
+        <input type="file" id="galleryInput" accept="image/*" multiple>
+        <svg class="gallery-dropzone__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+          <polyline points="21 15 16 10 5 21"/>
+        </svg>
+        <div class="gallery-dropzone__label">Click or drag &amp; drop photos</div>
+        <div class="gallery-dropzone__sub">JPG, PNG, WEBP · multiple files supported</div>
+      </div>
+      <div class="gallery-progress-list" id="galleryProgressList"></div>
+      <div class="gallery-grid" id="galleryGrid"></div>
+    </div>`;
+
+  // Wire up upload input
+  const input = document.getElementById('galleryInput');
+  const dropzone = document.getElementById('galleryDropzone');
+  input.addEventListener('change', () => handleGalleryUpload(id, input.files));
+  dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+  dropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropzone.classList.remove('drag-over');
+    handleGalleryUpload(id, e.dataTransfer.files);
+  });
+
+  renderGallery(id);
+
+  // Watermark toggle
+  document.getElementById('galleryWatermarkBtn').addEventListener('click', () => {
+    const grid = document.getElementById('galleryGrid');
+    const btn  = document.getElementById('galleryWatermarkBtn');
+    if (!grid) return;
+    const on = grid.classList.toggle('watermark-on');
+    btn.classList.toggle('active', on);
+    btn.textContent = on ? 'Watermark ✓' : 'Watermark';
+  });
+
+  // Copy Client Link
+  document.getElementById('galleryCopyLinkBtn').addEventListener('click', () => {
+    const link = window.location.origin + '/client.html?id=' + id;
+    navigator.clipboard.writeText(link)
+      .then(() => showToast('Client link copied to clipboard'))
+      .catch(() => prompt('Copy this client link:', link));
+  });
+
+  // Download All / Download Selected
+  document.getElementById('galleryDlBtn').addEventListener('click', async () => {
+    const grid = document.getElementById('galleryGrid');
+    const inSelect = grid.classList.contains('select-mode');
+    const allImgs  = getClientGallery(id);
+    const targets  = inSelect
+      ? [...grid.querySelectorAll('.gallery-thumb.selected')].map(t => allImgs.find(i => i.id === t.dataset.id)).filter(Boolean)
+      : allImgs;
+    if (!targets.length) return;
+    if (targets.length === 1) { downloadDataUrl(targets[0].url, targets[0].name); return; }
+    const b = getBookings().find(b => b.id === id);
+    showToast(`Preparing ZIP (${targets.length} files)…`);
+    await downloadAsZip(targets, `${b?.clientName || id}-gallery`);
+  });
+
+  // Select mode toggle
+  document.getElementById('gallerySelBtn').addEventListener('click', () => toggleSelectMode(id));
+
   detailModal.classList.add('open');
   document.body.style.overflow = 'hidden';
 }
@@ -803,9 +1074,89 @@ function showToast(msg) {
 }
 
 /* ════════════════════════════════════════════
+   LIGHTBOX
+   ════════════════════════════════════════════ */
+let _lbBookingId = null;
+let _lbImgs      = [];
+let _lbIdx       = 0;
+
+const lightbox   = document.getElementById('lightbox');
+const lbImg      = document.getElementById('lbImg');
+const lbFilename = document.getElementById('lbFilename');
+const lbCounter  = document.getElementById('lbCounter');
+const lbApproval = document.getElementById('lbApproval');
+const lbClose    = document.getElementById('lbClose');
+const lbPrev     = document.getElementById('lbPrev');
+const lbNext     = document.getElementById('lbNext');
+const lbDownload = document.getElementById('lbDownload');
+
+function openLightbox(bookingId, imgs, idx) {
+  _lbBookingId = bookingId;
+  _lbImgs      = imgs;
+  _lbIdx       = idx;
+  renderLightboxFrame();
+  lightbox.classList.add('open');
+}
+
+function renderLightboxFrame() {
+  const img = _lbImgs[_lbIdx];
+  if (!img) return;
+  lbImg.src       = img.url;
+  lbImg.alt       = img.name;
+  lbFilename.textContent = img.name;
+  lbCounter.textContent  = `${_lbIdx + 1} / ${_lbImgs.length}`;
+
+  // Approval status
+  const approvals = (getApprovals()[_lbBookingId]) || {};
+  const status    = approvals[img.id];
+  lbApproval.className = 'lightbox__approval-label';
+  if (status === 'keep') {
+    lbApproval.classList.add('lightbox__approval-label--keep');
+    lbApproval.textContent = 'Client: Keep';
+  } else if (status === 'remove') {
+    lbApproval.classList.add('lightbox__approval-label--remove');
+    lbApproval.textContent = 'Client: Remove';
+  } else {
+    lbApproval.classList.add('lightbox__approval-label--none');
+    lbApproval.textContent = 'No client selection';
+  }
+
+  // Arrow visibility
+  lbPrev.style.visibility = _lbIdx > 0 ? 'visible' : 'hidden';
+  lbNext.style.visibility = _lbIdx < _lbImgs.length - 1 ? 'visible' : 'hidden';
+}
+
+function closeLightbox() {
+  lightbox.classList.remove('open');
+  lbImg.src = '';
+}
+
+lbClose.addEventListener('click', closeLightbox);
+lbPrev.addEventListener('click',  () => { if (_lbIdx > 0) { _lbIdx--; renderLightboxFrame(); } });
+lbNext.addEventListener('click',  () => { if (_lbIdx < _lbImgs.length - 1) { _lbIdx++; renderLightboxFrame(); } });
+lbDownload.addEventListener('click', () => {
+  const img = _lbImgs[_lbIdx];
+  if (img) downloadDataUrl(img.url, img.name);
+});
+
+// Click outside image area closes lightbox
+lightbox.addEventListener('click', e => {
+  if (e.target === lightbox || e.target.classList.contains('lightbox__body')) closeLightbox();
+});
+
+/* ════════════════════════════════════════════
    KEYBOARD + CROSS-TAB SYNC
    ════════════════════════════════════════════ */
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeDetail(); closeReportsModal(); } });
+document.addEventListener('keydown', e => {
+  if (lightbox.classList.contains('open')) {
+    e.stopPropagation();
+    if (e.key === 'Escape')     { closeLightbox(); return; }
+    if (e.key === 'ArrowLeft')  { if (_lbIdx > 0) { _lbIdx--; renderLightboxFrame(); } return; }
+    if (e.key === 'ArrowRight') { if (_lbIdx < _lbImgs.length - 1) { _lbIdx++; renderLightboxFrame(); } return; }
+    return;
+  }
+  if (e.key === 'Escape') { closeDetail(); closeReportsModal(); }
+});
 window.addEventListener('storage', e => {
   if (!isAdminAuthed()) return;
   if (e.key === STORAGE_KEY) renderBookings();

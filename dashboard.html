@@ -438,6 +438,154 @@
       .report-item__body { font-size:0.82rem; color:var(--grey-2); line-height:1.6; white-space:pre-wrap; }
       .no-reports { text-align:center; padding:32px 16px; color:var(--grey-3); font-size:0.85rem; }
 
+      /* ── Client Gallery ── */
+      .gallery-section { margin-top:24px; border-top:1px solid var(--border); padding-top:20px; }
+      .gallery-section__header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; gap:8px; flex-wrap:wrap; }
+      .gallery-section__title { font-size:0.72rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--grey-3); }
+      .gallery-section__actions { display:flex; align-items:center; gap:6px; }
+      .gallery-btn {
+        font-size:0.68rem; font-weight:600; letter-spacing:0.06em; text-transform:uppercase;
+        padding:5px 10px; border-radius:6px; border:1px solid var(--border-l);
+        background:var(--bg-3); color:var(--grey-2); cursor:pointer; transition:var(--trans);
+        display:flex; align-items:center; gap:5px;
+      }
+      .gallery-btn svg { width:12px; height:12px; flex-shrink:0; }
+      .gallery-btn:hover { border-color:var(--gold); color:var(--gold); }
+      .gallery-btn.active { background:var(--gold); color:#000; border-color:var(--gold); }
+      .gallery-btn:disabled { opacity:.35; pointer-events:none; }
+      .gallery-dropzone {
+        border:2px dashed var(--border-l); border-radius:10px; padding:24px 16px;
+        text-align:center; cursor:pointer; transition:var(--trans); position:relative;
+      }
+      .gallery-dropzone:hover, .gallery-dropzone.drag-over {
+        border-color:var(--gold); background:var(--gold-glow);
+      }
+      .gallery-dropzone input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+      .gallery-dropzone__icon { width:32px; height:32px; margin:0 auto 8px; color:var(--grey-3); }
+      .gallery-dropzone__label { font-size:0.82rem; color:var(--grey-2); }
+      .gallery-dropzone__sub { font-size:0.72rem; color:var(--grey-4); margin-top:4px; }
+      .gallery-progress-list { display:flex; flex-direction:column; gap:8px; margin-top:12px; }
+      .gallery-progress-item { background:var(--bg-3); border:1px solid var(--border); border-radius:8px; padding:10px 12px; }
+      .gallery-progress-item__name { font-size:0.78rem; color:var(--grey-1); margin-bottom:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .gallery-progress-bar { height:4px; background:var(--bg-4); border-radius:2px; overflow:hidden; }
+      .gallery-progress-bar__fill { height:100%; background:var(--gold); border-radius:2px; transition:width 0.1s linear; }
+      .gallery-progress-item__pct { font-size:0.68rem; color:var(--grey-3); margin-top:4px; text-align:right; }
+      .gallery-progress-item.done .gallery-progress-bar__fill { background:var(--green); }
+      .gallery-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:14px; }
+      .gallery-thumb { position:relative; aspect-ratio:1; border-radius:6px; overflow:hidden; background:var(--bg-3); border:1px solid var(--border); cursor:pointer; }
+      .gallery-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+      .gallery-thumb__overlay {
+        position:absolute; inset:0; display:flex; align-items:flex-end; justify-content:flex-end;
+        padding:5px; gap:4px; opacity:0; transition:opacity 0.15s; background:linear-gradient(to top, rgba(0,0,0,.5) 0%, transparent 60%);
+      }
+      .gallery-thumb:hover .gallery-thumb__overlay { opacity:1; }
+      .gallery-thumb__btn {
+        width:22px; height:22px; background:rgba(0,0,0,.75); border:none; border-radius:50%;
+        cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+        transition:background 0.15s;
+      }
+      .gallery-thumb__btn:hover { background:var(--gold); }
+      .gallery-thumb__btn svg { width:11px; height:11px; color:#fff; }
+      .gallery-thumb__btn.del:hover { background:#e53e3e; }
+      /* select mode */
+      .gallery-thumb__check {
+        position:absolute; top:5px; left:5px; width:18px; height:18px;
+        background:rgba(0,0,0,.6); border:2px solid rgba(255,255,255,.5); border-radius:4px;
+        display:none; align-items:center; justify-content:center;
+      }
+      .gallery-grid.select-mode .gallery-thumb__check { display:flex; }
+      .gallery-grid.select-mode .gallery-thumb__overlay { display:none; }
+      .gallery-thumb.selected .gallery-thumb__check { background:var(--gold); border-color:var(--gold); }
+      .gallery-thumb.selected { outline:2px solid var(--gold); }
+      .gallery-thumb__check svg { width:10px; height:10px; color:#000; display:none; }
+      .gallery-thumb.selected .gallery-thumb__check svg { display:block; }
+      .gallery-empty { text-align:center; padding:16px; color:var(--grey-4); font-size:0.78rem; }
+      .gallery-count { font-size:0.72rem; color:var(--grey-3); }
+
+      /* ── Approval badges ── */
+      .gallery-thumb__approval {
+        position:absolute; bottom:5px; left:5px;
+        width:20px; height:20px; border-radius:50%;
+        display:flex; align-items:center; justify-content:center;
+        font-size:11px; font-weight:700; pointer-events:none; z-index:2;
+      }
+      .gallery-thumb__approval--keep  { background:var(--green); color:#000; }
+      .gallery-thumb__approval--remove { background:var(--red); color:#fff; }
+
+      /* ── Watermark overlay ── */
+      .gallery-grid.watermark-on .gallery-thumb::after {
+        content: 'NEJstudios';
+        position: absolute; inset: 0;
+        display: flex; align-items: center; justify-content: center;
+        font-family: var(--serif); font-size: 0.75rem; font-weight: 600;
+        color: rgba(255,255,255,0.55); letter-spacing: 0.12em; text-transform: uppercase;
+        transform: rotate(-30deg);
+        pointer-events: none; z-index: 3;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+      }
+
+      /* ── Lightbox ── */
+      .lightbox {
+        position: fixed; inset: 0; z-index: 99000;
+        background: rgba(0,0,0,0.96);
+        display: flex; flex-direction: column;
+        opacity: 0; pointer-events: none; transition: opacity 0.2s;
+      }
+      .lightbox.open { opacity: 1; pointer-events: all; }
+      .lightbox__topbar {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 14px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+      }
+      .lightbox__filename {
+        font-size: 0.85rem; color: var(--grey-1); font-family: var(--sans);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%;
+      }
+      .lightbox__counter { font-size: 0.78rem; color: var(--grey-3); flex-shrink: 0; }
+      .lightbox__close {
+        width: 32px; height: 32px; border-radius: 50%;
+        background: var(--bg-3); border: 1px solid var(--border);
+        display: flex; align-items: center; justify-content: center;
+        color: var(--grey-2); transition: var(--trans); flex-shrink: 0;
+      }
+      .lightbox__close:hover { background: var(--gold); color: #000; }
+      .lightbox__close svg { width: 14px; height: 14px; }
+      .lightbox__body {
+        flex: 1; display: flex; align-items: center; justify-content: center;
+        position: relative; overflow: hidden; min-height: 0;
+      }
+      .lightbox__img {
+        max-width: 100%; max-height: 100%; object-fit: contain;
+        border-radius: 4px; display: block;
+      }
+      .lightbox__arrow {
+        position: absolute; top: 50%; transform: translateY(-50%);
+        width: 44px; height: 44px; border-radius: 50%;
+        background: rgba(0,0,0,0.7); border: 1px solid var(--border);
+        display: flex; align-items: center; justify-content: center;
+        color: var(--white); font-size: 1.2rem; transition: var(--trans); z-index: 2;
+      }
+      .lightbox__arrow:hover { background: var(--gold); color: #000; border-color: var(--gold); }
+      .lightbox__arrow--prev { left: 16px; }
+      .lightbox__arrow--next { right: 16px; }
+      .lightbox__arrow svg { width: 20px; height: 20px; }
+      .lightbox__footer {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 12px 20px; border-top: 1px solid var(--border); flex-shrink: 0; gap: 12px;
+      }
+      .lightbox__approval-label {
+        font-size: 0.78rem; font-weight: 600; letter-spacing: 0.06em;
+        padding: 4px 10px; border-radius: 99px;
+      }
+      .lightbox__approval-label--keep   { background: var(--green-bg); color: var(--green); }
+      .lightbox__approval-label--remove { background: var(--red-bg); color: var(--red); }
+      .lightbox__approval-label--none   { color: var(--grey-4); font-size: 0.72rem; }
+      .lightbox__dl {
+        padding: 8px 18px; background: var(--gold); color: #000; font-weight: 700;
+        font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase;
+        border-radius: 6px; transition: var(--trans); border: none;
+      }
+      .lightbox__dl:hover { background: var(--gold-lt); }
+
       /* ── Toast ── */
       .toast { position:fixed; bottom:28px; right:28px; z-index:99999; background:var(--bg-2); border:1px solid var(--border); border-left:3px solid var(--gold); border-radius:8px; padding:14px 20px; font-size:0.85rem; color:var(--grey-1); transform:translateY(16px); opacity:0; transition:var(--trans); pointer-events:none; max-width:320px; }
       .toast.show { transform:translateY(0); opacity:1; }
@@ -816,9 +964,34 @@
       </div>
     </div>
 
+    <!-- Lightbox -->
+    <div class="lightbox" id="lightbox">
+      <div class="lightbox__topbar">
+        <div class="lightbox__filename" id="lbFilename"></div>
+        <div class="lightbox__counter" id="lbCounter"></div>
+        <button class="lightbox__close" id="lbClose">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="lightbox__body">
+        <button class="lightbox__arrow lightbox__arrow--prev" id="lbPrev">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <img class="lightbox__img" id="lbImg" src="" alt="" />
+        <button class="lightbox__arrow lightbox__arrow--next" id="lbNext">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 6 15 12 9 18"/></svg>
+        </button>
+      </div>
+      <div class="lightbox__footer">
+        <div class="lightbox__approval-label lightbox__approval-label--none" id="lbApproval"></div>
+        <button class="lightbox__dl" id="lbDownload">↓ Download</button>
+      </div>
+    </div>
+
     <!-- Toast -->
     <div class="toast" id="toast"></div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="js/dashboard.js"></script>
   </body>
 </html>
