@@ -190,7 +190,7 @@ function initCMS() {
 
   // Save buttons
   document.querySelectorAll('[data-save]').forEach(btn => {
-    btn.addEventListener('click', () => saveSection(btn.dataset.save));
+    btn.addEventListener('click', () => saveSection(btn.dataset.save).catch(e => console.error(e)));
   });
 
   // Reset links
@@ -235,6 +235,13 @@ function populateHero() {
     document.getElementById(id)?.addEventListener('input', updateHeroPreview);
   });
   document.getElementById('hero-bg')?.addEventListener('input', updateBgPreview);
+  document.getElementById('hero-bg-file')?.addEventListener('change', async () => {
+    const url = await resolveImageUrl('hero-bg-file', 'hero-bg');
+    if (url) {
+      const img = document.getElementById('hero-bg-preview');
+      if (img) { img.src = url; img.classList.add('show'); }
+    }
+  });
 }
 
 function updateHeroPreview() {
@@ -626,9 +633,10 @@ function clearForm(ids) {
 }
 
 /* ── SAVE SECTIONS ── */
-function saveSection(key) {
+async function saveSection(key) {
   switch (key) {
     case 'hero': {
+      const heroBg = await resolveImageUrl('hero-bg-file', 'hero-bg');
       cmsData.hero = {
         eyebrow: val('hero-eyebrow'),
         line1: val('hero-line1'),
@@ -637,8 +645,9 @@ function saveSection(key) {
         sub: val('hero-sub'),
         cta1: val('hero-cta1'),
         cta2: val('hero-cta2'),
-        bg: val('hero-bg'),
+        bg: heroBg || val('hero-bg'),
       };
+      const fi = document.getElementById('hero-bg-file'); if (fi) fi.value = '';
       break;
     }
     case 'services': {
@@ -743,22 +752,39 @@ function resetSection(key) {
 /* ── FILE UPLOAD HELPER ── */
 /**
  * readFileAsDataURL(fileInputId) → Promise<string|null>
- * Converts a selected image file to a base64 data URL.
- * Returns null if no file is selected.
+ * Compresses and converts a selected image to a base64 data URL.
+ * Uses canvas to resize + compress so it fits in localStorage.
  */
 function readFileAsDataURL(fileInputId) {
   return new Promise((resolve) => {
     const input = document.getElementById(fileInputId);
     if (!input || !input.files || !input.files[0]) { resolve(null); return; }
     const file = input.files[0];
-    if (!file.type.startsWith('image/')) { toast('Please select an image file (JPG, PNG, WEBP)', 'err'); resolve(null); return; }
-    if (file.size > 3 * 1024 * 1024) {
-      toast('Image is larger than 3 MB — please use a URL instead for large files.', 'err');
+    if (!file.type.startsWith('image/')) {
+      toast('Please select an image file (JPG, PNG, WEBP)', 'err');
       resolve(null); return;
     }
     const reader = new FileReader();
-    reader.onload  = (e) => resolve(e.target.result);
-    reader.onerror = ()  => { toast('Could not read file.', 'err'); resolve(null); };
+    reader.onerror = () => { toast('Could not read file.', 'err'); resolve(null); };
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onerror = () => { toast('Could not load image.', 'err'); resolve(null); };
+      img.onload = () => {
+        // Resize to max 1600px on longest side
+        const MAX = 1600;
+        let { width, height } = img;
+        if (width > MAX || height > MAX) {
+          if (width > height) { height = Math.round(height * MAX / width); width = MAX; }
+          else { width = Math.round(width * MAX / height); height = MAX; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        // Compress to JPEG at 75% quality
+        resolve(canvas.toDataURL('image/jpeg', 0.75));
+      };
+      img.src = e.target.result;
+    };
     reader.readAsDataURL(file);
   });
 }

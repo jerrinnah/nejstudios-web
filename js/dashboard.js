@@ -3,11 +3,10 @@
    Auth: username+PIN multi-role · Bookings · Tasks · Team
    ══════════════════════════════════════════════ */
 
-const ADMIN_PIN     = 'nej2026';      // ← change this
-const STORAGE_KEY   = 'nej_bookings';
-const TASKS_KEY     = 'nej_tasks';
-const TEAM_KEY      = 'nej_team';
-const SESSION_KEY   = 'nej_session';
+const ADMIN_PIN   = 'nej2026';      // ← change this
+const STORAGE_KEY = 'nej_bookings';
+const TEAM_KEY    = 'nej_team';
+const SESSION_KEY = 'nej_session';
 
 /* ════════════════════════════════════════════
    TEAM CONFIG  ← add / edit team members here
@@ -27,8 +26,6 @@ const TEAM_CONFIG = [
    ════════════════════════════════════════════ */
 function getBookings()     { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
 function saveBookings(arr) { localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); }
-function getTasks()        { return JSON.parse(localStorage.getItem(TASKS_KEY) || '[]'); }
-function saveTasks(arr)    { localStorage.setItem(TASKS_KEY, JSON.stringify(arr)); }
 function saveTeam(arr)     { localStorage.setItem(TEAM_KEY, JSON.stringify(arr)); }
 
 // Merges hardcoded TEAM_CONFIG with members added via the UI (localStorage).
@@ -57,7 +54,7 @@ function setSession(obj) {
    SEED DEMO BOOKINGS
    ════════════════════════════════════════════ */
 function seedIfEmpty() {
-  if (getBookings().length > 0) return;
+  if (localStorage.getItem('nej_bookings_seeded')) return;
   const now = Date.now(), day = 86400000;
   const demos = [
     { bookingKind:'studio', firstName:'Amaka',  middleName:'Chioma',  clientName:'Amaka Chioma',  phone:'+234 801 000 0001', email:'amaka@example.com',  sessionType:'Birthday', status:'pending',   createdAt: now - day*0 },
@@ -70,6 +67,21 @@ function seedIfEmpty() {
     { bookingKind:'event', firstName:'Emeka', lastName:'Obi', clientName:'Emeka Obi', phone:'+234 808 000 0008', email:'emeka@example.com', eventType:'corporate-event', package:'essential', eventDate:'2026-05-28', location:'Abuja', budget:'150-350', deliverables:'4-hour event coverage, recap video.', status:'pending', createdAt: now - day*0 },
   ];
   saveBookings(demos.map(b => ({ id: 'NEJ-' + Math.random().toString(36).slice(2,8).toUpperCase(), ...b })));
+  localStorage.setItem('nej_bookings_seeded', '1');
+}
+
+/* ════════════════════════════════════════════
+   PUSH NOTIFICATIONS
+   ════════════════════════════════════════════ */
+function requestNotifPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+function notify(title, body) {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification(title, { body, icon: '/favicon.ico' });
+  }
 }
 
 /* ════════════════════════════════════════════
@@ -134,6 +146,7 @@ function showDash() {
   seedIfEmpty();
   renderBookings();
   renderTasksBadge();
+  requestNotifPermission();
 }
 
 function tryLogin() {
@@ -215,11 +228,14 @@ function switchTab(name) {
   // Mobile bottom nav
   document.querySelectorAll('.mobile-bottom-nav [data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   // Header title
-  const titles = { bookings:'All Bookings', tasks:'Task Management', team:'Team Members' };
+  const titles = { bookings:'All Bookings', schedule:'Schedule', tasks:'Task Management', team:'Team Members', gallery:'Gallery Links', summary:'Daily Summary' };
   document.getElementById('headerTitle').textContent = titles[name] || 'Dashboard';
   // Load panel content
-  if (name === 'tasks')  renderTasks();
-  if (name === 'team')   renderTeam();
+  if (name === 'schedule') renderAdminSchedule();
+  if (name === 'tasks')    renderTasks();
+  if (name === 'team')     renderTeam();
+  if (name === 'gallery')  renderGalleryPanel();
+  if (name === 'summary')  renderDailySummary();
   closeSidebar();
 }
 
@@ -262,8 +278,14 @@ function actionButtons(b) {
   if (b.status === 'confirmed') {
     btns.push(`<button class="action-btn action-btn--complete" data-id="${b.id}" data-action="completed">Mark Done</button>`);
     btns.push(`<button class="action-btn action-btn--cancel"   data-id="${b.id}" data-action="cancelled">Cancel</button>`);
+    btns.push(`<button class="action-btn" style="border-color:var(--gold);color:var(--gold)" data-id="${b.id}" data-action="invoice">Invoice</button>`);
   }
-  if (['cancelled','completed'].includes(b.status)) {
+  if (b.status === 'completed') {
+    btns.push(`<button class="action-btn action-btn--pending"  data-id="${b.id}" data-action="pending">Reopen</button>`);
+    btns.push(`<button class="action-btn" style="border-color:var(--gold);color:var(--gold)" data-id="${b.id}" data-action="invoice">Invoice</button>`);
+    btns.push(`<button class="action-btn" style="border-color:var(--green);color:var(--green)" data-id="${b.id}" data-action="send-gallery">Gallery</button>`);
+  }
+  if (b.status === 'cancelled') {
     btns.push(`<button class="action-btn action-btn--pending"  data-id="${b.id}" data-action="pending">Reopen</button>`);
   }
   btns.push(`<button class="action-btn action-btn--delete" data-id="${b.id}" data-action="delete">Delete</button>`);
@@ -347,14 +369,43 @@ function renderBookings() {
   });
 }
 
-function handleBookingAction(id, action) {
-  if (action === 'detail') { openDetail(id); return; }
-  if (action === 'delete') { deleteBooking(id); return; }
+async function handleBookingAction(id, action) {
+  if (action === 'detail')       { openDetail(id);      return; }
+  if (action === 'delete')       { deleteBooking(id);   return; }
+  if (action === 'invoice')      { openInvoice(id);     return; }
+  if (action === 'send-gallery') { openSendGallery(id); return; }
   const bookings = getBookings(), idx = bookings.findIndex(b => b.id === id);
   if (idx === -1) return;
   bookings[idx].status = action;
   saveBookings(bookings);
-  showToast(`${bookings[idx].clientName} marked as ${STATUS_LABELS[action]}`);
+
+  // When confirmed, push to Supabase schedule so team can see it
+  if (action === 'confirmed') {
+    const b = bookings[idx];
+    const EVENT_MAP = {
+      'white-wedding':'wedding', 'traditional-wedding':'wedding',
+      'brand-film':'production', 'corporate-event':'event',
+      'music-video':'production', 'documentary':'production',
+      'birthday':'event', 'other-event':'event'
+    };
+    const schedType = b.bookingKind === 'event' ? (EVENT_MAP[b.eventType] || 'event') : 'studio';
+    const entry = {
+      id:         'BK-' + id,
+      title:      b.clientName + (b.sessionType ? ` — ${b.sessionType}` : b.eventType ? ` — ${EVENT_TYPE_LABELS[b.eventType] || b.eventType}` : ''),
+      date:       b.eventDate || new Date().toISOString().slice(0, 10),
+      time:       b.sessionTime || null,
+      type:       schedType,
+      clientName: b.clientName,
+      location:   b.location || null,
+      notes:      b.deliverables || null,
+      createdAt:  Date.now(),
+    };
+    await dbAddScheduleEntry(entry);
+    showToast(`${b.clientName} confirmed — added to team schedule ✓`);
+  } else {
+    showToast(`${bookings[idx].clientName} marked as ${STATUS_LABELS[action]}`);
+  }
+
   renderBookings();
 }
 
@@ -454,6 +505,393 @@ modalClose.addEventListener('click', closeDetail);
 modalBackdrop.addEventListener('click', closeDetail);
 
 /* ════════════════════════════════════════════
+   INVOICE GENERATOR
+   ════════════════════════════════════════════ */
+
+function openInvoice(id) {
+  const b = getBookings().find(b => b.id === id);
+  if (!b) return;
+
+  const isEvent    = b.bookingKind === 'event';
+  const invoiceNum = 'INV-' + id;
+  const now        = new Date();
+  const issued     = now.toLocaleDateString('en-NG', { dateStyle:'long' });
+  const due        = new Date(now.getTime() + 7 * 86400000).toLocaleDateString('en-NG', { dateStyle:'long' });
+
+  // Item description
+  let itemDesc, itemPrice;
+  if (isEvent) {
+    const typeLabel   = EVENT_TYPE_LABELS[b.eventType] || b.eventType || 'Event';
+    const pkgLabel    = b.package ? ` — ${b.package.charAt(0).toUpperCase() + b.package.slice(1)} Package` : '';
+    itemDesc  = typeLabel + pkgLabel;
+    itemPrice = BUDGET_LABELS[b.budget] || b.budget || '—';
+  } else {
+    const emoji  = SESSION_EMOJI[b.sessionType] || '';
+    itemDesc  = `${emoji} ${b.sessionType || 'Studio'} Session`.trim();
+    itemPrice = '—';
+  }
+
+  const deliverables = b.deliverables || (isEvent ? '' : '');
+
+  document.getElementById('invoiceBody').innerHTML = `
+    <div class="inv-header">
+      <div>
+        <div class="inv-logo-name"><span>NEJ</span>studios</div>
+        <div class="inv-tagline">Premium Photography &amp; Film Production</div>
+      </div>
+      <div class="inv-title-block">
+        <h1>Invoice</h1>
+        <div class="inv-number">${invoiceNum}</div>
+      </div>
+    </div>
+
+    <div class="inv-meta">
+      <div class="inv-meta-block">
+        <h4>Billed To</h4>
+        <p>
+          <strong>${b.clientName || '—'}</strong><br/>
+          ${b.phone  ? b.phone  + '<br/>' : ''}
+          ${b.email  ? b.email  + '<br/>' : ''}
+          ${isEvent && b.location ? b.location : ''}
+        </p>
+      </div>
+      <div class="inv-meta-block">
+        <h4>Invoice Details</h4>
+        <p>
+          <strong>Invoice #:</strong> ${invoiceNum}<br/>
+          <strong>Booking ID:</strong> ${id}<br/>
+          <strong>Date Issued:</strong> ${issued}<br/>
+          <strong>Due Date:</strong> ${due}<br/>
+          <strong>Status:</strong> ${STATUS_LABELS[b.status] || b.status}
+        </p>
+      </div>
+    </div>
+
+    <table class="inv-table">
+      <thead>
+        <tr>
+          <th style="width:50%">Description</th>
+          <th>Qty</th>
+          <th>Unit Price</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>${itemDesc}</td>
+          <td>1</td>
+          <td>${itemPrice}</td>
+          <td>${itemPrice}</td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="3" style="text-align:right;font-size:0.82rem;color:#555;letter-spacing:0.08em;text-transform:uppercase">Total Due</td>
+          <td>${itemPrice}</td>
+        </tr>
+      </tfoot>
+    </table>
+
+    ${deliverables ? `
+    <div class="inv-section">
+      <h4>Agreed Deliverables</h4>
+      <p>${deliverables}</p>
+    </div>` : ''}
+
+    <div class="inv-section">
+      <h4>Payment Details</h4>
+      <p>
+        Bank: <strong>— (Admin: fill in bank details)</strong><br/>
+        Account Name: NEJstudios<br/>
+        Account Number: —<br/>
+        Reference: <strong>${invoiceNum}</strong>
+      </p>
+    </div>
+
+    <div class="inv-section">
+      <h4>Terms &amp; Notes</h4>
+      <p>Payment is due within 7 days of this invoice. All deliverables will be provided upon full payment. For queries, contact us directly.</p>
+    </div>
+
+    <div class="inv-footer">
+      <strong>Thank you for choosing NEJstudios!</strong><br/>
+      We appreciate your trust and look forward to delivering exceptional work.
+    </div>
+  `;
+
+  document.getElementById('invoiceModal').classList.add('open');
+}
+
+document.getElementById('invoiceClose').addEventListener('click', () => {
+  document.getElementById('invoiceModal').classList.remove('open');
+});
+document.getElementById('invoicePrint').addEventListener('click', () => {
+  window.print();
+});
+
+/* ════════════════════════════════════════════
+   GALLERY PANEL
+   ════════════════════════════════════════════ */
+
+function initGalleryForm() {
+  // Add file row
+  document.getElementById('btnAddFile').addEventListener('click', () => {
+    const row = document.createElement('div');
+    row.className = 'gallery-file-row';
+    row.innerHTML = `
+      <input class="form-input" type="text" placeholder="File label" data-file-label />
+      <input class="form-input" type="text" placeholder="Download URL" data-file-url />
+      <button type="button" class="btn-remove-file" title="Remove">✕</button>
+    `;
+    row.querySelector('.btn-remove-file').addEventListener('click', () => row.remove());
+    document.getElementById('galleryFilesList').appendChild(row);
+  });
+
+  // Remove buttons on existing rows
+  document.querySelectorAll('#galleryFilesList .btn-remove-file').forEach(btn => {
+    btn.addEventListener('click', () => btn.closest('.gallery-file-row').remove());
+  });
+
+  // Create gallery link
+  document.getElementById('btnCreateGallery').addEventListener('click', createGalleryLink);
+}
+
+async function createGalleryLink() {
+  const clientName = document.getElementById('galleryClientName').value.trim();
+  if (!clientName) { showToast('Client name is required'); return; }
+
+  const bookingId  = document.getElementById('galleryBookingId').value.trim() || null;
+  const password   = document.getElementById('galleryPassword').value.trim()  || null;
+  const expiry     = document.getElementById('galleryExpiry').value           || null;
+
+  // Collect files
+  const files = [];
+  document.querySelectorAll('#galleryFilesList .gallery-file-row').forEach(row => {
+    const label = row.querySelector('[data-file-label]').value.trim();
+    const url   = row.querySelector('[data-file-url]').value.trim();
+    if (label && url) files.push({ label, url });
+  });
+
+  const token = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10);
+  const delivery = {
+    id:             'GAL-' + Math.random().toString(36).slice(2, 8).toUpperCase(),
+    booking_id:     bookingId,
+    client_name:    clientName,
+    token,
+    password,
+    files,
+    expires_at:     expiry || null,
+    download_count: 0,
+    created_at:     Date.now(),
+  };
+
+  await dbCreateGalleryDelivery(delivery);
+  showToast(`Gallery link created for ${clientName}`);
+
+  // Reset form
+  document.getElementById('galleryClientName').value = '';
+  document.getElementById('galleryBookingId').value  = '';
+  document.getElementById('galleryPassword').value   = '';
+  document.getElementById('galleryExpiry').value     = '';
+  const list = document.getElementById('galleryFilesList');
+  list.innerHTML = `
+    <div class="gallery-file-row">
+      <input class="form-input" type="text" placeholder="File label" data-file-label />
+      <input class="form-input" type="text" placeholder="Download URL" data-file-url />
+      <button type="button" class="btn-remove-file" title="Remove">✕</button>
+    </div>`;
+  list.querySelector('.btn-remove-file').addEventListener('click', e => e.target.closest('.gallery-file-row').remove());
+
+  await renderGalleryPanel();
+}
+
+async function renderGalleryPanel() {
+  const grid = document.getElementById('galleryLinksGrid');
+  if (!grid) return;
+
+  grid.innerHTML = '<p style="color:var(--grey-3);font-size:0.85rem">Loading…</p>';
+  const deliveries = await dbGetAllGalleryDeliveries();
+
+  if (deliveries.length === 0) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><h3>No gallery links yet</h3><p>Create your first gallery link using the form.</p></div>`;
+    return;
+  }
+
+  grid.innerHTML = deliveries.map(d => {
+    const galleryUrl = `${location.origin}/gallery?t=${d.token}`;
+    const expired    = d.expires_at && d.expires_at < new Date().toISOString().slice(0, 10);
+    return `
+      <div class="gallery-link-card">
+        <div class="gallery-link-card__top">
+          <div>
+            <div class="gallery-link-card__name">${d.client_name}</div>
+            <div class="gallery-link-card__meta">
+              ${d.booking_id ? `Booking: ${d.booking_id} · ` : ''}
+              ${d.files ? d.files.length : 0} file${(d.files && d.files.length !== 1) ? 's' : ''} ·
+              ${d.download_count} download${d.download_count !== 1 ? 's' : ''}
+              ${d.expires_at ? ` · Expires: ${d.expires_at}` : ''}
+              ${expired ? ' · <span style="color:var(--red)">EXPIRED</span>' : ''}
+              ${d.password ? ' · 🔒 Password protected' : ''}
+            </div>
+          </div>
+        </div>
+        <div class="gallery-link-card__url">
+          <a href="${galleryUrl}" target="_blank">${galleryUrl}</a>
+          <button class="btn-copy-link" data-copy="${galleryUrl}">Copy</button>
+        </div>
+        <div class="gallery-link-card__actions">
+          <button class="btn-del-gallery" data-gal-id="${d.id}" data-gal-name="${d.client_name}">Delete</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  grid.querySelectorAll('.btn-copy-link').forEach(btn => {
+    btn.addEventListener('click', () => {
+      navigator.clipboard.writeText(btn.dataset.copy)
+        .then(() => showToast('Gallery link copied!'))
+        .catch(() => prompt('Copy this link:', btn.dataset.copy));
+    });
+  });
+
+  grid.querySelectorAll('.btn-del-gallery').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm(`Delete gallery link for ${btn.dataset.galName}?`)) return;
+      await dbDeleteGalleryDelivery(btn.dataset.galId);
+      await renderGalleryPanel();
+      showToast('Gallery link deleted');
+    });
+  });
+}
+
+function openSendGallery(bookingId) {
+  const b = getBookings().find(b => b.id === bookingId);
+  if (!b) return;
+  // Pre-fill form
+  document.getElementById('galleryClientName').value = b.clientName || '';
+  document.getElementById('galleryBookingId').value  = bookingId;
+  // Switch to gallery tab
+  switchTab('gallery');
+  showToast(`Pre-filled gallery form for ${b.clientName}`);
+}
+
+// Init gallery form once DOM is ready
+initGalleryForm();
+
+/* ════════════════════════════════════════════
+   SCHEDULE
+   ════════════════════════════════════════════ */
+
+// Toggle form
+const schedCreateToggle = document.getElementById('schedCreateToggle');
+const schedCreateBody   = document.getElementById('schedCreateBody');
+schedCreateToggle.addEventListener('click', () => {
+  const open = schedCreateBody.classList.toggle('open');
+  schedCreateToggle.classList.toggle('open', open);
+});
+
+// Submit form
+document.getElementById('schedForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const title        = document.getElementById('schedTitle').value.trim();
+  const date         = document.getElementById('schedDate').value;
+  const time         = document.getElementById('schedTime').value;
+  const type         = document.getElementById('schedType').value;
+  const client       = document.getElementById('schedClient').value.trim();
+  const location     = document.getElementById('schedLocation').value.trim();
+  const notes        = document.getElementById('schedNotes').value.trim();
+  const deliverables = document.getElementById('schedDeliverables').value.trim();
+  if (!title || !date) return;
+
+  const entry = {
+    id:           'SCH-' + Math.random().toString(36).slice(2,8).toUpperCase(),
+    title, date, type,
+    time:         time         || null,
+    clientName:   client       || null,
+    location:     location     || null,
+    notes:        notes        || null,
+    deliverables: deliverables || null,
+    createdAt:    Date.now(),
+  };
+
+  await dbAddScheduleEntry(entry);
+  e.target.reset();
+  schedCreateBody.classList.remove('open');
+  schedCreateToggle.classList.remove('open');
+  await renderAdminSchedule();
+  showToast('Added to schedule — team can see it now');
+});
+
+async function renderAdminSchedule() {
+  const grid = document.getElementById('adminScheduleGrid');
+  if (!grid) return;
+  const sched = (await dbGetSchedule()).slice().sort((a, b) => a.date.localeCompare(b.date));
+
+  if (sched.length === 0) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <h3>No schedule entries yet</h3>
+      <p>Add upcoming shoots and events above — they'll appear on the team portal.</p>
+    </div>`;
+    return;
+  }
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const typeLabel = { studio:'Studio', wedding:'Wedding', event:'Event', production:'Production', meeting:'Meeting' };
+
+  grid.innerHTML = sched.map(s => {
+    const isPast = s.date < todayStr;
+    const d      = new Date(s.date + 'T00:00:00');
+    const dateStr = d.toLocaleDateString('en-NG', { dateStyle:'medium' });
+    const lbl    = typeLabel[s.type] || s.type;
+    return `
+      <div class="task-card${isPast ? ' task-card--completed' : ''}">
+        <div class="task-card__top">
+          <div class="task-card__badges">
+            <span class="priority-badge priority-badge--${s.type === 'meeting' ? 'low' : s.type === 'studio' ? 'medium' : 'high'}">${lbl}</span>
+            ${isPast ? '<span class="status-badge status-badge--completed">Past</span>' : '<span class="status-badge status-badge--pending">Upcoming</span>'}
+          </div>
+        </div>
+        <div class="task-card__title">${s.title}</div>
+        <div class="task-card__info">
+          <div class="task-info-row">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <strong>${dateStr}${s.time ? ' · ' + s.time : ''}</strong>
+          </div>
+          ${s.clientName ? `<div class="task-info-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>${s.clientName}</div>` : ''}
+          ${s.location   ? `<div class="task-info-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>${s.location}</div>` : ''}
+        </div>
+        ${s.notes ? `<div class="task-reports-preview">${s.notes}</div>` : ''}
+        ${s.deliverables ? `<div class="task-reports-preview" style="margin-top:6px"><strong style="color:var(--gold-lt);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em">Deliverables:</strong> ${s.deliverables}</div>` : ''}
+        ${(() => {
+          const cl = s.checklist || [];
+          if (cl.length === 0) return '';
+          const done = cl.filter(item => typeof item === 'object' ? item.checked : false).length;
+          const total = cl.length;
+          const pct = Math.round((done / total) * 100);
+          return `<div style="margin-top:10px;padding:8px 10px;background:var(--bg-3);border:1px solid var(--border);border-radius:6px;font-size:0.75rem;color:var(--grey-3)">
+            Checklist: <strong style="color:${done===total?'var(--green)':'var(--white)'}">${done}/${total}</strong> items done
+            <div style="margin-top:6px;height:4px;background:var(--border);border-radius:99px;overflow:hidden">
+              <div style="height:100%;width:${pct}%;background:${done===total?'var(--green)':'var(--gold)'};border-radius:99px;transition:width 0.3s"></div>
+            </div>
+          </div>`;
+        })()}
+        <div class="task-card__actions">
+          <button class="task-action-btn task-action-btn--delete" data-sched-id="${s.id}">Delete</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  grid.querySelectorAll('[data-sched-id]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Remove this schedule entry?')) return;
+      await dbDeleteScheduleEntry(btn.dataset.schedId);
+      await renderAdminSchedule();
+      showToast('Removed from schedule');
+    });
+  });
+}
+
+/* ════════════════════════════════════════════
    TASKS
    ════════════════════════════════════════════ */
 
@@ -466,7 +904,7 @@ taskCreateToggle.addEventListener('click', () => {
 });
 
 // Task form
-document.getElementById('taskForm').addEventListener('submit', e => {
+document.getElementById('taskForm').addEventListener('submit', async e => {
   e.preventDefault();
   const title    = document.getElementById('taskTitle').value.trim();
   const desc     = document.getElementById('taskDesc').value.trim();
@@ -474,29 +912,27 @@ document.getElementById('taskForm').addEventListener('submit', e => {
   const priority = document.getElementById('taskPriority').value;
   if (!title) return;
 
-  const team = getTeam();
+  const team   = getTeam();
   const member = team.find(m => m.id === assignee);
-  const task = {
-    id:          'TASK-' + Math.random().toString(36).slice(2,8).toUpperCase(),
+  const task   = {
+    id:           'TASK-' + Math.random().toString(36).slice(2,8).toUpperCase(),
     title, desc,
-    assignedTo:  assignee || null,
+    assignedTo:   assignee || null,
     assignedName: member ? member.name : null,
     priority,
-    status:      'pending',
-    createdAt:   Date.now(),
-    startedAt:   null,
-    completedAt: null,
-    reports:     [],
+    status:       'pending',
+    createdAt:    Date.now(),
+    startedAt:    null,
+    completedAt:  null,
+    reports:      [],
   };
 
-  const tasks = getTasks();
-  tasks.unshift(task);
-  saveTasks(tasks);
+  await dbAddTask(task);
   e.target.reset();
   taskCreateBody.classList.remove('open');
   taskCreateToggle.classList.remove('open');
-  renderTasks();
-  renderTasksBadge();
+  await renderTasks();
+  await renderTasksBadge();
   showToast('Task created');
 });
 
@@ -510,8 +946,8 @@ document.querySelectorAll('[data-task-status]').forEach(btn => {
   });
 });
 
-function renderTasks() {
-  let tasks = getTasks();
+async function renderTasks() {
+  let tasks = await dbGetTasks();
   if (activeTaskStatus !== 'all') tasks = tasks.filter(t => t.status === activeTaskStatus);
 
   const grid = document.getElementById('tasksGrid');
@@ -566,20 +1002,21 @@ function buildTaskCard(t) {
     </div>`;
 }
 
-function handleTaskAction(id, action) {
+async function handleTaskAction(id, action) {
   if (action === 'delete') {
     if (!confirm('Delete this task?')) return;
-    saveTasks(getTasks().filter(t => t.id !== id));
-    renderTasks(); renderTasksBadge();
+    await dbDeleteTask(id);
+    await renderTasks();
+    await renderTasksBadge();
     showToast('Task deleted');
     return;
   }
-  if (action === 'reports') { openReportsModal(id); return; }
+  if (action === 'reports')  { openReportsModal(id); return; }
   if (action === 'reassign') { openReassignModal(id); return; }
 }
 
-function renderTasksBadge() {
-  const count = getTasks().filter(t => t.status === 'pending').length;
+async function renderTasksBadge() {
+  const count = (await dbGetTasks()).filter(t => t.status === 'pending').length;
   const badge = document.getElementById('tabTasksBadge');
   const navCount = document.getElementById('navPendingTasks');
   const mnavBadge = document.getElementById('mnavTasksBadge');
@@ -598,8 +1035,8 @@ const reportsModalTitle   = document.getElementById('reportsModalTitle');
 const reportsModalClose   = document.getElementById('reportsModalClose');
 const reportsModalBack    = document.getElementById('reportsModalBackdrop');
 
-function openReportsModal(taskId) {
-  const task = getTasks().find(t => t.id === taskId);
+async function openReportsModal(taskId) {
+  const task = await dbGetTask(taskId);
   if (!task) return;
   reportsModalTitle.textContent = `Reports — ${task.title}`;
   if (!task.reports || task.reports.length === 0) {
@@ -625,27 +1062,24 @@ reportsModalBack.addEventListener('click', closeReportsModal);
 /* ════════════════════════════════════════════
    REASSIGN MODAL (inline prompt)
    ════════════════════════════════════════════ */
-function openReassignModal(taskId) {
-  const task = getTasks().find(t => t.id === taskId);
+async function openReassignModal(taskId) {
+  const task = await dbGetTask(taskId);
   if (!task) return;
   const team = getTeam();
   if (team.length === 0) { showToast('Add team members first'); return; }
 
-  // Build options string for prompt
   const options = ['0: Unassigned', ...team.map((m, i) => `${i+1}: ${m.name} (@${m.username})`)].join('\n');
-  const choice = prompt(`Reassign "${task.title}"\n\n${options}\n\nEnter number:`);
+  const choice  = prompt(`Reassign "${task.title}"\n\n${options}\n\nEnter number:`);
   if (choice === null) return;
   const idx = parseInt(choice, 10);
   if (isNaN(idx) || idx < 0 || idx > team.length) { showToast('Invalid choice'); return; }
 
   const member = idx === 0 ? null : team[idx - 1];
-  const tasks = getTasks();
-  const tIdx  = tasks.findIndex(t => t.id === taskId);
-  if (tIdx === -1) return;
-  tasks[tIdx].assignedTo   = member ? member.id : null;
-  tasks[tIdx].assignedName = member ? member.name : null;
-  saveTasks(tasks);
-  renderTasks();
+  await dbUpdateTask(taskId, {
+    assigned_to:   member ? member.id   : null,
+    assigned_name: member ? member.name : null,
+  });
+  await renderTasks();
   showToast(member ? `Assigned to ${member.name}` : 'Unassigned');
 }
 
@@ -714,8 +1148,9 @@ function cancelEdit() {
 
 document.getElementById('cancelEditBtn').addEventListener('click', cancelEdit);
 
-function renderTeam() {
-  const team = getTeam();
+async function renderTeam() {
+  const team     = getTeam();
+  const allTasks = await dbGetTasks();
   document.getElementById('teamCount').textContent = team.length;
   const grid = document.getElementById('teamGrid');
 
@@ -725,8 +1160,8 @@ function renderTeam() {
   }
 
   grid.innerHTML = team.map(m => {
-    const initials = m.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
-    const taskCount = getTasks().filter(t => t.assignedTo === m.id).length;
+    const initials  = m.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
+    const taskCount = allTasks.filter(t => t.assignedTo === m.id).length;
     return `
       <div class="member-card">
         <div class="member-avatar">${initials}</div>
@@ -778,14 +1213,12 @@ function editMember(id) {
   document.querySelector('.team-form-card').scrollIntoView({ behavior:'smooth', block:'nearest' });
 }
 
-function removeMember(id, name) {
+async function removeMember(id, name) {
   if (!confirm(`Remove ${name} from the team? Their tasks will become unassigned.`)) return;
-  // Unassign their tasks
-  const tasks = getTasks().map(t => t.assignedTo === id ? { ...t, assignedTo:null, assignedName:null } : t);
-  saveTasks(tasks);
+  await dbUnassignMemberTasks(id);
   saveTeam(getTeam().filter(m => m.id !== id));
-  renderTeam();
-  renderTasks();
+  await renderTeam();
+  await renderTasks();
   populateAssigneeSelect();
   showToast(`${name} removed`);
 }
@@ -805,10 +1238,278 @@ function showToast(msg) {
 /* ════════════════════════════════════════════
    KEYBOARD + CROSS-TAB SYNC
    ════════════════════════════════════════════ */
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeDetail(); closeReportsModal(); } });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeDetail();
+    closeReportsModal();
+    closeNewBookingModal();
+    document.getElementById('invoiceModal').classList.remove('open');
+  }
+});
 window.addEventListener('storage', e => {
   if (!isAdminAuthed()) return;
   if (e.key === STORAGE_KEY) renderBookings();
-  if (e.key === TASKS_KEY)   { renderTasks(); renderTasksBadge(); }
   if (e.key === TEAM_KEY)    renderTeam();
+});
+
+// Real-time sync: reflect changes made on other devices (e.g. team updating task status/reports)
+dbSubscribeTasks(payload => {
+  renderTasks();
+  renderTasksBadge();
+  // Push notifications for task status changes
+  if (payload && payload.new && payload.old) {
+    const n = payload.new;
+    const o = payload.old;
+    if (n.status === 'in-progress' && o.status === 'pending') {
+      notify('Task Started', (n.assigned_name || 'A team member') + ' started: ' + n.title);
+    }
+    if (n.status === 'completed' && o.status !== 'completed') {
+      notify('Task Completed', (n.assigned_name || 'A team member') + ' completed: ' + n.title);
+    }
+  }
+});
+dbSubscribeSchedule(() => { renderAdminSchedule(); });
+
+/* ════════════════════════════════════════════
+   DAILY SUMMARY
+   ════════════════════════════════════════════ */
+async function renderDailySummary() {
+  const container = document.getElementById('summarySections');
+  const dateLabel = document.getElementById('summaryDateLabel');
+  if (!container) return;
+
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+  if (dateLabel) {
+    dateLabel.textContent = today.toLocaleDateString('en-NG', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  }
+
+  container.innerHTML = `<div class="summary-section"><p class="summary-empty">Loading…</p></div>`;
+
+  const [schedule, tasks] = await Promise.all([dbGetSchedule(), dbGetTasks()]);
+  const bookings = getBookings();
+
+  // Schedule today
+  const schedToday = schedule.filter(s => s.date === todayStr);
+
+  // Task counts
+  const total       = tasks.length;
+  const pending     = tasks.filter(t => t.status === 'pending').length;
+  const inProgress  = tasks.filter(t => t.status === 'in-progress').length;
+  const completed   = tasks.filter(t => t.status === 'completed').length;
+
+  // Completed today
+  const completedToday = tasks.filter(t => {
+    if (!t.completedAt) return false;
+    return new Date(t.completedAt).toISOString().slice(0, 10) === todayStr;
+  });
+
+  // Started today
+  const startedToday = tasks.filter(t => {
+    if (!t.startedAt) return false;
+    return new Date(t.startedAt).toISOString().slice(0, 10) === todayStr;
+  });
+
+  // Bookings today (by createdAt)
+  const bookingsToday = bookings.filter(b => {
+    if (!b.createdAt) return false;
+    return new Date(b.createdAt).toISOString().slice(0, 10) === todayStr;
+  });
+
+  const typeLabel = { studio:'Studio', wedding:'Wedding', event:'Event', production:'Production', meeting:'Meeting' };
+
+  container.innerHTML = `
+    <div class="summary-section">
+      <div class="summary-section-title">Schedule Today</div>
+      ${schedToday.length === 0
+        ? `<p class="summary-empty">No scheduled shoots or events today.</p>`
+        : `<div class="summary-list">${schedToday.map(s => `
+            <div class="summary-list-item">
+              <strong>${s.title}</strong>
+              <span style="color:var(--grey-4)"> — ${typeLabel[s.type] || s.type}${s.time ? ' · ' + s.time : ''}${s.location ? ' · ' + s.location : ''}</span>
+              ${s.deliverables ? `<div style="font-size:0.75rem;color:var(--grey-3);margin-top:4px">Deliverables: ${s.deliverables}</div>` : ''}
+            </div>`).join('')}</div>`
+      }
+    </div>
+
+    <div class="summary-section">
+      <div class="summary-section-title">Tasks Overview</div>
+      <div class="summary-counts">
+        <div class="summary-count-item">
+          <div class="summary-count-item__value" style="color:var(--white)">${total}</div>
+          <div class="summary-count-item__label">Total</div>
+        </div>
+        <div class="summary-count-item">
+          <div class="summary-count-item__value" style="color:var(--orange)">${pending}</div>
+          <div class="summary-count-item__label">Pending</div>
+        </div>
+        <div class="summary-count-item">
+          <div class="summary-count-item__value" style="color:var(--purple)">${inProgress}</div>
+          <div class="summary-count-item__label">In Progress</div>
+        </div>
+        <div class="summary-count-item">
+          <div class="summary-count-item__value" style="color:var(--green)">${completed}</div>
+          <div class="summary-count-item__label">Completed</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="summary-section">
+      <div class="summary-section-title">Completed Today</div>
+      ${completedToday.length === 0
+        ? `<p class="summary-empty">No tasks completed today.</p>`
+        : `<div class="summary-list">${completedToday.map(t => `
+            <div class="summary-list-item">
+              <strong>${t.title}</strong>
+              ${t.assignedName ? `<span style="color:var(--grey-4)"> — ${t.assignedName}</span>` : ''}
+            </div>`).join('')}</div>`
+      }
+    </div>
+
+    <div class="summary-section">
+      <div class="summary-section-title">Started Today</div>
+      ${startedToday.length === 0
+        ? `<p class="summary-empty">No tasks started today.</p>`
+        : `<div class="summary-list">${startedToday.map(t => `
+            <div class="summary-list-item">
+              <strong>${t.title}</strong>
+              ${t.assignedName ? `<span style="color:var(--grey-4)"> — ${t.assignedName}</span>` : ''}
+            </div>`).join('')}</div>`
+      }
+    </div>
+
+    <div class="summary-section">
+      <div class="summary-section-title">Bookings Today</div>
+      ${bookingsToday.length === 0
+        ? `<p class="summary-empty">No new bookings received today.</p>`
+        : `<div class="summary-list">${bookingsToday.map(b => `
+            <div class="summary-list-item">
+              <strong>${b.clientName}</strong>
+              <span style="color:var(--grey-4)"> — ${b.bookingKind === 'event' ? (EVENT_TYPE_LABELS[b.eventType] || b.eventType || 'Event') : b.sessionType || 'Studio'} · ${STATUS_LABELS[b.status] || b.status}</span>
+            </div>`).join('')}</div>`
+      }
+    </div>`;
+}
+
+document.getElementById('btnRefreshSummary').addEventListener('click', renderDailySummary);
+
+/* ════════════════════════════════════════════
+   INLINE BOOKING MODAL
+   ════════════════════════════════════════════ */
+const newBookingModal        = document.getElementById('newBookingModal');
+const newBookingModalClose   = document.getElementById('newBookingModalClose');
+const newBookingModalBack    = document.getElementById('newBookingModalBackdrop');
+
+function openNewBookingModal() {
+  newBookingModal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeNewBookingModal() {
+  newBookingModal.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('btnNewBooking').addEventListener('click', openNewBookingModal);
+newBookingModalClose.addEventListener('click', closeNewBookingModal);
+newBookingModalBack.addEventListener('click', closeNewBookingModal);
+
+// Tab switching inside booking modal
+document.querySelectorAll('.bm-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.bm-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.bm-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('bm-panel-' + btn.dataset.bmTab).classList.add('active');
+  });
+});
+
+// Session type picker in studio modal
+let bmSelectedSession = '';
+document.querySelectorAll('.bm-sp-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.bm-sp-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    bmSelectedSession = btn.dataset.session;
+  });
+});
+
+// Studio booking form submit
+document.getElementById('bmStudioForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const err = document.getElementById('bmStudioErr');
+  const firstName  = document.getElementById('bmFirstName').value.trim();
+  const middleName = document.getElementById('bmMiddleName').value.trim();
+  const phone      = document.getElementById('bmPhone').value.trim();
+  const email      = document.getElementById('bmEmail').value.trim();
+
+  if (!firstName || !phone || !email) { err.textContent = 'First name, phone, and email are required.'; return; }
+  if (!bmSelectedSession) { err.textContent = 'Please select a session type.'; return; }
+  err.textContent = '';
+
+  const clientName = [firstName, middleName].filter(Boolean).join(' ');
+  const booking = {
+    id:          'NEJ-' + Math.random().toString(36).slice(2,8).toUpperCase(),
+    bookingKind: 'studio',
+    firstName, middleName,
+    clientName, phone, email,
+    sessionType: bmSelectedSession,
+    status:      'pending',
+    createdAt:   Date.now(),
+  };
+
+  const bookings = getBookings();
+  bookings.unshift(booking);
+  saveBookings(bookings);
+
+  e.target.reset();
+  document.querySelectorAll('.bm-sp-btn').forEach(b => b.classList.remove('selected'));
+  bmSelectedSession = '';
+  closeNewBookingModal();
+  renderBookings();
+  showToast(`Booking for ${clientName} added ✓`);
+});
+
+// Event booking form submit
+document.getElementById('bmEventForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const err = document.getElementById('bmEventErr');
+  const firstName  = document.getElementById('bmEFirstName').value.trim();
+  const lastName   = document.getElementById('bmELastName').value.trim();
+  const phone      = document.getElementById('bmEPhone').value.trim();
+  const email      = document.getElementById('bmEEmail').value.trim();
+  const eventType  = document.getElementById('bmEType').value;
+  const pkg        = document.getElementById('bmEPackage').value;
+  const eventDate  = document.getElementById('bmEDate').value;
+  const budget     = document.getElementById('bmEBudget').value;
+  const location   = document.getElementById('bmELocation').value.trim();
+  const deliverables = document.getElementById('bmEDeliverables').value.trim();
+
+  if (!firstName || !phone || !email) { err.textContent = 'First name, phone, and email are required.'; return; }
+  if (!eventType) { err.textContent = 'Please select an event type.'; return; }
+  err.textContent = '';
+
+  const clientName = [firstName, lastName].filter(Boolean).join(' ');
+  const booking = {
+    id:          'NEJ-' + Math.random().toString(36).slice(2,8).toUpperCase(),
+    bookingKind: 'event',
+    firstName, lastName,
+    clientName, phone, email,
+    eventType,
+    package:      pkg || null,
+    eventDate:    eventDate || null,
+    budget:       budget || null,
+    location:     location || null,
+    deliverables: deliverables || null,
+    status:       'pending',
+    createdAt:    Date.now(),
+  };
+
+  const bookings = getBookings();
+  bookings.unshift(booking);
+  saveBookings(bookings);
+
+  e.target.reset();
+  closeNewBookingModal();
+  renderBookings();
+  showToast(`Event booking for ${clientName} added ✓`);
 });

@@ -362,7 +362,9 @@
         <div class="cms-card">
           <div class="cms-card__title">Background Image</div>
           <div class="fg">
-            <label class="lbl">Hero Background Image URL</label>
+            <label class="lbl">Upload Image</label>
+            <input type="file" id="hero-bg-file" accept="image/*" style="background:var(--bg-3);border:1px dashed var(--border);border-radius:6px;padding:10px;color:var(--grey-2);width:100%;cursor:pointer" />
+            <label class="lbl" style="margin-top:10px">Or paste an image URL</label>
             <input type="url" id="hero-bg" placeholder="https://images.unsplash.com/..." />
             <img class="img-preview" id="hero-bg-preview" alt="Hero preview" />
           </div>
@@ -738,6 +740,6 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/cms.js"></script>
+<script src="js/cms.js?v=2.1"></script>
 </body>
 </html>

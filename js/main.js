@@ -191,7 +191,8 @@
   function openLightbox(src, caption) {
     const modal = document.getElementById('videoModal');
     const embed = document.getElementById('modalEmbed');
-    embed.innerHTML = `<img src="${src}" alt="${caption}" style="width:100%;display:block;max-height:90vh;object-fit:contain;" />`;
+    embed.className = 'video-modal__embed video-modal__embed--image';
+    embed.innerHTML = `<img src="${src}" alt="${caption}" />`;
     modal.classList.add('open');
     document.body.style.overflow = 'hidden';
   }
@@ -238,6 +239,7 @@
   function closeVideo() {
     videoModal.classList.remove('open');
     modalEmbed.innerHTML = '';
+    modalEmbed.className = 'video-modal__embed';
     document.body.style.overflow = '';
   }
 
