@@ -69,6 +69,12 @@ const picker = document.getElementById("sessionPicker");
 const spError = document.getElementById("spError");
 const sessionInput = document.getElementById("sessionTypeInput");
 
+// ── Rate Card modal ──
+const rateCardOverlay = document.getElementById("rateCardOverlay");
+document.getElementById("btnRateCard").addEventListener("click", () => rateCardOverlay.classList.add("open"));
+document.getElementById("btnRateCardClose").addEventListener("click", () => rateCardOverlay.classList.remove("open"));
+rateCardOverlay.addEventListener("click", e => { if (e.target === rateCardOverlay) rateCardOverlay.classList.remove("open"); });
+
 // ── Session type picker ──
 picker.querySelectorAll(".sp-card").forEach((card) => {
   card.addEventListener("click", () => {
@@ -120,8 +126,9 @@ function fmtDate(ts) {
 function validate() {
   let ok = true;
 
-  ["firstName", "phone", "email"].forEach((id) => {
+  ["firstName", "phone", "email", "sessionDate"].forEach((id) => {
     const el = document.getElementById(id);
+    if (!el) return;
     el.classList.remove("error");
     if (!el.value.trim()) {
       el.classList.add("error");
@@ -166,9 +173,19 @@ form.addEventListener("submit", async (e) => {
   const phone = document.getElementById("phone").value.trim();
   const email = document.getElementById("email").value.trim();
   const sessionType = sessionInput.value;
+  const sessionDate = document.getElementById("sessionDate").value;
+  const sessionTime = document.getElementById("sessionTime").value;
   const clientName = middleName ? `${firstName} ${middleName}` : firstName;
   const bookingId = genBookingId();
   const now = Date.now();
+
+  // Format date/time nicely for emails
+  const fmtShootDate = sessionDate
+    ? new Date(sessionDate + "T00:00:00").toLocaleDateString("en-NG", { dateStyle: "long" })
+    : "TBC";
+  const fmtShootTime = sessionTime
+    ? new Date("1970-01-01T" + sessionTime).toLocaleTimeString("en-NG", { timeStyle: "short" })
+    : "TBC";
 
   // Disable + show loading
   submitBtn.disabled = true;
@@ -176,12 +193,15 @@ form.addEventListener("submit", async (e) => {
 
   const booking = {
     id: bookingId,
+    bookingKind: "studio",
     firstName,
     middleName,
     clientName,
     phone,
     email,
     sessionType,
+    sessionDate: sessionDate || null,
+    sessionTime: sessionTime || null,
     status: "pending",
     createdAt: now,
   };
@@ -193,6 +213,8 @@ form.addEventListener("submit", async (e) => {
     client_email: email,
     phone,
     session_type: sessionType,
+    session_date: fmtShootDate,
+    session_time: fmtShootTime,
     submitted_at: fmtDate(now),
   };
 
@@ -215,6 +237,8 @@ form.addEventListener("submit", async (e) => {
     form.style.display = "none";
     successScreen.classList.add("show");
     successId.textContent = bookingId;
+    const payRef = document.getElementById("successPayRef");
+    if (payRef) payRef.textContent = bookingId;
 
     // Inject share button if not already present
     if (!document.getElementById("studioShareBtn")) {
@@ -261,6 +285,8 @@ form.addEventListener("submit", async (e) => {
     form.style.display = "none";
     successScreen.classList.add("show");
     successId.textContent = bookingId;
+    const payRefCatch = document.getElementById("successPayRef");
+    if (payRefCatch) payRefCatch.textContent = bookingId;
     // Share button is injected by the try block above; add it here too if try failed early
     if (!document.getElementById("studioShareBtn")) {
       const shareWrap = document.createElement("div");

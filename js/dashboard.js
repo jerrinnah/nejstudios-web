@@ -336,7 +336,7 @@ function buildEventCard(b) {
       <div class="event-fields">
         <div class="event-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><div><span class="ef-label">Event Date</span><span class="ef-value">${fmtEventDate(b.eventDate)}</span></div></div>
         <div class="event-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg><div><span class="ef-label">Location</span><span class="ef-value">${b.location || '—'}</span></div></div>
-        <div class="event-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg><div><span class="ef-label">Budget</span><span class="ef-value">${budgetLabel}</span></div></div>
+        <div class="event-field"><span style="font-size:1rem;flex-shrink:0">₦</span><div><span class="ef-label">Budget</span><span class="ef-value">${budgetLabel}</span></div></div>
         <div class="event-field event-field--full"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><div><span class="ef-label">Deliverables</span><span class="ef-value ef-deliverables">${deliv}</span></div></div>
       </div>
       <div class="booking-card__meta" style="margin-top:12px">
@@ -1811,6 +1811,29 @@ async function renderDailySummary() {
     </div>
 
     <div class="summary-section">
+      <div class="summary-section-title">Team Task Reports</div>
+      ${tasks.filter(t => t.reports && t.reports.length > 0).length === 0
+        ? `<p class="summary-empty">No team reports submitted yet.</p>`
+        : tasks.filter(t => t.reports && t.reports.length > 0).map(t => {
+            const latestReports = [...t.reports].reverse().slice(0, 3);
+            const statusColor = t.status === 'completed' ? 'var(--green)' : t.status === 'in-progress' ? 'var(--purple)' : 'var(--orange)';
+            return `
+            <div style="background:var(--bg-3);border:1px solid var(--border);border-left:3px solid ${statusColor};border-radius:8px;padding:12px 14px;margin-bottom:10px">
+              <div style="font-size:0.85rem;font-weight:600;color:var(--white);margin-bottom:6px">${t.title}
+                ${t.assignedName ? `<span style="font-size:0.72rem;color:var(--grey-3);font-weight:400"> · ${t.assignedName}</span>` : ''}
+                <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:99px;background:${statusColor}22;color:${statusColor};margin-left:6px;text-transform:uppercase;letter-spacing:.06em">${t.status}</span>
+              </div>
+              ${latestReports.map(r => `
+                <div style="font-size:0.78rem;color:var(--grey-2);padding:6px 0;border-top:1px solid var(--border)">
+                  <span style="font-size:0.68rem;color:var(--grey-4);margin-right:6px">${r.submittedAt ? new Date(r.submittedAt).toLocaleString('en-NG',{dateStyle:'short',timeStyle:'short'}) : ''}</span>
+                  ${r.text || r.message || r.note || ''}
+                </div>`).join('')}
+            </div>`;
+          }).join('')
+      }
+    </div>
+
+    <div class="summary-section">
       <div class="summary-section-title">Bookings Today</div>
       ${bookingsToday.length === 0
         ? `<p class="summary-empty">No new bookings received today.</p>`
@@ -1818,12 +1841,34 @@ async function renderDailySummary() {
             <div class="summary-list-item">
               <strong>${b.clientName}</strong>
               <span style="color:var(--grey-4)"> — ${b.bookingKind === 'event' ? (EVENT_TYPE_LABELS[b.eventType] || b.eventType || 'Event') : b.sessionType || 'Studio'} · ${STATUS_LABELS[b.status] || b.status}</span>
+              ${b.sessionDate ? `<div style="font-size:0.75rem;color:var(--grey-3);margin-top:2px">📅 ${b.sessionDate}${b.sessionTime ? ' · ' + b.sessionTime : ''}</div>` : ''}
             </div>`).join('')}</div>`
       }
     </div>`;
 }
 
 document.getElementById('btnRefreshSummary').addEventListener('click', renderDailySummary);
+
+/* ════════════════════════════════════════════
+   REAL-TIME: detect new bookings from public booking form
+   (localStorage 'storage' event fires in other tabs/windows)
+   ════════════════════════════════════════════ */
+let _lastBookingCount = getBookings().length;
+window.addEventListener('storage', e => {
+  if (e.key !== 'nej_bookings') return;
+  const bookings = getBookings();
+  const newCount  = bookings.length;
+  if (newCount > _lastBookingCount) {
+    const newest = bookings[0];
+    const name   = newest ? newest.clientName || newest.firstName || 'A client' : 'A client';
+    const type   = newest ? (newest.sessionType || (EVENT_TYPE_LABELS[newest.eventType]) || 'session') : 'session';
+    showToast(`🔔 New booking from ${name} — ${type}`);
+    notify('New Booking Received', `${name} just booked a ${type} session`);
+    _lastBookingCount = newCount;
+    renderBookings();
+    renderStatCards();
+  }
+});
 
 /* ════════════════════════════════════════════
    INLINE BOOKING MODAL

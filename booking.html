@@ -73,6 +73,46 @@
         color: #000;
       }
 
+      /* ── RATE CARD MODAL ── */
+      .rc-overlay {
+        position:fixed; inset:0; background:rgba(0,0,0,.75); z-index:9000;
+        display:flex; align-items:center; justify-content:center; padding:20px;
+        opacity:0; pointer-events:none; transition:opacity .2s;
+      }
+      .rc-overlay.open { opacity:1; pointer-events:all; }
+      .rc-box {
+        background:var(--bg-2); border:1px solid var(--border); border-radius:16px;
+        padding:36px 32px; max-width:520px; width:100%;
+        transform:scale(.97); transition:transform .2s;
+      }
+      .rc-overlay.open .rc-box { transform:scale(1); }
+      .rc-title { font-family:var(--serif); font-size:1.5rem; color:var(--white); margin-bottom:4px; }
+      .rc-sub { font-size:0.78rem; color:var(--grey-3); margin-bottom:24px; }
+      .rc-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px; }
+      .rc-card {
+        background:var(--bg-3); border:1px solid var(--border); border-radius:10px;
+        padding:16px; position:relative; overflow:hidden;
+      }
+      .rc-card::before { content:""; position:absolute; top:0; left:0; right:0; height:2px; background:var(--gold); }
+      .rc-card--outdoor::before { background:var(--green); }
+      .rc-price { font-family:var(--serif); font-size:1.3rem; font-weight:700; color:var(--gold); }
+      .rc-card--outdoor .rc-price { color:var(--green); }
+      .rc-plan { font-size:0.75rem; font-weight:700; color:var(--grey-2); text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px; }
+      .rc-includes { list-style:none; margin-top:8px; display:flex; flex-direction:column; gap:4px; }
+      .rc-includes li { font-size:0.75rem; color:var(--grey-3); display:flex; align-items:center; gap:5px; }
+      .rc-includes li::before { content:"·"; color:var(--gold); font-weight:700; }
+      .rc-card--outdoor .rc-includes li::before { color:var(--green); }
+      .rc-delivery { font-size:0.75rem; color:var(--grey-3); padding-top:12px; border-top:1px solid var(--border); }
+      .rc-delivery strong { color:var(--gold); }
+      .rc-close {
+        display:block; width:100%; margin-top:20px; padding:12px;
+        background:var(--gold); color:#000; font-weight:700; font-size:0.8rem;
+        letter-spacing:.08em; text-transform:uppercase; border:none; border-radius:8px;
+        cursor:pointer; font-family:var(--sans); transition:var(--trans);
+      }
+      .rc-close:hover { background:var(--gold-lt); }
+      @media (max-width:480px) { .rc-grid { grid-template-columns:1fr; } }
+
       /* ── TOP BAR ── */
       .topbar {
         position: sticky;
@@ -516,18 +556,65 @@
         <span class="logo-nej">NEJ</span
         ><span class="logo-studios">studios</span>
       </a>
-      <a href="/" class="topbar-back">
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <polyline points="15 18 9 12 15 6" />
-        </svg>
-        Back to site
-      </a>
+      <div style="display:flex;align-items:center;gap:12px">
+        <button id="btnRateCard" style="padding:8px 16px;border:1px solid var(--border);border-radius:7px;font-size:0.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);background:var(--gold-glow);font-family:var(--sans);cursor:pointer;transition:var(--trans)">
+          ₦ Rate Card
+        </button>
+        <a href="/" class="topbar-back">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          Back to site
+        </a>
+      </div>
     </nav>
+
+    <!-- RATE CARD MODAL -->
+    <div class="rc-overlay" id="rateCardOverlay">
+      <div class="rc-box">
+        <div class="rc-title">Studio Rate Card</div>
+        <div class="rc-sub">NEJstudios · Lagos, Nigeria · 2026</div>
+        <div class="rc-grid">
+          <div class="rc-card">
+            <div class="rc-price">₦45,000</div>
+            <div class="rc-plan">Half Session</div>
+            <ul class="rc-includes">
+              <li>5 edited pictures</li>
+              <li>1 outfit</li>
+            </ul>
+          </div>
+          <div class="rc-card">
+            <div class="rc-price">₦70,000</div>
+            <div class="rc-plan">Regular</div>
+            <ul class="rc-includes">
+              <li>8 edited pictures</li>
+              <li>2 outfits</li>
+              <li>30 mins shoot time</li>
+            </ul>
+          </div>
+          <div class="rc-card">
+            <div class="rc-price">₦65,000</div>
+            <div class="rc-plan">Birthday Session</div>
+            <ul class="rc-includes">
+              <li>12 edited pictures</li>
+              <li>2 outfits</li>
+              <li>1 hour shoot time</li>
+            </ul>
+          </div>
+          <div class="rc-card rc-card--outdoor">
+            <div class="rc-price">₦150,000</div>
+            <div class="rc-plan">Outdoor</div>
+            <ul class="rc-includes">
+              <li>15 edited pictures</li>
+              <li>1 hour shoot time</li>
+              <li>Extra hour = ₦15,000</li>
+            </ul>
+          </div>
+        </div>
+        <div class="rc-delivery"><strong>Delivery timeline:</strong> 2 – 3 business days</div>
+        <button class="rc-close" id="btnRateCardClose">Got it — Close</button>
+      </div>
+    </div>
 
     <!-- MAIN CONTENT -->
     <main class="page">
@@ -674,6 +761,17 @@
             </div>
           </div>
 
+          <div class="form-row">
+            <div class="form-group">
+              <label for="sessionDate">Preferred Shoot Date <span class="req">*</span></label>
+              <input type="date" id="sessionDate" name="sessionDate" required />
+            </div>
+            <div class="form-group">
+              <label for="sessionTime">Preferred Time</label>
+              <input type="time" id="sessionTime" name="sessionTime" />
+            </div>
+          </div>
+
           <button type="submit" class="btn-submit" id="submitBtn">
             <span id="submitText">Request Booking</span>
             <svg
@@ -696,28 +794,40 @@
         <!-- SUCCESS STATE -->
         <div class="success-screen" id="successScreen">
           <div class="success-icon">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
               <polyline points="22 4 12 14.01 9 11.01" />
             </svg>
           </div>
-          <h3>You're Booked!</h3>
-          <p>Thank you. Your studio session request has been received.</p>
-          <p>
-            A confirmation has been sent to your email. We'll be in touch within
-            24 hours to confirm your date and time.
-          </p>
-          <div class="success-id" id="successId"></div>
-          <br />
-          <button
-            class="btn-back-home"
-            onclick="window.location.href='/'"
-          >
+          <h3>Booking Received!</h3>
+          <p>Thank you. Your studio session request has been received. We'll confirm your date &amp; time within 24 hours.</p>
+
+          <div style="background:var(--bg-3);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin:20px 0;text-align:left">
+            <div style="font-size:0.62rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:12px">Booking Reference</div>
+            <div class="success-id" id="successId" style="margin:0 0 16px;display:inline-block"></div>
+            <div style="font-size:0.68rem;color:var(--grey-3);margin-bottom:16px">Keep this reference number — you'll need it for any enquiries.</div>
+
+            <div style="font-size:0.62rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:10px">Payment Details</div>
+            <div style="font-size:0.82rem;color:var(--grey-1);line-height:1.9">
+              <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:6px">
+                <span style="color:var(--grey-3)">Bank</span><strong>Kuda MFB</strong>
+              </div>
+              <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:6px">
+                <span style="color:var(--grey-3)">Account Name</span><strong>NEJstudios</strong>
+              </div>
+              <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:6px">
+                <span style="color:var(--grey-3)">Account Number</span><strong style="font-size:1rem;letter-spacing:.06em;color:var(--gold)">3001571135</strong>
+              </div>
+              <div style="display:flex;justify-content:space-between">
+                <span style="color:var(--grey-3)">Reference</span><strong id="successPayRef">—</strong>
+              </div>
+            </div>
+            <div style="font-size:0.72rem;color:var(--grey-4);margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+              A 50% deposit is required to secure your booking. Please use your Booking Reference as the payment description.
+            </div>
+          </div>
+
+          <button class="btn-back-home" onclick="window.location.href='/'">
             ← Back to NEJstudios
           </button>
         </div>
