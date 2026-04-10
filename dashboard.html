@@ -780,27 +780,13 @@
       .gallery-form-card h3 { font-family:var(--serif); font-size:1.1rem; color:var(--white); margin-bottom:6px; }
       .gallery-form-card p { font-size:0.78rem; color:var(--grey-3); margin-bottom:20px; }
       .gallery-form { display:flex; flex-direction:column; gap:12px; }
-      .gallery-delivery-dropzone {
-        border:2px dashed var(--border-l); border-radius:10px; padding:24px 16px;
-        text-align:center; cursor:pointer; transition:var(--trans); background:var(--bg-3);
-        display:flex; flex-direction:column; align-items:center;
-      }
-      .gallery-delivery-dropzone:hover, .gallery-delivery-dropzone.drag-over {
-        border-color:var(--gold); background:var(--gold-glow);
-      }
-      .gallery-delivery-progress { display:flex; flex-direction:column; gap:6px; margin-top:8px; }
-      .gdp-item { background:var(--bg-3); border:1px solid var(--border); border-radius:6px; padding:8px 12px; }
-      .gdp-item__name { font-size:0.75rem; color:var(--grey-1); margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-      .gdp-bar { height:3px; background:var(--bg-4); border-radius:2px; overflow:hidden; }
-      .gdp-bar__fill { height:100%; background:var(--gold); border-radius:2px; transition:width 0.2s; }
-      .gallery-files-list { display:flex; flex-direction:column; gap:6px; margin-top:4px; }
-      .gallery-file-row { display:grid; grid-template-columns:auto 1fr auto; gap:8px; align-items:center; background:var(--bg-3); border:1px solid var(--border); border-radius:6px; padding:8px 10px; }
-      .gallery-file-row__thumb { width:36px; height:36px; border-radius:4px; object-fit:cover; background:var(--bg-4); flex-shrink:0; }
-      .gallery-file-row__info { display:flex; flex-direction:column; gap:2px; min-width:0; }
-      .gallery-file-row__name { font-size:0.78rem; color:var(--grey-1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-      .gallery-file-row__size { font-size:0.68rem; color:var(--grey-3); }
-      .btn-remove-file { width:24px; height:24px; display:flex; align-items:center; justify-content:center; border-radius:4px; border:1px solid var(--border); color:var(--grey-3); font-size:0.8rem; line-height:1; transition:var(--trans); flex-shrink:0; }
+      .gallery-files-list { display:flex; flex-direction:column; gap:8px; }
+      .gallery-file-row { display:grid; grid-template-columns:1fr 1fr auto; gap:8px; align-items:center; }
+      .gallery-file-row .form-input { font-size:0.8rem; padding:8px 10px; }
+      .btn-remove-file { width:28px; height:28px; display:flex; align-items:center; justify-content:center; border-radius:6px; border:1px solid var(--border); color:var(--grey-3); font-size:1rem; line-height:1; transition:var(--trans); flex-shrink:0; }
       .btn-remove-file:hover { border-color:var(--red); color:var(--red); }
+      .btn-add-file { padding:8px 14px; border:1px dashed var(--border-l); border-radius:6px; font-size:0.75rem; color:var(--grey-3); transition:var(--trans); text-align:center; width:100%; }
+      .btn-add-file:hover { border-color:var(--gold); color:var(--gold); }
       .gallery-links-section h3 { font-family:var(--serif); font-size:1.1rem; color:var(--white); margin-bottom:16px; }
       .gallery-links-grid { display:flex; flex-direction:column; gap:10px; }
       .gallery-link-card { background:var(--bg-2); border:1px solid var(--border); border-radius:var(--radius); padding:16px 20px; }
@@ -1230,15 +1216,15 @@
                     <input class="form-input" id="galleryBookingId" type="text" placeholder="e.g. NEJ-ABC123" />
                   </div>
                   <div class="form-field">
-                    <label class="form-label">Upload Photos for Client Delivery</label>
-                    <div class="gallery-delivery-dropzone" id="galleryDeliveryDropzone">
-                      <input type="file" id="galleryDeliveryInput" accept="image/*,video/*,.pdf,.zip" multiple style="display:none" />
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:36px;height:36px;color:var(--gold);margin-bottom:8px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                      <div style="font-size:0.85rem;color:var(--grey-2);font-weight:500">Click or drag &amp; drop files</div>
-                      <div style="font-size:0.72rem;color:var(--grey-4);margin-top:4px">Photos, videos, PDFs or ZIP · multiple files supported</div>
+                    <label class="form-label">Files <span style="color:var(--grey-4);font-weight:400;text-transform:none;letter-spacing:0">(label + download link)</span></label>
+                    <div class="gallery-files-list" id="galleryFilesList">
+                      <div class="gallery-file-row">
+                        <input class="form-input" type="text" placeholder="File label e.g. Full Gallery" data-file-label />
+                        <input class="form-input" type="url" placeholder="Download URL (Drive, Dropbox, WeTransfer…)" data-file-url />
+                        <button type="button" class="btn-remove-file" title="Remove">✕</button>
+                      </div>
                     </div>
-                    <div class="gallery-delivery-progress" id="galleryDeliveryProgress"></div>
-                    <div class="gallery-files-list" id="galleryFilesList"></div>
+                    <button type="button" class="btn-add-file" id="btnAddFile" style="margin-top:8px">+ Add File</button>
                   </div>
                   <div class="form-field">
                     <label class="form-label">Password (optional)</label>
@@ -1494,7 +1480,20 @@
     <div id="invoiceModal">
       <div class="invoice-chrome">
         <button class="btn-invoice-close" id="invoiceClose">✕ Close</button>
-        <h2>Invoice Preview</h2>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:6px">
+            <label style="font-size:0.72rem;font-weight:600;color:#666;white-space:nowrap">Total (₦)</label>
+            <input id="invAmount" type="number" min="0" placeholder="e.g. 500000"
+              style="width:130px;padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:0.82rem;font-family:inherit" />
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <label style="font-size:0.72rem;font-weight:600;color:#666;white-space:nowrap">Deposit Paid (₦)</label>
+            <input id="invDeposit" type="number" min="0" placeholder="e.g. 250000"
+              style="width:130px;padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:0.82rem;font-family:inherit" />
+          </div>
+          <button id="invApply" style="padding:6px 14px;background:#c9a84c;border:none;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer">Apply</button>
+        </div>
+        <h2 style="margin-left:auto">Invoice Preview</h2>
         <button class="btn-invoice-print" id="invoicePrint">🖨 Print / Save PDF</button>
       </div>
       <div id="invoiceBody">
