@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gallery — NEJstudios</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg:      #080808;
+        --bg-2:    #0f0f0f;
+        --bg-3:    #141414;
+        --bg-4:    #1a1a1a;
+        --surface: #1e1e1e;
+        --border:  #2a2a2a;
+        --border-l:#333;
+        --gold:    #c9a84c;
+        --gold-lt: #e0c06a;
+        --gold-dk: #a0832a;
+        --gold-glow: rgba(201,168,76,.14);
+        --white:   #ffffff;
+        --grey-1:  #e8e8e8;
+        --grey-2:  #b0b0b0;
+        --grey-3:  #707070;
+        --grey-4:  #404040;
+        --green:   #3ecf8e;
+        --green-bg: rgba(62,207,142,.1);
+        --red:     #f87171;
+        --red-bg:  rgba(248,113,113,.1);
+        --serif:   "Playfair Display", Georgia, serif;
+        --sans:    "Outfit", system-ui, sans-serif;
+        --trans:   0.25s cubic-bezier(0.4,0,0.2,1);
+        --radius:  10px;
+      }
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html { scroll-behavior: smooth; }
+      body {
+        background: var(--bg); color: var(--grey-1);
+        font-family: var(--sans); min-height: 100vh;
+        display: flex; flex-direction: column; align-items: center;
+      }
+      a { color: inherit; text-decoration: none; }
+      button { cursor: pointer; border: none; background: none; font-family: inherit; }
+      ::-webkit-scrollbar { width: 5px; }
+      ::-webkit-scrollbar-track { background: var(--bg); }
+      ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 99px; }
+      ::selection { background: var(--gold); color: #000; }
+
+      /* ── Page header ── */
+      .page-header {
+        width: 100%; background: var(--bg-2);
+        border-bottom: 1px solid var(--border);
+        padding: 20px 32px;
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 16px;
+      }
+      .logo {
+        font-size: 1.4rem; font-weight: 700; line-height: 1;
+        display: flex; align-items: baseline; gap: 2px;
+      }
+      .logo-nej { color: var(--gold); font-family: var(--serif); }
+      .logo-studios { color: var(--white); font-family: var(--sans); font-weight: 300; font-size: 0.9rem; }
+      .logo-tagline { font-size: 0.7rem; color: var(--grey-3); margin-top: 4px; letter-spacing: 0.06em; }
+
+      /* ── Container ── */
+      .container {
+        width: 100%; max-width: 680px;
+        padding: 40px 24px 60px;
+        flex: 1;
+      }
+
+      /* ── Password gate ── */
+      #passwordGate {
+        background: var(--bg-2); border: 1px solid var(--border);
+        border-radius: 16px; padding: 40px 36px;
+        text-align: center; max-width: 420px; margin: 0 auto;
+      }
+      #passwordGate h2 {
+        font-family: var(--serif); font-size: 1.4rem; color: var(--white);
+        margin-bottom: 8px;
+      }
+      #passwordGate p { font-size: 0.85rem; color: var(--grey-3); margin-bottom: 24px; }
+      .pw-input-wrap { position: relative; margin-bottom: 12px; }
+      .pw-input-wrap input {
+        width: 100%; background: var(--bg-3); border: 1px solid var(--border);
+        border-radius: 8px; padding: 14px 16px; color: var(--white);
+        font-size: 0.95rem; font-family: var(--sans); outline: none;
+        transition: var(--trans); text-align: center; letter-spacing: 0.1em;
+      }
+      .pw-input-wrap input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-glow); }
+      .pw-err { font-size: 0.8rem; color: var(--red); margin-bottom: 12px; min-height: 18px; }
+      .btn-unlock {
+        width: 100%; padding: 14px; background: var(--gold); color: #000;
+        font-weight: 700; font-size: 0.85rem; letter-spacing: 0.08em;
+        text-transform: uppercase; border-radius: 8px; transition: var(--trans);
+      }
+      .btn-unlock:hover { background: var(--gold-lt); }
+
+      /* ── Gallery content ── */
+      #galleryContent { display: none; }
+      .gallery-brand {
+        text-align: center; margin-bottom: 36px;
+        padding-bottom: 28px; border-bottom: 1px solid var(--border);
+      }
+      .gallery-brand__logo {
+        font-size: 2rem; font-weight: 700; font-family: var(--serif);
+        margin-bottom: 4px;
+      }
+      .gallery-brand__logo span { color: var(--gold); }
+      .gallery-brand__tagline { font-size: 0.8rem; color: var(--grey-3); letter-spacing: 0.08em; }
+      .gallery-greeting {
+        background: var(--bg-2); border: 1px solid var(--border);
+        border-left: 3px solid var(--gold);
+        border-radius: var(--radius); padding: 20px 24px;
+        margin-bottom: 28px;
+      }
+      .gallery-greeting h2 {
+        font-family: var(--serif); font-size: 1.3rem; color: var(--white);
+        margin-bottom: 6px;
+      }
+      .gallery-greeting p { font-size: 0.85rem; color: var(--grey-2); line-height: 1.6; }
+      .gallery-expiry {
+        background: rgba(251,146,60,.08); border: 1px solid rgba(251,146,60,.2);
+        border-radius: 8px; padding: 10px 16px; margin-bottom: 24px;
+        font-size: 0.8rem; color: #fb923c; display: flex; align-items: center; gap: 8px;
+      }
+      .gallery-expiry svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+      /* ── Files list ── */
+      .files-header {
+        font-size: 0.62rem; font-weight: 700; letter-spacing: 0.18em;
+        text-transform: uppercase; color: var(--grey-4);
+        margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+      }
+      .files-header::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+      .files-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 36px; }
+      .file-card {
+        background: var(--bg-2); border: 1px solid var(--border);
+        border-radius: var(--radius); padding: 16px 20px;
+        display: flex; align-items: center; gap: 14px;
+        transition: var(--trans);
+      }
+      .file-card:hover { border-color: var(--gold); background: rgba(201,168,76,.04); }
+      .file-card__icon {
+        width: 40px; height: 40px; border-radius: 10px;
+        background: var(--gold-glow); border: 1px solid rgba(201,168,76,.25);
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+      }
+      .file-card__icon svg { width: 20px; height: 20px; color: var(--gold); }
+      .file-card__info { flex: 1; min-width: 0; }
+      .file-card__label { font-size: 0.92rem; font-weight: 600; color: var(--white); }
+      .file-card__url { font-size: 0.72rem; color: var(--grey-4); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .btn-download {
+        padding: 9px 18px; background: var(--gold); color: #000;
+        font-weight: 700; font-size: 0.72rem; letter-spacing: 0.06em;
+        text-transform: uppercase; border-radius: 6px;
+        display: flex; align-items: center; gap: 6px;
+        transition: var(--trans); flex-shrink: 0;
+      }
+      .btn-download:hover { background: var(--gold-lt); }
+      .btn-download svg { width: 14px; height: 14px; }
+      .no-files {
+        text-align: center; padding: 40px 24px; color: var(--grey-3); font-size: 0.85rem;
+      }
+
+      /* ── Footer ── */
+      .gallery-footer {
+        text-align: center; padding: 24px 0;
+        border-top: 1px solid var(--border);
+        font-size: 0.75rem; color: var(--grey-4);
+        line-height: 1.7;
+      }
+      .gallery-footer strong { color: var(--gold); }
+
+      /* ── States ── */
+      #loadingState {
+        text-align: center; padding: 80px 24px; color: var(--grey-3);
+      }
+      .spinner {
+        width: 36px; height: 36px; border: 3px solid var(--border);
+        border-top-color: var(--gold); border-radius: 50%;
+        animation: spin 0.8s linear infinite; margin: 0 auto 16px;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      #errorState {
+        display: none; text-align: center; padding: 80px 24px;
+        color: var(--grey-3);
+      }
+      #errorState svg { width: 48px; height: 48px; margin: 0 auto 16px; opacity: 0.4; color: var(--red); }
+      #errorState h3 { font-family: var(--serif); font-size: 1.3rem; color: var(--grey-2); margin-bottom: 8px; }
+      #errorState p { font-size: 0.85rem; line-height: 1.6; }
+    </style>
+  </head>
+  <body>
+
+    <header class="page-header">
+      <div>
+        <div class="logo">
+          <span class="logo-nej">NEJ</span><span class="logo-studios">studios</span>
+        </div>
+        <div class="logo-tagline">Premium Photography &amp; Film Production</div>
+      </div>
+    </header>
+
+    <div class="container">
+
+      <!-- Loading -->
+      <div id="loadingState">
+        <div class="spinner"></div>
+        <p>Loading your gallery…</p>
+      </div>
+
+      <!-- Error -->
+      <div id="errorState">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <h3 id="errorTitle">Link Not Found</h3>
+        <p id="errorMsg">This gallery link is invalid or has been removed.</p>
+      </div>
+
+      <!-- Password gate -->
+      <div id="passwordGate" style="display:none">
+        <h2>Password Required</h2>
+        <p>This gallery is protected. Enter the password to access your files.</p>
+        <div class="pw-input-wrap">
+          <input type="password" id="pwInput" placeholder="Enter password" autocomplete="off" />
+        </div>
+        <div class="pw-err" id="pwErr"></div>
+        <button class="btn-unlock" id="btnUnlock">Unlock Gallery</button>
+      </div>
+
+      <!-- Gallery -->
+      <div id="galleryContent">
+        <div class="gallery-brand">
+          <div class="gallery-brand__logo"><span>NEJ</span>studios</div>
+          <div class="gallery-brand__tagline">Your photos are ready</div>
+        </div>
+
+        <div class="gallery-greeting">
+          <h2 id="greetingName">Hello!</h2>
+          <p id="greetingMsg">Your gallery is ready. Click the download button next to each file to save it to your device.</p>
+        </div>
+
+        <div id="expiryNotice" style="display:none" class="gallery-expiry">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <span id="expiryText">This gallery link expires on —</span>
+        </div>
+
+        <div class="files-header">Your Files</div>
+        <div class="files-list" id="filesList"></div>
+
+        <div class="gallery-footer">
+          Delivered by <strong>NEJstudios</strong> — Premium Photography &amp; Film Production<br/>
+          Files are provided for personal use only. All rights reserved.
+        </div>
+      </div>
+
+    </div><!-- /container -->
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/db.js?v=2.2"></script>
+    <script>
+      (async function () {
+        const params = new URLSearchParams(location.search);
+        const token  = params.get('t');
+
+        const loadingEl  = document.getElementById('loadingState');
+        const errorEl    = document.getElementById('errorState');
+        const pwGateEl   = document.getElementById('passwordGate');
+        const galleryEl  = document.getElementById('galleryContent');
+
+        function showError(title, msg) {
+          loadingEl.style.display = 'none';
+          document.getElementById('errorTitle').textContent = title;
+          document.getElementById('errorMsg').textContent   = msg;
+          errorEl.style.display = 'block';
+        }
+
+        if (!token) {
+          showError('No Gallery Token', 'No gallery token was provided in the URL. Please use the link sent to you by NEJstudios.');
+          return;
+        }
+
+        // Load delivery record
+        let delivery;
+        try {
+          delivery = await dbGetGalleryDelivery(token);
+        } catch (err) {
+          showError('Failed to Load', 'Could not connect to the gallery server. Please try again later.');
+          return;
+        }
+
+        if (!delivery) {
+          showError('Link Not Found', 'This gallery link is invalid or has been removed. Please contact NEJstudios for assistance.');
+          return;
+        }
+
+        // Check expiry
+        const today = new Date().toISOString().slice(0, 10);
+        if (delivery.expires_at && delivery.expires_at < today) {
+          showError('Gallery Expired', `This gallery link expired on ${delivery.expires_at}. Please contact NEJstudios to request a new link.`);
+          return;
+        }
+
+        loadingEl.style.display = 'none';
+
+        // Password protection
+        if (delivery.password) {
+          pwGateEl.style.display = 'block';
+
+          function tryUnlock() {
+            const entered = document.getElementById('pwInput').value;
+            if (entered === delivery.password) {
+              document.getElementById('pwErr').textContent = '';
+              pwGateEl.style.display = 'none';
+              showGallery(delivery);
+            } else {
+              document.getElementById('pwErr').textContent = 'Incorrect password. Try again.';
+              document.getElementById('pwInput').value = '';
+              document.getElementById('pwInput').focus();
+            }
+          }
+
+          document.getElementById('btnUnlock').addEventListener('click', tryUnlock);
+          document.getElementById('pwInput').addEventListener('keydown', e => {
+            if (e.key === 'Enter') tryUnlock();
+          });
+        } else {
+          showGallery(delivery);
+        }
+
+        function showGallery(d) {
+          galleryEl.style.display = 'block';
+
+          // Greeting
+          document.getElementById('greetingName').textContent = `Hello, ${d.client_name}!`;
+          const fileCount = (d.files || []).length;
+          document.getElementById('greetingMsg').textContent =
+            `Your gallery is ready with ${fileCount} file${fileCount !== 1 ? 's' : ''}. Click the download button next to each file.`;
+
+          // Expiry notice
+          if (d.expires_at) {
+            const expDate = new Date(d.expires_at + 'T12:00:00').toLocaleDateString('en-NG', { dateStyle: 'long' });
+            document.getElementById('expiryNotice').style.display = 'flex';
+            document.getElementById('expiryText').textContent = `This gallery link expires on ${expDate}. Download your files before then.`;
+          }
+
+          // Files
+          const list = document.getElementById('filesList');
+          const files = d.files || [];
+
+          if (files.length === 0) {
+            list.innerHTML = `<div class="no-files">No files have been added to this gallery yet. Check back soon or contact NEJstudios.</div>`;
+          } else {
+            list.innerHTML = files.map((f, idx) => `
+              <div class="file-card" data-file-idx="${idx}">
+                <div class="file-card__icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/>
+                    <polyline points="13 2 13 9 20 9"/>
+                  </svg>
+                </div>
+                <div class="file-card__info">
+                  <div class="file-card__label">${f.label || 'File ' + (idx + 1)}</div>
+                  <div class="file-card__url">${f.url || ''}</div>
+                </div>
+                <a class="btn-download" href="${f.url || '#'}" target="_blank" rel="noopener" data-dl-idx="${idx}">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                  Download
+                </a>
+              </div>`).join('');
+
+            // Track downloads
+            list.querySelectorAll('.btn-download').forEach(btn => {
+              btn.addEventListener('click', () => {
+                dbIncrementDownload(d.id);
+              });
+            });
+          }
+        }
+
+      })();
+    </script>
+  </body>
+</html>

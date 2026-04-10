@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Your Gallery — NEJstudios</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg: #080808; --bg-2: #0f0f0f; --bg-3: #141414; --bg-4: #1a1a1a;
+        --surface: #1e1e1e; --border: #2a2a2a; --border-l: #333;
+        --gold: #c9a84c; --gold-lt: #e0c06a; --gold-dk: #a0832a;
+        --gold-glow: rgba(201,168,76,.14);
+        --white: #ffffff; --grey-1: #e8e8e8; --grey-2: #b0b0b0;
+        --grey-3: #707070; --grey-4: #404040;
+        --green: #3ecf8e; --green-bg: rgba(62,207,142,.1);
+        --red: #f87171; --red-bg: rgba(248,113,113,.1);
+        --serif: "Playfair Display", Georgia, serif;
+        --sans: "Outfit", system-ui, sans-serif;
+        --trans: all 0.2s ease;
+        --radius: 10px;
+      }
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html { scroll-behavior: smooth; }
+      body { background: var(--bg); color: var(--grey-1); font-family: var(--sans); min-height: 100vh; }
+      a { color: inherit; text-decoration: none; }
+      button { cursor: pointer; border: none; background: none; font-family: inherit; }
+      ::-webkit-scrollbar { width: 5px; }
+      ::-webkit-scrollbar-track { background: var(--bg); }
+      ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 99px; }
+      ::selection { background: var(--gold); color: #000; }
+
+      /* ── Header ── */
+      .client-header {
+        background: var(--bg-2); border-bottom: 1px solid var(--border);
+        padding: 16px 28px; display: flex; align-items: center; justify-content: space-between;
+        position: sticky; top: 0; z-index: 100;
+      }
+      .client-logo { font-size: 1.2rem; font-weight: 700; }
+      .client-logo-nej { color: var(--gold); font-family: var(--serif); }
+      .client-logo-studios { color: var(--white); font-family: var(--sans); font-weight: 300; font-size: 0.85rem; }
+      .client-logo-tag { font-size: 0.65rem; color: var(--grey-3); margin-top: 2px; }
+
+      /* ── Main content ── */
+      .client-main { max-width: 960px; margin: 0 auto; padding: 36px 24px 60px; }
+
+      /* ── Info card ── */
+      .client-info-card {
+        background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius);
+        padding: 24px 28px; margin-bottom: 28px;
+      }
+      .client-info-card__name {
+        font-family: var(--serif); font-size: 1.6rem; color: var(--white); margin-bottom: 6px;
+      }
+      .client-info-card__meta {
+        display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.82rem; color: var(--grey-3);
+      }
+      .client-info-card__meta span { display: flex; align-items: center; gap: 6px; }
+      .client-info-card__meta svg { width: 14px; height: 14px; color: var(--gold); flex-shrink: 0; }
+
+      /* ── Notice banner ── */
+      .client-notice {
+        background: var(--gold-glow); border: 1px solid rgba(201,168,76,.2); border-radius: 8px;
+        padding: 14px 18px; margin-bottom: 28px; font-size: 0.85rem; color: var(--grey-2);
+        display: flex; align-items: flex-start; gap: 10px;
+      }
+      .client-notice svg { width: 16px; height: 16px; color: var(--gold); flex-shrink: 0; margin-top: 2px; }
+
+      /* ── Gallery toolbar ── */
+      .client-gallery-toolbar {
+        display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+        gap: 10px; margin-bottom: 18px;
+      }
+      .client-gallery-title {
+        font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--grey-3);
+      }
+      .client-gallery-title span { color: var(--grey-2); margin-left: 4px; }
+      .btn-dl-all {
+        padding: 9px 18px; background: var(--gold); color: #000; font-weight: 700;
+        font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase;
+        border-radius: 6px; display: flex; align-items: center; gap: 6px; transition: var(--trans);
+      }
+      .btn-dl-all:hover { background: var(--gold-lt); }
+      .btn-dl-all svg { width: 14px; height: 14px; }
+
+      /* ── Gallery grid ── */
+      .client-gallery-grid {
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+      }
+      .client-thumb {
+        position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden;
+        background: var(--bg-3); border: 1px solid var(--border); cursor: pointer;
+        transition: border-color 0.2s;
+      }
+      .client-thumb:hover { border-color: var(--border-l); }
+      .client-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+      /* Hover overlay with action buttons */
+      .client-thumb__overlay {
+        position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.7) 0%, transparent 50%);
+        opacity: 0; transition: opacity 0.18s;
+        display: flex; flex-direction: column; justify-content: flex-end; padding: 8px;
+      }
+      .client-thumb:hover .client-thumb__overlay { opacity: 1; }
+      .client-thumb__actions { display: flex; gap: 5px; }
+      .client-thumb__btn {
+        flex: 1; padding: 5px 4px; border-radius: 5px; font-size: 0.62rem; font-weight: 700;
+        letter-spacing: 0.05em; text-transform: uppercase; border: 1px solid; transition: var(--trans);
+        display: flex; align-items: center; justify-content: center; gap: 3px;
+      }
+      .client-thumb__btn--keep {
+        background: rgba(62,207,142,.2); border-color: var(--green); color: var(--green);
+      }
+      .client-thumb__btn--keep:hover,
+      .client-thumb__btn--keep.active { background: var(--green); color: #000; }
+      .client-thumb__btn--remove {
+        background: rgba(248,113,113,.15); border-color: var(--red); color: var(--red);
+      }
+      .client-thumb__btn--remove:hover,
+      .client-thumb__btn--remove.active { background: var(--red); color: #fff; }
+      .client-thumb__btn--dl {
+        background: rgba(0,0,0,.5); border-color: rgba(255,255,255,.25); color: var(--white);
+        flex: 0 0 30px;
+      }
+      .client-thumb__btn--dl:hover { background: var(--gold); border-color: var(--gold); color: #000; }
+      .client-thumb__btn svg { width: 11px; height: 11px; }
+
+      /* Approval badge on thumbnail (bottom-left) */
+      .client-thumb__badge {
+        position: absolute; top: 6px; right: 6px;
+        width: 22px; height: 22px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 11px; font-weight: 700; pointer-events: none; z-index: 2;
+        transition: var(--trans);
+      }
+      .client-thumb__badge--keep   { background: var(--green); color: #000; }
+      .client-thumb__badge--remove { background: var(--red); color: #fff; }
+      .client-thumb__badge--none   { display: none; }
+
+      /* ── Lightbox ── */
+      .client-lightbox {
+        position: fixed; inset: 0; z-index: 9000;
+        background: rgba(0,0,0,0.96); display: flex; flex-direction: column;
+        opacity: 0; pointer-events: none; transition: opacity 0.2s;
+      }
+      .client-lightbox.open { opacity: 1; pointer-events: all; }
+      .client-lightbox__topbar {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 14px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+      }
+      .client-lightbox__filename {
+        font-size: 0.85rem; color: var(--grey-1);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%;
+      }
+      .client-lightbox__counter { font-size: 0.78rem; color: var(--grey-3); flex-shrink: 0; }
+      .client-lightbox__close {
+        width: 32px; height: 32px; border-radius: 50%;
+        background: var(--bg-3); border: 1px solid var(--border);
+        display: flex; align-items: center; justify-content: center;
+        color: var(--grey-2); transition: var(--trans); flex-shrink: 0;
+      }
+      .client-lightbox__close:hover { background: var(--gold); color: #000; }
+      .client-lightbox__close svg { width: 14px; height: 14px; }
+      .client-lightbox__body {
+        flex: 1; display: flex; align-items: center; justify-content: center;
+        position: relative; overflow: hidden; min-height: 0;
+      }
+      .client-lightbox__img {
+        max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4px; display: block;
+      }
+      .client-lightbox__arrow {
+        position: absolute; top: 50%; transform: translateY(-50%);
+        width: 44px; height: 44px; border-radius: 50%;
+        background: rgba(0,0,0,0.7); border: 1px solid var(--border);
+        display: flex; align-items: center; justify-content: center;
+        color: var(--white); transition: var(--trans); z-index: 2;
+      }
+      .client-lightbox__arrow:hover { background: var(--gold); color: #000; border-color: var(--gold); }
+      .client-lightbox__arrow--prev { left: 16px; }
+      .client-lightbox__arrow--next { right: 16px; }
+      .client-lightbox__arrow svg { width: 20px; height: 20px; }
+      .client-lightbox__footer {
+        display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+        padding: 12px 20px; border-top: 1px solid var(--border); flex-shrink: 0; gap: 10px;
+      }
+      .client-lightbox__approval-btns { display: flex; gap: 8px; }
+      .client-lightbox__appr-btn {
+        padding: 8px 16px; border-radius: 6px; font-size: 0.72rem; font-weight: 700;
+        letter-spacing: 0.06em; text-transform: uppercase; border: 1px solid; transition: var(--trans);
+      }
+      .client-lightbox__appr-btn--keep {
+        border-color: var(--green); color: var(--green); background: transparent;
+      }
+      .client-lightbox__appr-btn--keep.active { background: var(--green); color: #000; }
+      .client-lightbox__appr-btn--remove {
+        border-color: var(--red); color: var(--red); background: transparent;
+      }
+      .client-lightbox__appr-btn--remove.active { background: var(--red); color: #fff; }
+      .client-lightbox__dl {
+        padding: 8px 18px; background: var(--gold); color: #000; font-weight: 700;
+        font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase;
+        border-radius: 6px; transition: var(--trans); border: none;
+      }
+      .client-lightbox__dl:hover { background: var(--gold-lt); }
+
+      /* ── Empty / error states ── */
+      .client-empty {
+        text-align: center; padding: 80px 24px; color: var(--grey-3);
+      }
+      .client-empty svg { width: 52px; height: 52px; margin: 0 auto 20px; opacity: .3; }
+      .client-empty h2 { font-family: var(--serif); color: var(--grey-2); margin-bottom: 8px; }
+      .client-empty p { font-size: 0.85rem; }
+
+      /* ── Toast ── */
+      .toast {
+        position: fixed; bottom: 28px; right: 28px; z-index: 99999;
+        background: var(--bg-2); border: 1px solid var(--border);
+        border-left: 3px solid var(--gold); border-radius: 8px;
+        padding: 14px 20px; font-size: 0.85rem; color: var(--grey-1);
+        transform: translateY(16px); opacity: 0; transition: var(--trans);
+        pointer-events: none; max-width: 320px;
+      }
+      .toast.show { transform: translateY(0); opacity: 1; }
+
+      /* ── Responsive ── */
+      @media (max-width: 600px) {
+        .client-main { padding: 20px 14px 48px; }
+        .client-gallery-grid { grid-template-columns: repeat(2, 1fr); }
+        .client-header { padding: 14px 16px; }
+      }
+    </style>
+  </head>
+  <body>
+
+    <!-- Header -->
+    <header class="client-header">
+      <div>
+        <div class="client-logo">
+          <span class="client-logo-nej">NEJ</span><span class="client-logo-studios">studios</span>
+        </div>
+        <div class="client-logo-tag">Client Gallery Portal</div>
+      </div>
+    </header>
+
+    <!-- Main -->
+    <main class="client-main" id="clientMain">
+      <!-- Populated by client.js -->
+    </main>
+
+    <!-- Lightbox -->
+    <div class="client-lightbox" id="clientLightbox">
+      <div class="client-lightbox__topbar">
+        <div class="client-lightbox__filename" id="clbFilename"></div>
+        <div class="client-lightbox__counter" id="clbCounter"></div>
+        <button class="client-lightbox__close" id="clbClose">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="client-lightbox__body">
+        <button class="client-lightbox__arrow client-lightbox__arrow--prev" id="clbPrev">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <img class="client-lightbox__img" id="clbImg" src="" alt="" />
+        <button class="client-lightbox__arrow client-lightbox__arrow--next" id="clbNext">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 6 15 12 9 18"/></svg>
+        </button>
+      </div>
+      <div class="client-lightbox__footer">
+        <div class="client-lightbox__approval-btns">
+          <button class="client-lightbox__appr-btn client-lightbox__appr-btn--keep" id="clbKeep">✓ Keep</button>
+          <button class="client-lightbox__appr-btn client-lightbox__appr-btn--remove" id="clbRemove">✕ Remove</button>
+        </div>
+        <button class="client-lightbox__dl" id="clbDownload">↓ Download</button>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="clientToast"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="js/client.js"></script>
+  </body>
+</html>

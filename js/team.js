@@ -4,10 +4,8 @@
    Features: all tasks bar, my tasks, start/end, reports
    ══════════════════════════════════════════════ */
 
-const TASKS_KEY    = 'nej_tasks';
-const TEAM_KEY     = 'nej_team';
-const SESSION_KEY  = 'nej_session';
-const SCHEDULE_KEY = 'nej_schedule';
+const TEAM_KEY    = 'nej_team';
+const SESSION_KEY = 'nej_session';
 
 /* ════════════════════════════════════════════
    TEAM CONFIG  ← add / edit team members here
@@ -25,9 +23,6 @@ const TEAM_CONFIG = [
 /* ════════════════════════════════════════════
    STORAGE HELPERS
    ════════════════════════════════════════════ */
-function getTasks()        { return JSON.parse(localStorage.getItem(TASKS_KEY)    || '[]'); }
-function saveTasks(arr)    { localStorage.setItem(TASKS_KEY, JSON.stringify(arr)); }
-function getSchedule()     { return JSON.parse(localStorage.getItem(SCHEDULE_KEY) || '[]'); }
 
 // Merges hardcoded TEAM_CONFIG with any members added via the admin UI (localStorage).
 // TEAM_CONFIG entries take precedence so credentials always work cross-device.
@@ -52,6 +47,20 @@ function setSession(obj) {
 }
 
 /* ════════════════════════════════════════════
+   PUSH NOTIFICATIONS
+   ════════════════════════════════════════════ */
+function requestNotifPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+function notify(title, body) {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification(title, { body, icon: '/favicon.ico' });
+  }
+}
+
+/* ════════════════════════════════════════════
    FORMATTERS
    ════════════════════════════════════════════ */
 function fmtDate(ts)  { if (!ts) return '—'; return new Date(ts).toLocaleDateString('en-NG', { dateStyle:'medium' }); }
@@ -59,9 +68,21 @@ function fmtTime(ts)  { if (!ts) return ''; return new Date(ts).toLocaleTimeStri
 function fmtShort(ts) { if (!ts) return '—'; return new Date(ts).toLocaleDateString('en-NG', { dateStyle:'short' }); }
 
 /* ════════════════════════════════════════════
+   CHECKLIST TEMPLATES
+   ════════════════════════════════════════════ */
+const CHECKLIST_TEMPLATES = {
+  studio:     ['Camera bodies charged', 'Memory cards formatted', 'Lighting rigs set up', 'Backdrops ready', 'Props arranged', 'Release forms printed'],
+  wedding:    ['Camera bodies charged', 'Backup camera ready', 'Flash units charged', 'Memory cards (x4 minimum)', 'Drone charged & permitted', 'Shot list printed', 'Venue scouted', 'Emergency kit packed'],
+  event:      ['Camera bodies charged', 'Memory cards formatted', 'Lighting equipment', 'Audio recorder', 'Shot list confirmed', 'Parking arranged'],
+  production: ['Camera bodies charged', 'Gimbal calibrated', 'Drone charged & permitted', 'Lights & diffusers', 'Audio kit checked', 'Script/shot list printed', 'Hard drives (2x backup)'],
+  meeting:    ['Notebook & pen', 'Contract documents', 'Pricing guide', 'Portfolio samples'],
+};
+
+/* ════════════════════════════════════════════
    SESSION / CURRENT MEMBER
    ════════════════════════════════════════════ */
 let currentMember = null; // populated after login / session restore
+let activeTab     = 'schedule';
 
 /* ════════════════════════════════════════════
    LOGIN
@@ -82,6 +103,7 @@ function showPortal(member) {
   document.getElementById('userBadgeName').textContent = member.name;
   switchTab('schedule');
   updateBadges();
+  requestNotifPermission();
 }
 
 function tryLogin() {
@@ -167,8 +189,6 @@ if (sess && sess.role === 'team') {
 /* ════════════════════════════════════════════
    TAB SWITCHING
    ════════════════════════════════════════════ */
-let activeTab = 'schedule';
-
 function switchTab(name) {
   activeTab = name;
   document.querySelectorAll('.t-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
@@ -191,12 +211,14 @@ document.querySelectorAll('.mobile-bottom-nav [data-tab]').forEach(btn => {
 /* ════════════════════════════════════════════
    SCHEDULE
    ════════════════════════════════════════════ */
-function renderSchedule() {
+async function renderSchedule() {
   const grid = document.getElementById('scheduleGrid');
   if (!grid) return;
 
+  grid.innerHTML = `<div class="sch-empty" style="opacity:0.5"><p style="color:var(--grey-3);font-size:0.85rem">Loading…</p></div>`;
+
   const todayStr = new Date().toISOString().slice(0, 10);
-  const shots    = getSchedule().slice().sort((a, b) => a.date.localeCompare(b.date));
+  const shots    = (await dbGetSchedule()).slice().sort((a, b) => a.date.localeCompare(b.date));
 
   const upcoming = shots.filter(s => s.date >= todayStr);
   const past     = shots.filter(s => s.date < todayStr).slice(-5).reverse();
@@ -224,8 +246,44 @@ function renderSchedule() {
     const isToday = s.date === todayStr;
     const cls     = isToday ? 'sch-card--today' : (isPast ? 'sch-card--past' : '');
     const lbl     = typeLabel[s.type] || s.type;
+
+    // Determine checklist items: saved items take priority, else use template
+    const savedItems    = s.checklist && s.checklist.length > 0 ? s.checklist : null;
+    const templateItems = CHECKLIST_TEMPLATES[s.type] || CHECKLIST_TEMPLATES['studio'];
+    const rawItems      = savedItems
+      ? savedItems
+      : templateItems.map(text => ({ text, checked: false }));
+
+    // Normalise items to { text, checked }
+    const items = rawItems.map(item =>
+      typeof item === 'string' ? { text: item, checked: false } : item
+    );
+
+    const doneCount  = items.filter(it => it.checked).length;
+    const totalCount = items.length;
+    const allDone    = doneCount === totalCount && totalCount > 0;
+    const pct        = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
+
+    const checklistHtml = `
+      <div class="sch-checklist" id="checklist-${s.id}" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--gold)">Checklist</span>
+          ${allDone ? `<span style="font-size:0.7rem;font-weight:700;color:var(--green);background:var(--green-bg);padding:2px 8px;border-radius:99px">All done ✓</span>` : `<span style="font-size:0.72rem;color:var(--grey-3)">${doneCount}/${totalCount}</span>`}
+        </div>
+        <div style="height:4px;background:var(--border);border-radius:99px;overflow:hidden;margin-bottom:12px">
+          <div style="height:100%;width:${pct}%;background:${allDone?'var(--green)':'var(--gold)'};border-radius:99px;transition:width 0.3s"></div>
+        </div>
+        <div class="sch-checklist-items" data-sched-id="${s.id}">
+          ${items.map((item, idx) => `
+            <label style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);cursor:pointer;font-size:0.82rem;color:${item.checked ? 'var(--grey-4)' : 'var(--grey-1)'};${item.checked ? 'text-decoration:line-through' : ''}">
+              <input type="checkbox" data-item-idx="${idx}" data-sched-id="${s.id}" ${item.checked ? 'checked' : ''} style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0" />
+              ${item.text}
+            </label>`).join('')}
+        </div>
+      </div>`;
+
     return `
-      <div class="sch-card ${cls}">
+      <div class="sch-card ${cls}" data-sched-card="${s.id}">
         <div class="sch-date-block">
           <div class="sch-date-block__day">${day}</div>
           <div class="sch-date-block__month">${month}</div>
@@ -242,6 +300,12 @@ function renderSchedule() {
             ${s.location   ? `<span>📍 ${s.location}</span>`   : ''}
           </div>
           ${s.notes ? `<div class="sch-body__notes">${s.notes}</div>` : ''}
+          ${s.deliverables ? `<div class="sch-body__notes" style="margin-top:6px;border-top:1px solid var(--border);padding-top:6px"><span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--gold);display:block;margin-bottom:2px">Deliverables</span>${s.deliverables}</div>` : ''}
+          <button class="sch-checklist-toggle" data-toggle-id="${s.id}" style="margin-top:12px;width:100%;padding:7px 12px;background:var(--bg-3);border:1px solid var(--border);border-radius:6px;font-size:0.72rem;font-weight:600;color:var(--grey-3);display:flex;align-items:center;justify-content:space-between;transition:var(--trans)">
+            <span>Checklist ${doneCount > 0 ? `(${doneCount}/${totalCount})` : ''}</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          ${checklistHtml}
         </div>
       </div>`;
   }
@@ -260,6 +324,79 @@ function renderSchedule() {
   }
 
   grid.innerHTML = html;
+
+  // Checklist toggle buttons
+  grid.querySelectorAll('.sch-checklist-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.toggleId;
+      const cl = document.getElementById('checklist-' + id);
+      if (!cl) return;
+      const open = cl.style.display === 'none' || cl.style.display === '';
+      cl.style.display = open ? 'block' : 'none';
+      btn.querySelector('svg').style.transform = open ? 'rotate(180deg)' : '';
+    });
+  });
+
+  // Checklist checkboxes
+  grid.querySelectorAll('.sch-checklist-items input[type=checkbox]').forEach(cb => {
+    cb.addEventListener('change', async () => {
+      const schedId  = cb.dataset.schedId;
+      const itemIdx  = parseInt(cb.dataset.itemIdx, 10);
+      const schedObj = shots.find(s => s.id === schedId);
+      if (!schedObj) return;
+
+      // Build normalised items array with saved data
+      const templateItems = CHECKLIST_TEMPLATES[schedObj.type] || CHECKLIST_TEMPLATES['studio'];
+      const rawItems      = schedObj.checklist && schedObj.checklist.length > 0
+        ? schedObj.checklist
+        : templateItems.map(text => ({ text, checked: false }));
+      const items = rawItems.map(item =>
+        typeof item === 'string' ? { text: item, checked: false } : { ...item }
+      );
+
+      items[itemIdx].checked = cb.checked;
+
+      // Persist
+      await dbUpdateScheduleChecklist(schedId, items);
+      schedObj.checklist = items;
+
+      // Update UI: progress bar, counter, label, allDone badge
+      const container = cb.closest('.sch-checklist');
+      const allItems  = Array.from(container.querySelectorAll('input[type=checkbox]'));
+      const done      = allItems.filter(c => c.checked).length;
+      const total     = allItems.length;
+      const pct       = total > 0 ? Math.round((done / total) * 100) : 0;
+      const allDone   = done === total && total > 0;
+
+      // Update progress bar
+      const bar = container.querySelector('div[style*="height:4px"] > div');
+      if (bar) {
+        bar.style.width = pct + '%';
+        bar.style.background = allDone ? 'var(--green)' : 'var(--gold)';
+      }
+
+      // Update counter/badge
+      const headerSpan = container.querySelector('div:first-child > span:last-child');
+      if (headerSpan) {
+        if (allDone) {
+          headerSpan.textContent = 'All done ✓';
+          headerSpan.style.cssText = 'font-size:0.7rem;font-weight:700;color:var(--green);background:var(--green-bg);padding:2px 8px;border-radius:99px';
+        } else {
+          headerSpan.textContent = `${done}/${total}`;
+          headerSpan.style.cssText = 'font-size:0.72rem;color:var(--grey-3)';
+        }
+      }
+
+      // Update toggle button label
+      const card   = container.closest('[data-sched-card]');
+      const toggle = card ? card.querySelector('.sch-checklist-toggle span') : null;
+      if (toggle) toggle.textContent = `Checklist (${done}/${total})`;
+
+      // Update label style
+      cb.closest('label').style.color          = cb.checked ? 'var(--grey-4)' : 'var(--grey-1)';
+      cb.closest('label').style.textDecoration = cb.checked ? 'line-through' : '';
+    });
+  });
 }
 
 /* ════════════════════════════════════════════
@@ -276,13 +413,14 @@ document.querySelectorAll('[data-bar-filter]').forEach(btn => {
   });
 });
 
-function renderAllTasksBar() {
-  let tasks = getTasks();
+async function renderAllTasksBar() {
+  document.getElementById('allTasksBar').innerHTML = `<div class="tasks-bar-empty" style="opacity:0.5">Loading…</div>`;
+  const allTasks = await dbGetTasks();
+  let tasks = allTasks;
   if (barFilter !== 'all') tasks = tasks.filter(t => t.status === barFilter);
 
-  const bar       = document.getElementById('allTasksBar');
-  const countEl   = document.getElementById('allTasksCount');
-  const allTasks  = getTasks();
+  const bar     = document.getElementById('allTasksBar');
+  const countEl = document.getElementById('allTasksCount');
 
   countEl.textContent = allTasks.length + ' task' + (allTasks.length !== 1 ? 's' : '');
 
@@ -312,9 +450,10 @@ function renderAllTasksBar() {
 /* ════════════════════════════════════════════
    MY TASKS
    ════════════════════════════════════════════ */
-function renderMyTasks() {
+async function renderMyTasks() {
   if (!currentMember) return;
-  const myTasks = getTasks().filter(t => t.assignedTo === currentMember.id);
+  document.getElementById('myTasksGrid').innerHTML = `<div class="empty-state" style="grid-column:1/-1;opacity:0.5"><p style="color:var(--grey-3);font-size:0.85rem">Loading…</p></div>`;
+  const myTasks = (await dbGetTasks()).filter(t => t.assignedTo === currentMember.id);
   const grid    = document.getElementById('myTasksGrid');
 
   if (myTasks.length === 0) {
@@ -391,28 +530,20 @@ function handleMyTaskAction(id, action) {
   if (action === 'report')   { openReportModal(id); return; }
 }
 
-function startTask(id) {
-  const tasks = getTasks();
-  const idx   = tasks.findIndex(t => t.id === id);
-  if (idx === -1) return;
-  if (tasks[idx].status !== 'pending') return;
-  tasks[idx].status    = 'in-progress';
-  tasks[idx].startedAt = Date.now();
-  saveTasks(tasks);
+async function startTask(id) {
+  const task = await dbGetTask(id);
+  if (!task || task.status !== 'pending') return;
+  await dbUpdateTask(id, { status: 'in-progress', started_at: Date.now() });
   renderMyTasks();
   renderAllTasksBar();
   updateBadges();
   showToast('Task started — good luck!');
 }
 
-function completeTask(id) {
-  const tasks = getTasks();
-  const idx   = tasks.findIndex(t => t.id === id);
-  if (idx === -1) return;
-  if (tasks[idx].status !== 'in-progress') return;
-  tasks[idx].status      = 'completed';
-  tasks[idx].completedAt = Date.now();
-  saveTasks(tasks);
+async function completeTask(id) {
+  const task = await dbGetTask(id);
+  if (!task || task.status !== 'in-progress') return;
+  await dbUpdateTask(id, { status: 'completed', completed_at: Date.now() });
   renderMyTasks();
   renderAllTasksBar();
   updateBadges();
@@ -433,8 +564,8 @@ const pastReportsList     = document.getElementById('pastReportsList');
 
 let activeReportTaskId = null;
 
-function openReportModal(taskId) {
-  const task = getTasks().find(t => t.id === taskId);
+async function openReportModal(taskId) {
+  const task = await dbGetTask(taskId);
   if (!task) return;
 
   activeReportTaskId = taskId;
@@ -474,26 +605,24 @@ function renderPastReports(task) {
   }</div>`;
 }
 
-submitReportBtn.addEventListener('click', () => {
+submitReportBtn.addEventListener('click', async () => {
   const content = reportTextarea.value.trim();
   if (!content) { reportTextarea.focus(); return; }
   if (!currentMember || !activeReportTaskId) return;
 
-  const tasks = getTasks();
-  const idx   = tasks.findIndex(t => t.id === activeReportTaskId);
-  if (idx === -1) return;
+  const task = await dbGetTask(activeReportTaskId);
+  if (!task) return;
 
-  if (!tasks[idx].reports) tasks[idx].reports = [];
-  tasks[idx].reports.push({
+  const reports = [...(task.reports || []), {
     memberId:   currentMember.id,
     memberName: currentMember.name,
     content,
     createdAt:  Date.now(),
-  });
+  }];
 
-  saveTasks(tasks);
+  await dbUpdateTask(activeReportTaskId, { reports });
   reportTextarea.value = '';
-  renderPastReports(tasks[idx]);
+  renderPastReports({ ...task, reports });
   renderMyTasks();
   showToast('Report submitted');
 });
@@ -511,19 +640,19 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeReportM
 /* ════════════════════════════════════════════
    BADGES
    ════════════════════════════════════════════ */
-function updateBadges() {
-  const allTasks = getTasks();
+async function updateBadges() {
+  const [allTasks, schedule] = await Promise.all([dbGetTasks(), dbGetSchedule()]);
 
   // Schedule badge: count today's shots
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const todayCount = getSchedule().filter(s => s.date === todayStr).length;
-  const schBadge = document.getElementById('scheduleBadge');
+  const todayStr   = new Date().toISOString().slice(0, 10);
+  const todayCount = schedule.filter(s => s.date === todayStr).length;
+  const schBadge   = document.getElementById('scheduleBadge');
   schBadge.textContent = todayCount;
   schBadge.classList.toggle('hidden', todayCount === 0);
 
   // All tasks badge: count pending
   const pendingCount = allTasks.filter(t => t.status === 'pending').length;
-  const allBadge = document.getElementById('allTasksBadge');
+  const allBadge     = document.getElementById('allTasksBadge');
   allBadge.textContent = pendingCount;
   allBadge.classList.toggle('hidden', pendingCount === 0);
 
@@ -549,19 +678,42 @@ function showToast(msg) {
 }
 
 /* ════════════════════════════════════════════
-   CROSS-TAB SYNC
+   REAL-TIME SYNC
    ════════════════════════════════════════════ */
 window.addEventListener('storage', e => {
   if (!currentMember) return;
-  if (e.key === TASKS_KEY) {
-    renderAllTasksBar();
-    renderMyTasks();
-    updateBadges();
-  }
   if (e.key === TEAM_KEY) {
-    // If current member was removed by admin, force logout
     const team   = getTeam();
     const exists = team.find(m => m.id === currentMember.id);
     if (!exists) { doLogout(); }
   }
+});
+
+// Live updates from Supabase — admin changes appear instantly on team portal
+dbSubscribeTasks(payload => {
+  if (!currentMember) return;
+  renderAllTasksBar();
+  renderMyTasks();
+  updateBadges();
+  // Notify when a task is newly assigned to this member
+  if (payload && payload.new && payload.eventType === 'INSERT') {
+    const n = payload.new;
+    if (n.assigned_to === currentMember.id && n.status === 'pending') {
+      notify('New Task Assigned', n.title);
+    }
+  }
+  if (payload && payload.new && payload.eventType === 'UPDATE') {
+    const n = payload.new;
+    const o = payload.old || {};
+    // Notify if this task was just assigned to the current member (was unassigned or assigned to someone else)
+    if (n.assigned_to === currentMember.id && n.status === 'pending' && o.assigned_to !== currentMember.id) {
+      notify('New Task Assigned', n.title);
+    }
+  }
+});
+
+dbSubscribeSchedule(() => {
+  if (!currentMember) return;
+  if (activeTab === 'schedule') renderSchedule();
+  updateBadges();
 });

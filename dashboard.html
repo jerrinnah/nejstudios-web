@@ -337,7 +337,7 @@
 
       /* Task cards */
       .tasks-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; }
-      .task-card { background:var(--bg-2); border:1px solid var(--border); border-radius:var(--radius); padding:20px; transition:var(--trans); }
+      .task-card { background:var(--bg-2); border:1px solid var(--border); border-radius:var(--radius); padding:20px; transition:var(--trans); overflow:hidden; min-width:0; }
       .task-card:hover { border-color:var(--border-l); }
       .task-card--pending { border-left:2px solid var(--orange); }
       .task-card--in-progress { border-left:2px solid var(--purple); }
@@ -350,8 +350,8 @@
       .priority-badge--medium { background:var(--orange-bg); color:var(--orange); }
       .priority-badge--low { background:var(--green-bg); color:var(--green); }
 
-      .task-card__title { font-size:0.95rem; font-weight:600; color:var(--white); margin-bottom:6px; line-height:1.4; }
-      .task-card__desc { font-size:0.78rem; color:var(--grey-3); line-height:1.5; margin-bottom:14px; }
+      .task-card__title { font-size:0.95rem; font-weight:600; color:var(--white); margin-bottom:6px; line-height:1.4; word-break:break-word; overflow-wrap:anywhere; }
+      .task-card__desc { font-size:0.78rem; color:var(--grey-3); line-height:1.5; margin-bottom:14px; word-break:break-word; overflow-wrap:anywhere; }
       .task-card__info { padding:12px 0; border-top:1px solid var(--border); border-bottom:1px solid var(--border); margin-bottom:12px; display:flex; flex-direction:column; gap:6px; }
       .task-info-row { display:flex; align-items:center; gap:8px; font-size:0.76rem; color:var(--grey-3); }
       .task-info-row strong { color:var(--grey-1); }
@@ -438,9 +438,229 @@
       .report-item__body { font-size:0.82rem; color:var(--grey-2); line-height:1.6; white-space:pre-wrap; }
       .no-reports { text-align:center; padding:32px 16px; color:var(--grey-3); font-size:0.85rem; }
 
+      /* ── Client Gallery ── */
+      .gallery-section { margin-top:24px; border-top:1px solid var(--border); padding-top:20px; }
+      .gallery-section__header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; gap:8px; flex-wrap:wrap; }
+      .gallery-section__title { font-size:0.72rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--grey-3); }
+      .gallery-section__actions { display:flex; align-items:center; gap:6px; }
+      .gallery-btn {
+        font-size:0.68rem; font-weight:600; letter-spacing:0.06em; text-transform:uppercase;
+        padding:5px 10px; border-radius:6px; border:1px solid var(--border-l);
+        background:var(--bg-3); color:var(--grey-2); cursor:pointer; transition:var(--trans);
+        display:flex; align-items:center; gap:5px;
+      }
+      .gallery-btn svg { width:12px; height:12px; flex-shrink:0; }
+      .gallery-btn:hover { border-color:var(--gold); color:var(--gold); }
+      .gallery-btn.active { background:var(--gold); color:#000; border-color:var(--gold); }
+      .gallery-btn:disabled { opacity:.35; pointer-events:none; }
+      .gallery-dropzone {
+        border:2px dashed var(--border-l); border-radius:10px; padding:24px 16px;
+        text-align:center; cursor:pointer; transition:var(--trans); position:relative;
+      }
+      .gallery-dropzone:hover, .gallery-dropzone.drag-over {
+        border-color:var(--gold); background:var(--gold-glow);
+      }
+      .gallery-dropzone input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+      .gallery-dropzone__icon { width:32px; height:32px; margin:0 auto 8px; color:var(--grey-3); }
+      .gallery-dropzone__label { font-size:0.82rem; color:var(--grey-2); }
+      .gallery-dropzone__sub { font-size:0.72rem; color:var(--grey-4); margin-top:4px; }
+      .gallery-progress-list { display:flex; flex-direction:column; gap:8px; margin-top:12px; }
+      .gallery-progress-item { background:var(--bg-3); border:1px solid var(--border); border-radius:8px; padding:10px 12px; }
+      .gallery-progress-item__name { font-size:0.78rem; color:var(--grey-1); margin-bottom:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .gallery-progress-bar { height:4px; background:var(--bg-4); border-radius:2px; overflow:hidden; }
+      .gallery-progress-bar__fill { height:100%; background:var(--gold); border-radius:2px; transition:width 0.1s linear; }
+      .gallery-progress-item__pct { font-size:0.68rem; color:var(--grey-3); margin-top:4px; text-align:right; }
+      .gallery-progress-item.done .gallery-progress-bar__fill { background:var(--green); }
+      .gallery-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:14px; }
+      .gallery-thumb { position:relative; aspect-ratio:1; border-radius:6px; overflow:hidden; background:var(--bg-3); border:1px solid var(--border); cursor:pointer; }
+      .gallery-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+      .gallery-thumb__overlay {
+        position:absolute; inset:0; display:flex; align-items:flex-end; justify-content:flex-end;
+        padding:5px; gap:4px; opacity:0; transition:opacity 0.15s; background:linear-gradient(to top, rgba(0,0,0,.5) 0%, transparent 60%);
+      }
+      .gallery-thumb:hover .gallery-thumb__overlay { opacity:1; }
+      .gallery-thumb__btn {
+        width:22px; height:22px; background:rgba(0,0,0,.75); border:none; border-radius:50%;
+        cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+        transition:background 0.15s;
+      }
+      .gallery-thumb__btn:hover { background:var(--gold); }
+      .gallery-thumb__btn svg { width:11px; height:11px; color:#fff; }
+      .gallery-thumb__btn.del:hover { background:#e53e3e; }
+      /* select mode */
+      .gallery-thumb__check {
+        position:absolute; top:5px; left:5px; width:18px; height:18px;
+        background:rgba(0,0,0,.6); border:2px solid rgba(255,255,255,.5); border-radius:4px;
+        display:none; align-items:center; justify-content:center;
+      }
+      .gallery-grid.select-mode .gallery-thumb__check { display:flex; }
+      .gallery-grid.select-mode .gallery-thumb__overlay { display:none; }
+      .gallery-thumb.selected .gallery-thumb__check { background:var(--gold); border-color:var(--gold); }
+      .gallery-thumb.selected { outline:2px solid var(--gold); }
+      .gallery-thumb__check svg { width:10px; height:10px; color:#000; display:none; }
+      .gallery-thumb.selected .gallery-thumb__check svg { display:block; }
+      .gallery-empty { text-align:center; padding:16px; color:var(--grey-4); font-size:0.78rem; }
+      .gallery-count { font-size:0.72rem; color:var(--grey-3); }
+
+      /* ── Approval badges ── */
+      .gallery-thumb__approval {
+        position:absolute; bottom:5px; left:5px;
+        width:20px; height:20px; border-radius:50%;
+        display:flex; align-items:center; justify-content:center;
+        font-size:11px; font-weight:700; pointer-events:none; z-index:2;
+      }
+      .gallery-thumb__approval--keep  { background:var(--green); color:#000; }
+      .gallery-thumb__approval--remove { background:var(--red); color:#fff; }
+
+      /* ── Watermark overlay ── */
+      .gallery-grid.watermark-on .gallery-thumb::after {
+        content: 'NEJstudios';
+        position: absolute; inset: 0;
+        display: flex; align-items: center; justify-content: center;
+        font-family: var(--serif); font-size: 0.75rem; font-weight: 600;
+        color: rgba(255,255,255,0.55); letter-spacing: 0.12em; text-transform: uppercase;
+        transform: rotate(-30deg);
+        pointer-events: none; z-index: 3;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+      }
+
+      /* ── Lightbox ── */
+      .lightbox {
+        position: fixed; inset: 0; z-index: 99000;
+        background: rgba(0,0,0,0.96);
+        display: flex; flex-direction: column;
+        opacity: 0; pointer-events: none; transition: opacity 0.2s;
+      }
+      .lightbox.open { opacity: 1; pointer-events: all; }
+      .lightbox__topbar {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 14px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+      }
+      .lightbox__filename {
+        font-size: 0.85rem; color: var(--grey-1); font-family: var(--sans);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%;
+      }
+      .lightbox__counter { font-size: 0.78rem; color: var(--grey-3); flex-shrink: 0; }
+      .lightbox__close {
+        width: 32px; height: 32px; border-radius: 50%;
+        background: var(--bg-3); border: 1px solid var(--border);
+        display: flex; align-items: center; justify-content: center;
+        color: var(--grey-2); transition: var(--trans); flex-shrink: 0;
+      }
+      .lightbox__close:hover { background: var(--gold); color: #000; }
+      .lightbox__close svg { width: 14px; height: 14px; }
+      .lightbox__body {
+        flex: 1; display: flex; align-items: center; justify-content: center;
+        position: relative; overflow: hidden; min-height: 0;
+      }
+      .lightbox__img {
+        max-width: 100%; max-height: 100%; object-fit: contain;
+        border-radius: 4px; display: block;
+      }
+      .lightbox__arrow {
+        position: absolute; top: 50%; transform: translateY(-50%);
+        width: 44px; height: 44px; border-radius: 50%;
+        background: rgba(0,0,0,0.7); border: 1px solid var(--border);
+        display: flex; align-items: center; justify-content: center;
+        color: var(--white); font-size: 1.2rem; transition: var(--trans); z-index: 2;
+      }
+      .lightbox__arrow:hover { background: var(--gold); color: #000; border-color: var(--gold); }
+      .lightbox__arrow--prev { left: 16px; }
+      .lightbox__arrow--next { right: 16px; }
+      .lightbox__arrow svg { width: 20px; height: 20px; }
+      .lightbox__footer {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 12px 20px; border-top: 1px solid var(--border); flex-shrink: 0; gap: 12px;
+      }
+      .lightbox__approval-label {
+        font-size: 0.78rem; font-weight: 600; letter-spacing: 0.06em;
+        padding: 4px 10px; border-radius: 99px;
+      }
+      .lightbox__approval-label--keep   { background: var(--green-bg); color: var(--green); }
+      .lightbox__approval-label--remove { background: var(--red-bg); color: var(--red); }
+      .lightbox__approval-label--none   { color: var(--grey-4); font-size: 0.72rem; }
+      .lightbox__dl {
+        padding: 8px 18px; background: var(--gold); color: #000; font-weight: 700;
+        font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase;
+        border-radius: 6px; transition: var(--trans); border: none;
+      }
+      .lightbox__dl:hover { background: var(--gold-lt); }
+
       /* ── Toast ── */
       .toast { position:fixed; bottom:28px; right:28px; z-index:99999; background:var(--bg-2); border:1px solid var(--border); border-left:3px solid var(--gold); border-radius:8px; padding:14px 20px; font-size:0.85rem; color:var(--grey-1); transform:translateY(16px); opacity:0; transition:var(--trans); pointer-events:none; max-width:320px; }
       .toast.show { transform:translateY(0); opacity:1; }
+
+      /* ════ BOOKING MODAL ════ */
+      .booking-modal-box {
+        position:relative; z-index:1; background:var(--bg-2); border:1px solid var(--border);
+        border-radius:16px; padding:0; width:100%; max-width:640px;
+        transform:scale(0.96); transition:transform 0.25s; max-height:90vh; overflow-y:auto; display:flex; flex-direction:column;
+      }
+      .modal-overlay.open .booking-modal-box { transform:scale(1); }
+      .booking-modal-header {
+        display:flex; align-items:center; justify-content:space-between;
+        padding:24px 28px 0; flex-shrink:0;
+      }
+      .booking-modal-header h3 { font-family:var(--serif); font-size:1.3rem; color:var(--white); }
+      .booking-modal-body { padding:20px 28px 28px; }
+      .bm-tabs { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:24px; }
+      .bm-tab {
+        padding:10px 18px; font-size:0.8rem; font-weight:600; color:var(--grey-3);
+        border-bottom:2px solid transparent; transition:var(--trans); cursor:pointer;
+      }
+      .bm-tab:hover { color:var(--grey-1); }
+      .bm-tab.active { color:var(--gold); border-bottom-color:var(--gold); }
+      .bm-panel { display:none; }
+      .bm-panel.active { display:block; }
+      .bm-form { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+      .bm-form .full { grid-column:1/-1; }
+      .bm-session-picker { display:flex; gap:8px; flex-wrap:wrap; grid-column:1/-1; }
+      .bm-sp-btn {
+        flex:1; min-width:80px; padding:8px 10px; border:1px solid var(--border); border-radius:8px;
+        background:var(--bg-3); color:var(--grey-2); font-size:0.72rem; font-weight:600;
+        text-align:center; transition:var(--trans); cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:3px;
+      }
+      .bm-sp-btn:hover { border-color:var(--gold); color:var(--gold); }
+      .bm-sp-btn.selected { border-color:var(--gold); background:var(--gold-glow); color:var(--gold); }
+      .bm-sp-btn .sp-emoji { font-size:1.1rem; }
+      .btn-submit-booking {
+        grid-column:1/-1; padding:12px; background:var(--gold); color:#000;
+        font-weight:700; font-size:0.82rem; letter-spacing:0.08em; text-transform:uppercase;
+        border-radius:8px; transition:var(--trans); border:none; cursor:pointer; font-family:var(--sans);
+      }
+      .btn-submit-booking:hover { background:var(--gold-lt); }
+      @media (max-width:600px) {
+        .bm-form { grid-template-columns:1fr; }
+        .bm-form .full { grid-column:1; }
+        .booking-modal-header { padding:18px 18px 0; }
+        .booking-modal-body { padding:16px 18px 20px; }
+      }
+
+      /* ════ SUMMARY PANEL ════ */
+      .summary-header { margin-bottom:28px; }
+      .summary-header h2 { font-family:var(--serif); font-size:1.3rem; color:var(--white); }
+      .summary-date { font-size:0.82rem; color:var(--grey-3); margin-top:4px; }
+      .summary-sections { display:flex; flex-direction:column; gap:24px; }
+      .summary-section { background:var(--bg-2); border:1px solid var(--border); border-radius:var(--radius); padding:20px 22px; }
+      .summary-section-title {
+        font-size:0.65rem; font-weight:700; letter-spacing:0.18em; text-transform:uppercase;
+        color:var(--grey-4); margin-bottom:14px; display:flex; align-items:center; gap:8px;
+      }
+      .summary-section-title::after { content:""; flex:1; height:1px; background:var(--border); }
+      .summary-counts { display:flex; gap:16px; flex-wrap:wrap; }
+      .summary-count-item { text-align:center; }
+      .summary-count-item__value { font-family:var(--serif); font-size:1.8rem; font-weight:700; line-height:1; }
+      .summary-count-item__label { font-size:0.62rem; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:var(--grey-4); margin-top:4px; }
+      .summary-list { display:flex; flex-direction:column; gap:8px; }
+      .summary-list-item { padding:10px 14px; background:var(--bg-3); border:1px solid var(--border); border-radius:8px; font-size:0.82rem; color:var(--grey-2); }
+      .summary-list-item strong { color:var(--white); }
+      .summary-empty { font-size:0.82rem; color:var(--grey-4); font-style:italic; }
+      .btn-refresh-summary {
+        padding:9px 18px; border:1px solid var(--border); border-radius:6px;
+        font-size:0.72rem; font-weight:600; color:var(--grey-2); transition:var(--trans); display:inline-flex; align-items:center; gap:6px;
+      }
+      .btn-refresh-summary:hover { border-color:var(--gold); color:var(--gold); }
+      .btn-refresh-summary svg { width:14px; height:14px; }
 
       /* ════ MOBILE BOTTOM NAV ════ */
       .mobile-bottom-nav {
@@ -462,10 +682,131 @@
         min-width:14px; text-align:center; pointer-events:none;
       }
 
+      /* ════ INVOICE MODAL ════ */
+      #invoiceModal {
+        position:fixed; inset:0; z-index:99000; background:#fff;
+        display:none; flex-direction:column; overflow-y:auto;
+      }
+      #invoiceModal.open { display:flex; }
+      .invoice-chrome {
+        background:#f5f5f5; border-bottom:1px solid #ddd;
+        padding:12px 24px; display:flex; align-items:center; gap:12px;
+        flex-shrink:0;
+      }
+      .invoice-chrome h2 { font-size:0.9rem; font-weight:600; color:#333; margin-left:auto; }
+      .btn-invoice-close {
+        padding:8px 16px; background:#fff; border:1px solid #ccc; border-radius:6px;
+        font-size:0.78rem; color:#333; cursor:pointer; transition:background 0.2s;
+      }
+      .btn-invoice-close:hover { background:#eee; }
+      .btn-invoice-print {
+        padding:8px 18px; background:#c9a84c; border:none; border-radius:6px;
+        font-size:0.78rem; font-weight:700; color:#000; cursor:pointer; transition:background 0.2s;
+        text-transform:uppercase; letter-spacing:0.08em;
+      }
+      .btn-invoice-print:hover { background:#e0c06a; }
+      #invoiceBody {
+        max-width:780px; width:100%; margin:32px auto; padding:48px;
+        background:#fff; flex:1;
+        font-family:"Outfit", system-ui, sans-serif; color:#111;
+      }
+      .inv-header {
+        display:flex; align-items:flex-start; justify-content:space-between;
+        padding-bottom:24px; border-bottom:3px solid #c9a84c; margin-bottom:28px;
+      }
+      .inv-logo-name {
+        font-family:"Playfair Display", Georgia, serif;
+        font-size:2rem; font-weight:700; color:#111; line-height:1;
+      }
+      .inv-logo-name span { color:#c9a84c; }
+      .inv-tagline { font-size:0.78rem; color:#666; margin-top:4px; letter-spacing:0.06em; }
+      .inv-title-block { text-align:right; }
+      .inv-title-block h1 {
+        font-family:"Playfair Display", Georgia, serif;
+        font-size:2rem; font-weight:400; color:#c9a84c; text-transform:uppercase;
+        letter-spacing:0.12em;
+      }
+      .inv-number { font-size:0.85rem; color:#555; margin-top:4px; }
+      .inv-meta {
+        display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:28px;
+      }
+      .inv-meta-block h4 {
+        font-size:0.62rem; font-weight:700; letter-spacing:0.16em; text-transform:uppercase;
+        color:#c9a84c; margin-bottom:8px; border-bottom:1px solid #eee; padding-bottom:4px;
+      }
+      .inv-meta-block p { font-size:0.88rem; color:#333; line-height:1.7; }
+      .inv-meta-block strong { color:#111; }
+      .inv-table { width:100%; border-collapse:collapse; margin-bottom:24px; }
+      .inv-table thead tr { background:#c9a84c; }
+      .inv-table thead th {
+        padding:10px 14px; font-size:0.7rem; font-weight:700; letter-spacing:0.1em;
+        text-transform:uppercase; color:#000; text-align:left;
+      }
+      .inv-table thead th:last-child { text-align:right; }
+      .inv-table tbody tr { border-bottom:1px solid #eee; }
+      .inv-table tbody tr:nth-child(even) { background:#fafafa; }
+      .inv-table tbody td {
+        padding:12px 14px; font-size:0.88rem; color:#333; vertical-align:top;
+      }
+      .inv-table tbody td:last-child { text-align:right; font-weight:600; color:#111; }
+      .inv-table tfoot tr { border-top:2px solid #c9a84c; }
+      .inv-table tfoot td {
+        padding:12px 14px; font-size:0.92rem; font-weight:700; color:#111;
+      }
+      .inv-table tfoot td:last-child { text-align:right; color:#c9a84c; font-size:1rem; }
+      .inv-section { margin-bottom:20px; }
+      .inv-section h4 {
+        font-size:0.62rem; font-weight:700; letter-spacing:0.16em; text-transform:uppercase;
+        color:#c9a84c; margin-bottom:8px; border-bottom:1px solid #eee; padding-bottom:4px;
+      }
+      .inv-section p { font-size:0.86rem; color:#444; line-height:1.7; }
+      .inv-footer {
+        border-top:1px solid #ddd; padding-top:20px; text-align:center;
+        font-size:0.78rem; color:#888; margin-top:32px;
+      }
+      .inv-footer strong { color:#c9a84c; }
+      @media print {
+        body > *:not(#invoiceModal) { display:none !important; }
+        #invoiceModal { display:flex !important; position:static; overflow:visible; }
+        .invoice-chrome { display:none !important; }
+        #invoiceBody { margin:0; padding:24px; max-width:100%; }
+        .inv-header { border-bottom-color:#c9a84c; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+        .inv-table thead tr { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+      }
+
+      /* ════ GALLERY PANEL ════ */
+      .gallery-layout { display:grid; grid-template-columns:380px 1fr; gap:28px; align-items:start; }
+      .gallery-form-card { background:var(--bg-2); border:1px solid var(--border); border-radius:var(--radius); padding:24px; position:sticky; top:100px; }
+      .gallery-form-card h3 { font-family:var(--serif); font-size:1.1rem; color:var(--white); margin-bottom:6px; }
+      .gallery-form-card p { font-size:0.78rem; color:var(--grey-3); margin-bottom:20px; }
+      .gallery-form { display:flex; flex-direction:column; gap:12px; }
+      .gallery-files-list { display:flex; flex-direction:column; gap:8px; }
+      .gallery-file-row { display:grid; grid-template-columns:1fr 1fr auto; gap:8px; align-items:center; }
+      .gallery-file-row .form-input { font-size:0.8rem; padding:8px 10px; }
+      .btn-remove-file { width:28px; height:28px; display:flex; align-items:center; justify-content:center; border-radius:6px; border:1px solid var(--border); color:var(--grey-3); font-size:1rem; line-height:1; transition:var(--trans); flex-shrink:0; }
+      .btn-remove-file:hover { border-color:var(--red); color:var(--red); }
+      .btn-add-file { padding:8px 14px; border:1px dashed var(--border-l); border-radius:6px; font-size:0.75rem; color:var(--grey-3); transition:var(--trans); text-align:center; width:100%; }
+      .btn-add-file:hover { border-color:var(--gold); color:var(--gold); }
+      .gallery-links-section h3 { font-family:var(--serif); font-size:1.1rem; color:var(--white); margin-bottom:16px; }
+      .gallery-links-grid { display:flex; flex-direction:column; gap:10px; }
+      .gallery-link-card { background:var(--bg-2); border:1px solid var(--border); border-radius:var(--radius); padding:16px 20px; }
+      .gallery-link-card__top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:10px; }
+      .gallery-link-card__name { font-size:0.92rem; font-weight:600; color:var(--white); }
+      .gallery-link-card__meta { font-size:0.75rem; color:var(--grey-3); margin-top:3px; }
+      .gallery-link-card__url { font-size:0.78rem; color:var(--gold); word-break:break-all; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+      .gallery-link-card__url a { color:var(--gold); text-decoration:underline; }
+      .btn-copy-link { padding:3px 8px; border:1px solid rgba(201,168,76,.3); border-radius:4px; font-size:0.62rem; color:var(--gold); transition:var(--trans); flex-shrink:0; }
+      .btn-copy-link:hover { background:var(--gold-glow); }
+      .gallery-link-card__actions { display:flex; gap:6px; }
+      .btn-del-gallery { padding:5px 12px; border:1px solid var(--border); border-radius:6px; font-size:0.68rem; font-weight:600; color:var(--grey-3); transition:var(--trans); }
+      .btn-del-gallery:hover { border-color:var(--red); color:var(--red); }
+
       /* ════ RESPONSIVE ════ */
       @media (max-width:1100px) {
         .team-layout { grid-template-columns:1fr; }
         .team-form-card { position:static; }
+        .gallery-layout { grid-template-columns:1fr; }
+        .gallery-form-card { position:static; }
       }
       @media (max-width:900px) {
         .sidebar { transform:translateX(-100%); }
@@ -571,6 +912,10 @@
           <button class="nav-item" data-etype="music-video" data-kind="event"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>Music Video</button>
 
           <div class="nav-section" style="margin-top:8px">Management</div>
+          <button class="nav-item nav-panel-trigger" data-panel="schedule">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Schedule
+          </button>
           <button class="nav-item nav-panel-trigger" data-panel="tasks">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
             Tasks
@@ -579,6 +924,14 @@
           <button class="nav-item nav-panel-trigger" data-panel="team">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
             Team Members
+          </button>
+          <button class="nav-item nav-panel-trigger" data-panel="gallery">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            Gallery Links
+          </button>
+          <button class="nav-item nav-panel-trigger" data-panel="summary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 10h8M8 14h5"/></svg>
+            Daily Summary
           </button>
 
           <div class="nav-section" style="margin-top:8px">Site</div>
@@ -611,10 +964,10 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
               <span>Home</span>
             </a>
-            <a href="booking" target="_blank" class="btn-new-booking">
+            <button class="btn-new-booking" id="btnNewBooking">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               <span>New Booking</span>
-            </a>
+            </button>
           </div>
         </div>
 
@@ -624,6 +977,10 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             Bookings
           </button>
+          <button class="tab-btn" data-tab="schedule">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Schedule
+          </button>
           <button class="tab-btn" data-tab="tasks">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
             Tasks
@@ -632,6 +989,14 @@
           <button class="tab-btn" data-tab="team">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
             Team
+          </button>
+          <button class="tab-btn" data-tab="gallery">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            Gallery
+          </button>
+          <button class="tab-btn" data-tab="summary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 10h8M8 14h5"/></svg>
+            Summary
           </button>
         </div>
 
@@ -664,6 +1029,70 @@
               </div>
             </div>
             <div class="bookings-grid" id="bookingsGrid"></div>
+          </div>
+
+          <!-- ══ SCHEDULE PANEL ══ -->
+          <div id="panel-schedule" class="tab-panel">
+            <div class="panel-header">
+              <div>
+                <h2>Shoots &amp; Events Schedule</h2>
+                <p>Add upcoming shoots and events — team members will see these on their portal</p>
+              </div>
+            </div>
+
+            <!-- Add schedule entry -->
+            <div class="task-create-wrap">
+              <button class="task-create-toggle" id="schedCreateToggle">
+                <span>+ Add Shoot / Event</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
+              <div class="task-create-body" id="schedCreateBody">
+                <form class="task-form" id="schedForm">
+                  <div class="form-field full">
+                    <label class="form-label">Title *</label>
+                    <input class="form-input" id="schedTitle" type="text" placeholder="e.g. Wedding — Tunde &amp; Ngozi" required />
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label">Date *</label>
+                    <input class="form-input" id="schedDate" type="date" required />
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label">Time</label>
+                    <input class="form-input" id="schedTime" type="time" />
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label">Type</label>
+                    <select class="form-select" id="schedType">
+                      <option value="studio">Studio</option>
+                      <option value="wedding">Wedding</option>
+                      <option value="event">Event</option>
+                      <option value="production">Production</option>
+                      <option value="meeting">Meeting</option>
+                    </select>
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label">Client Name</label>
+                    <input class="form-input" id="schedClient" type="text" placeholder="e.g. Kemi Afolabi" />
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label">Location</label>
+                    <input class="form-input" id="schedLocation" type="text" placeholder="e.g. Eko Hotel, Lagos" />
+                  </div>
+                  <div class="form-field full">
+                    <label class="form-label">Notes</label>
+                    <textarea class="form-textarea" id="schedNotes" placeholder="Any extra details for the team…"></textarea>
+                  </div>
+                  <div class="form-field full">
+                    <label class="form-label">Agreed Deliverables</label>
+                    <textarea class="form-textarea" id="schedDeliverables" placeholder="e.g. Full-day coverage, 300 edited photos, same-day highlight reel…"></textarea>
+                  </div>
+                  <button class="btn-create-task full" type="submit">Add to Schedule</button>
+                </form>
+              </div>
+            </div>
+
+            <!-- Schedule list -->
+            <div class="tasks-grid" id="adminScheduleGrid"></div>
           </div>
 
           <!-- ══ TASKS PANEL ══ -->
@@ -762,6 +1191,82 @@
             </div>
           </div>
 
+          <!-- ══ GALLERY PANEL ══ -->
+          <div id="panel-gallery" class="tab-panel">
+            <div class="panel-header">
+              <div>
+                <h2>Gallery Delivery Links</h2>
+                <p>Create and manage secure gallery links for clients to download their photos</p>
+              </div>
+            </div>
+
+            <div class="gallery-layout">
+              <!-- Create form -->
+              <div class="gallery-form-card">
+                <h3 id="galleryFormTitle">Create Gallery Link</h3>
+                <p>Generate a secure link for a client to access their delivered files</p>
+                <div class="gallery-form" id="galleryForm">
+                  <input type="hidden" id="galleryBookingIdHidden" />
+                  <div class="form-field">
+                    <label class="form-label">Client Name *</label>
+                    <input class="form-input" id="galleryClientName" type="text" placeholder="e.g. Amaka Chioma" />
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label">Booking ID (optional)</label>
+                    <input class="form-input" id="galleryBookingId" type="text" placeholder="e.g. NEJ-ABC123" />
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label">Files <span style="color:var(--grey-4);font-weight:400;text-transform:none;letter-spacing:0">(label + download link)</span></label>
+                    <div class="gallery-files-list" id="galleryFilesList">
+                      <div class="gallery-file-row">
+                        <input class="form-input" type="text" placeholder="File label e.g. Full Gallery" data-file-label />
+                        <input class="form-input" type="url" placeholder="Download URL (Drive, Dropbox, WeTransfer…)" data-file-url />
+                        <button type="button" class="btn-remove-file" title="Remove">✕</button>
+                      </div>
+                    </div>
+                    <button type="button" class="btn-add-file" id="btnAddFile" style="margin-top:8px">+ Add File</button>
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label">Password (optional)</label>
+                    <input class="form-input" id="galleryPassword" type="text" placeholder="Leave blank for no password" />
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label">Expiry Date (optional)</label>
+                    <input class="form-input" id="galleryExpiry" type="date" />
+                  </div>
+                  <button class="btn-create-task" type="button" id="btnCreateGallery">Create Gallery Link</button>
+                </div>
+              </div>
+
+              <!-- Links list -->
+              <div class="gallery-links-section">
+                <h3>All Gallery Links</h3>
+                <div class="gallery-links-grid" id="galleryLinksGrid">
+                  <p style="color:var(--grey-3);font-size:0.85rem">Loading…</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ══ SUMMARY PANEL ══ -->
+          <div id="panel-summary" class="tab-panel">
+            <div class="summary-header">
+              <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+                <div>
+                  <h2>Daily Summary</h2>
+                  <p class="summary-date" id="summaryDateLabel"></p>
+                </div>
+                <button class="btn-refresh-summary" id="btnRefreshSummary">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+                  Refresh
+                </button>
+              </div>
+            </div>
+            <div class="summary-sections" id="summarySections">
+              <div class="summary-section"><p class="summary-empty">Loading…</p></div>
+            </div>
+          </div>
+
         </div><!-- /content -->
       </div><!-- /main -->
     </div><!-- /shell -->
@@ -792,6 +1297,134 @@
       </div>
     </nav>
 
+    <!-- New Booking Modal -->
+    <div class="modal-overlay" id="newBookingModal">
+      <div class="modal-backdrop" id="newBookingModalBackdrop"></div>
+      <div class="booking-modal-box">
+        <div class="booking-modal-header">
+          <h3>New Booking</h3>
+          <button class="modal-close" id="newBookingModalClose">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="booking-modal-body">
+          <div class="bm-tabs">
+            <button class="bm-tab active" data-bm-tab="studio">Studio Session</button>
+            <button class="bm-tab" data-bm-tab="event">Event / Wedding</button>
+          </div>
+
+          <!-- Studio Tab -->
+          <div class="bm-panel active" id="bm-panel-studio">
+            <form class="bm-form" id="bmStudioForm" novalidate>
+              <div class="form-field">
+                <label class="form-label">First Name *</label>
+                <input class="form-input" id="bmFirstName" type="text" placeholder="e.g. Amaka" required autocomplete="off" />
+              </div>
+              <div class="form-field">
+                <label class="form-label">Middle Name</label>
+                <input class="form-input" id="bmMiddleName" type="text" placeholder="e.g. Chioma" autocomplete="off" />
+              </div>
+              <div class="form-field">
+                <label class="form-label">Phone *</label>
+                <input class="form-input" id="bmPhone" type="tel" placeholder="+234 800 000 0000" required autocomplete="off" />
+              </div>
+              <div class="form-field">
+                <label class="form-label">Email *</label>
+                <input class="form-input" id="bmEmail" type="email" placeholder="client@email.com" required autocomplete="off" />
+              </div>
+              <div class="form-field full">
+                <label class="form-label">Session Type *</label>
+                <div class="bm-session-picker" id="bmSessionPicker">
+                  <button type="button" class="bm-sp-btn" data-session="Birthday"><span class="sp-emoji">🎂</span><span>Birthday</span></button>
+                  <button type="button" class="bm-sp-btn" data-session="Family"><span class="sp-emoji">👨‍👩‍👧</span><span>Family</span></button>
+                  <button type="button" class="bm-sp-btn" data-session="Creative"><span class="sp-emoji">✨</span><span>Creative</span></button>
+                  <button type="button" class="bm-sp-btn" data-session="Fashion"><span class="sp-emoji">👗</span><span>Fashion</span></button>
+                  <button type="button" class="bm-sp-btn" data-session="Product"><span class="sp-emoji">📦</span><span>Product</span></button>
+                </div>
+              </div>
+              <div class="form-field full">
+                <p id="bmStudioErr" style="font-size:0.78rem;color:var(--red);min-height:18px"></p>
+              </div>
+              <button type="submit" class="btn-submit-booking">Submit Studio Booking</button>
+            </form>
+          </div>
+
+          <!-- Event Tab -->
+          <div class="bm-panel" id="bm-panel-event">
+            <form class="bm-form" id="bmEventForm" novalidate>
+              <div class="form-field">
+                <label class="form-label">First Name *</label>
+                <input class="form-input" id="bmEFirstName" type="text" placeholder="e.g. David" required autocomplete="off" />
+              </div>
+              <div class="form-field">
+                <label class="form-label">Last Name</label>
+                <input class="form-input" id="bmELastName" type="text" placeholder="e.g. Okonkwo" autocomplete="off" />
+              </div>
+              <div class="form-field">
+                <label class="form-label">Phone *</label>
+                <input class="form-input" id="bmEPhone" type="tel" placeholder="+234 800 000 0000" required autocomplete="off" />
+              </div>
+              <div class="form-field">
+                <label class="form-label">Email *</label>
+                <input class="form-input" id="bmEEmail" type="email" placeholder="client@email.com" required autocomplete="off" />
+              </div>
+              <div class="form-field">
+                <label class="form-label">Event Type *</label>
+                <select class="form-select" id="bmEType" required>
+                  <option value="">— Select type —</option>
+                  <option value="traditional-wedding">Traditional Wedding</option>
+                  <option value="white-wedding">White Wedding</option>
+                  <option value="full-wedding">Full Wedding</option>
+                  <option value="engagement">Engagement Shoot</option>
+                  <option value="brand-film">Brand Film</option>
+                  <option value="music-video">Music Video</option>
+                  <option value="corporate-event">Corporate Event</option>
+                  <option value="documentary">Documentary</option>
+                  <option value="other-production">Other Production</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label class="form-label">Package</label>
+                <select class="form-select" id="bmEPackage">
+                  <option value="">— Select —</option>
+                  <option value="essential">Essential</option>
+                  <option value="premium">Premium</option>
+                  <option value="luxury">Luxury</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label class="form-label">Event Date</label>
+                <input class="form-input" id="bmEDate" type="date" autocomplete="off" />
+              </div>
+              <div class="form-field">
+                <label class="form-label">Budget</label>
+                <select class="form-select" id="bmEBudget">
+                  <option value="">— Select —</option>
+                  <option value="under150">Under ₦150k</option>
+                  <option value="150-350">₦150k–₦350k</option>
+                  <option value="350-600">₦350k–₦600k</option>
+                  <option value="600-1m">₦600k–₦1M</option>
+                  <option value="above1m">Above ₦1M</option>
+                </select>
+              </div>
+              <div class="form-field full">
+                <label class="form-label">Location</label>
+                <input class="form-input" id="bmELocation" type="text" placeholder="e.g. Eko Hotel, Lagos" autocomplete="off" />
+              </div>
+              <div class="form-field full">
+                <label class="form-label">Deliverables</label>
+                <textarea class="form-textarea" id="bmEDeliverables" placeholder="e.g. Full-day coverage, same-day highlight reel, drone shots…"></textarea>
+              </div>
+              <div class="form-field full">
+                <p id="bmEventErr" style="font-size:0.78rem;color:var(--red);min-height:18px"></p>
+              </div>
+              <button type="submit" class="btn-submit-booking">Submit Event Booking</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Detail Modal -->
     <div class="modal-overlay" id="detailModal">
       <div class="modal-backdrop" id="modalBackdrop"></div>
@@ -816,9 +1449,61 @@
       </div>
     </div>
 
+    <!-- Lightbox -->
+    <div class="lightbox" id="lightbox">
+      <div class="lightbox__topbar">
+        <div class="lightbox__filename" id="lbFilename"></div>
+        <div class="lightbox__counter" id="lbCounter"></div>
+        <button class="lightbox__close" id="lbClose">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="lightbox__body">
+        <button class="lightbox__arrow lightbox__arrow--prev" id="lbPrev">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <img class="lightbox__img" id="lbImg" src="" alt="" />
+        <button class="lightbox__arrow lightbox__arrow--next" id="lbNext">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 6 15 12 9 18"/></svg>
+        </button>
+      </div>
+      <div class="lightbox__footer">
+        <div class="lightbox__approval-label lightbox__approval-label--none" id="lbApproval"></div>
+        <button class="lightbox__dl" id="lbDownload">↓ Download</button>
+      </div>
+    </div>
+
     <!-- Toast -->
     <div class="toast" id="toast"></div>
 
-    <script src="js/dashboard.js"></script>
+    <!-- Invoice Modal -->
+    <div id="invoiceModal">
+      <div class="invoice-chrome">
+        <button class="btn-invoice-close" id="invoiceClose">✕ Close</button>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:6px">
+            <label style="font-size:0.72rem;font-weight:600;color:#666;white-space:nowrap">Total (₦)</label>
+            <input id="invAmount" type="number" min="0" placeholder="e.g. 500000"
+              style="width:130px;padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:0.82rem;font-family:inherit" />
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <label style="font-size:0.72rem;font-weight:600;color:#666;white-space:nowrap">Deposit Paid (₦)</label>
+            <input id="invDeposit" type="number" min="0" placeholder="e.g. 250000"
+              style="width:130px;padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:0.82rem;font-family:inherit" />
+          </div>
+          <button id="invApply" style="padding:6px 14px;background:#c9a84c;border:none;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer">Apply</button>
+        </div>
+        <h2 style="margin-left:auto">Invoice Preview</h2>
+        <button class="btn-invoice-print" id="invoicePrint">🖨 Print / Save PDF</button>
+      </div>
+      <div id="invoiceBody">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/db.js?v=2.2"></script>
+    <script src="js/dashboard.js?v=2.2"></script>
   </body>
 </html>
