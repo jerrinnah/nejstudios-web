@@ -810,6 +810,7 @@ function openInvoice(id) {
       <div>
         <div class="inv-logo-name"><span>NEJ</span>studios</div>
         <div class="inv-tagline">Premium Photography &amp; Film Production</div>
+        <div style="font-size:0.75rem;color:#888;margin-top:4px">Lagos, Nigeria · nejstudios.com</div>
       </div>
       <div class="inv-title-block">
         <h1>Invoice</h1>
@@ -822,9 +823,9 @@ function openInvoice(id) {
         <h4>Billed To</h4>
         <p>
           <strong>${b.clientName || '—'}</strong><br/>
-          ${b.phone  ? b.phone  + '<br/>' : ''}
-          ${b.email  ? b.email  + '<br/>' : ''}
-          ${isEvent && b.location ? b.location : ''}
+          ${b.phone  ? 'Phone: ' + b.phone  + '<br/>' : ''}
+          ${b.email  ? 'Email: ' + b.email  + '<br/>' : ''}
+          ${isEvent && b.location ? 'Location: ' + b.location + '<br/>' : ''}
         </p>
       </div>
       <div class="inv-meta-block">
@@ -834,7 +835,9 @@ function openInvoice(id) {
           <strong>Booking ID:</strong> ${id}<br/>
           <strong>Date Issued:</strong> ${issued}<br/>
           <strong>Due Date:</strong> ${due}<br/>
-          <strong>Status:</strong> ${STATUS_LABELS[b.status] || b.status}
+          <strong>Status:</strong> ${STATUS_LABELS[b.status] || b.status}<br/>
+          ${isEvent && b.eventDate ? '<strong>Event Date:</strong> ' + fmtEventDate(b.eventDate) + '<br/>' : ''}
+          ${isEvent && b.package  ? '<strong>Package:</strong> ' + (b.package.charAt(0).toUpperCase() + b.package.slice(1)) + '<br/>' : ''}
         </p>
       </div>
     </div>
@@ -842,7 +845,7 @@ function openInvoice(id) {
     <table class="inv-table">
       <thead>
         <tr>
-          <th style="width:50%">Description</th>
+          <th style="width:55%">Description</th>
           <th>Qty</th>
           <th>Unit Price</th>
           <th>Total</th>
@@ -859,7 +862,7 @@ function openInvoice(id) {
       <tfoot>
         <tr>
           <td colspan="3" style="text-align:right;font-size:0.82rem;color:#555;letter-spacing:0.08em;text-transform:uppercase">Total Due</td>
-          <td>${itemPrice}</td>
+          <td><strong>${itemPrice}</strong></td>
         </tr>
       </tfoot>
     </table>
@@ -873,21 +876,27 @@ function openInvoice(id) {
     <div class="inv-section">
       <h4>Payment Details</h4>
       <p>
-        Bank: <strong>— (Admin: fill in bank details)</strong><br/>
-        Account Name: NEJstudios<br/>
-        Account Number: —<br/>
-        Reference: <strong>${invoiceNum}</strong>
+        <strong>Bank:</strong> Kuda MFB<br/>
+        <strong>Account Name:</strong> NEJstudios<br/>
+        <strong>Account Number:</strong> 3001571135<br/>
+        <strong>Reference:</strong> ${invoiceNum}
       </p>
     </div>
 
     <div class="inv-section">
       <h4>Terms &amp; Notes</h4>
-      <p>Payment is due within 7 days of this invoice. All deliverables will be provided upon full payment. For queries, contact us directly.</p>
+      <p>
+        Payment is due within 7 days of this invoice date.<br/>
+        All deliverables will be provided upon receipt of full payment.<br/>
+        A 50% non-refundable deposit is required to confirm your booking.<br/>
+        For any queries, please contact us directly via email or phone.
+      </p>
     </div>
 
     <div class="inv-footer">
       <strong>Thank you for choosing NEJstudios!</strong><br/>
-      We appreciate your trust and look forward to delivering exceptional work.
+      We appreciate your trust and look forward to delivering exceptional work.<br/>
+      <span style="font-size:0.75rem;color:#aaa">NEJstudios · Lagos, Nigeria · nejstudios.com</span>
     </div>
   `;
 
@@ -905,23 +914,70 @@ document.getElementById('invoicePrint').addEventListener('click', () => {
    GALLERY PANEL
    ════════════════════════════════════════════ */
 
-function initGalleryForm() {
-  // Add file row
-  document.getElementById('btnAddFile').addEventListener('click', () => {
-    const row = document.createElement('div');
-    row.className = 'gallery-file-row';
-    row.innerHTML = `
-      <input class="form-input" type="text" placeholder="File label" data-file-label />
-      <input class="form-input" type="text" placeholder="Download URL" data-file-url />
-      <button type="button" class="btn-remove-file" title="Remove">✕</button>
-    `;
-    row.querySelector('.btn-remove-file').addEventListener('click', () => row.remove());
-    document.getElementById('galleryFilesList').appendChild(row);
-  });
+// Delivery gallery staged files (name → {name, size, url})
+const _deliveryFiles = [];
 
-  // Remove buttons on existing rows
-  document.querySelectorAll('#galleryFilesList .btn-remove-file').forEach(btn => {
-    btn.addEventListener('click', () => btn.closest('.gallery-file-row').remove());
+function fmtBytes(n) {
+  if (n < 1024) return n + ' B';
+  if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+  return (n / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function addDeliveryFileRow(name, size, url, isImage) {
+  const list = document.getElementById('galleryFilesList');
+  const row  = document.createElement('div');
+  row.className  = 'gallery-file-row';
+  row.dataset.name = name;
+  row.innerHTML = isImage
+    ? `<img class="gallery-file-row__thumb" src="${url}" alt="${name}" />
+       <div class="gallery-file-row__info"><div class="gallery-file-row__name" title="${name}">${name}</div><div class="gallery-file-row__size">${fmtBytes(size)}</div></div>
+       <button class="btn-remove-file" title="Remove">✕</button>`
+    : `<div style="width:36px;height:36px;border-radius:4px;background:var(--bg-4);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0">📄</div>
+       <div class="gallery-file-row__info"><div class="gallery-file-row__name" title="${name}">${name}</div><div class="gallery-file-row__size">${fmtBytes(size)}</div></div>
+       <button class="btn-remove-file" title="Remove">✕</button>`;
+  row.querySelector('.btn-remove-file').addEventListener('click', () => {
+    const idx = _deliveryFiles.findIndex(f => f.name === name);
+    if (idx !== -1) _deliveryFiles.splice(idx, 1);
+    row.remove();
+  });
+  list.appendChild(row);
+}
+
+function handleDeliveryUpload(files) {
+  const progress = document.getElementById('galleryDeliveryProgress');
+  Array.from(files).forEach(file => {
+    const item = document.createElement('div');
+    item.className = 'gdp-item';
+    item.innerHTML = `<div class="gdp-item__name">${file.name}</div><div class="gdp-bar"><div class="gdp-bar__fill" style="width:0%"></div></div>`;
+    progress.appendChild(item);
+    const fill = item.querySelector('.gdp-bar__fill');
+
+    const reader = new FileReader();
+    reader.onprogress = e => { if (e.lengthComputable) fill.style.width = Math.round(e.loaded / e.total * 90) + '%'; };
+    reader.onload = e => {
+      fill.style.width = '100%';
+      setTimeout(() => item.remove(), 600);
+      const url = e.target.result;
+      _deliveryFiles.push({ name: file.name, size: file.size, url });
+      addDeliveryFileRow(file.name, file.size, url, file.type.startsWith('image/'));
+    };
+    reader.onerror = () => { item.querySelector('.gdp-item__name').textContent = `Error: ${file.name}`; setTimeout(() => item.remove(), 2000); };
+    reader.readAsDataURL(file);
+  });
+}
+
+function initGalleryForm() {
+  const dropzone = document.getElementById('galleryDeliveryDropzone');
+  const input    = document.getElementById('galleryDeliveryInput');
+
+  dropzone.addEventListener('click', () => input.click());
+  input.addEventListener('change', () => { handleDeliveryUpload(input.files); input.value = ''; });
+  dropzone.addEventListener('dragover',  e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+  dropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropzone.classList.remove('drag-over');
+    handleDeliveryUpload(e.dataTransfer.files);
   });
 
   // Create gallery link
@@ -931,18 +987,14 @@ function initGalleryForm() {
 async function createGalleryLink() {
   const clientName = document.getElementById('galleryClientName').value.trim();
   if (!clientName) { showToast('Client name is required'); return; }
+  if (_deliveryFiles.length === 0) { showToast('Please upload at least one file'); return; }
 
-  const bookingId  = document.getElementById('galleryBookingId').value.trim() || null;
-  const password   = document.getElementById('galleryPassword').value.trim()  || null;
-  const expiry     = document.getElementById('galleryExpiry').value           || null;
+  const bookingId = document.getElementById('galleryBookingId').value.trim() || null;
+  const password  = document.getElementById('galleryPassword').value.trim()  || null;
+  const expiry    = document.getElementById('galleryExpiry').value            || null;
 
-  // Collect files
-  const files = [];
-  document.querySelectorAll('#galleryFilesList .gallery-file-row').forEach(row => {
-    const label = row.querySelector('[data-file-label]').value.trim();
-    const url   = row.querySelector('[data-file-url]').value.trim();
-    if (label && url) files.push({ label, url });
-  });
+  // Build files list from staged uploads
+  const files = _deliveryFiles.map(f => ({ label: f.name, url: f.url, size: f.size }));
 
   const token = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10);
   const delivery = {
@@ -958,21 +1010,15 @@ async function createGalleryLink() {
   };
 
   await dbCreateGalleryDelivery(delivery);
-  showToast(`Gallery link created for ${clientName}`);
+  showToast(`Gallery link created for ${clientName} · ${files.length} file${files.length !== 1 ? 's' : ''}`);
 
   // Reset form
   document.getElementById('galleryClientName').value = '';
   document.getElementById('galleryBookingId').value  = '';
   document.getElementById('galleryPassword').value   = '';
   document.getElementById('galleryExpiry').value     = '';
-  const list = document.getElementById('galleryFilesList');
-  list.innerHTML = `
-    <div class="gallery-file-row">
-      <input class="form-input" type="text" placeholder="File label" data-file-label />
-      <input class="form-input" type="text" placeholder="Download URL" data-file-url />
-      <button type="button" class="btn-remove-file" title="Remove">✕</button>
-    </div>`;
-  list.querySelector('.btn-remove-file').addEventListener('click', e => e.target.closest('.gallery-file-row').remove());
+  document.getElementById('galleryFilesList').innerHTML = '';
+  _deliveryFiles.length = 0;
 
   await renderGalleryPanel();
 }
@@ -1007,6 +1053,14 @@ async function renderGalleryPanel() {
             </div>
           </div>
         </div>
+        ${d.files && d.files.length > 0 ? `
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+          ${d.files.slice(0,6).map(f => f.url && f.url.startsWith('data:image')
+            ? `<img src="${f.url}" alt="${f.label}" title="${f.label}" style="width:48px;height:48px;object-fit:cover;border-radius:5px;border:1px solid var(--border)">`
+            : `<div title="${f.label}" style="width:48px;height:48px;border-radius:5px;border:1px solid var(--border);background:var(--bg-3);display:flex;align-items:center;justify-content:center;font-size:1.2rem">📄</div>`
+          ).join('')}
+          ${d.files.length > 6 ? `<div style="width:48px;height:48px;border-radius:5px;border:1px solid var(--border);background:var(--bg-3);display:flex;align-items:center;justify-content:center;font-size:0.72rem;color:var(--grey-3)">+${d.files.length - 6}</div>` : ''}
+        </div>` : ''}
         <div class="gallery-link-card__url">
           <a href="${galleryUrl}" target="_blank">${galleryUrl}</a>
           <button class="btn-copy-link" data-copy="${galleryUrl}">Copy</button>
