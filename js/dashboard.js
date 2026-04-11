@@ -336,7 +336,7 @@ function buildEventCard(b) {
       <div class="event-fields">
         <div class="event-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><div><span class="ef-label">Event Date</span><span class="ef-value">${fmtEventDate(b.eventDate)}</span></div></div>
         <div class="event-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg><div><span class="ef-label">Location</span><span class="ef-value">${b.location || '—'}</span></div></div>
-        <div class="event-field"><span style="font-size:1rem;flex-shrink:0">₦</span><div><span class="ef-label">Budget</span><span class="ef-value">${budgetLabel}</span></div></div>
+        <div class="event-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2z"/><path d="M12 6v6l4 2"/></svg><div><span class="ef-label">Cost of Event</span><span class="ef-value">${budgetLabel}</span></div></div>
         <div class="event-field event-field--full"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><div><span class="ef-label">Deliverables</span><span class="ef-value ef-deliverables">${deliv}</span></div></div>
       </div>
       <div class="booking-card__meta" style="margin-top:12px">
@@ -401,15 +401,16 @@ async function handleBookingAction(id, action) {
     };
     const schedType = b.bookingKind === 'event' ? (EVENT_MAP[b.eventType] || 'event') : 'studio';
     const entry = {
-      id:         'BK-' + id,
-      title:      b.clientName + (b.sessionType ? ` — ${b.sessionType}` : b.eventType ? ` — ${EVENT_TYPE_LABELS[b.eventType] || b.eventType}` : ''),
-      date:       b.eventDate || new Date().toISOString().slice(0, 10),
-      time:       b.sessionTime || null,
-      type:       schedType,
-      clientName: b.clientName,
-      location:   b.location || null,
-      notes:      b.deliverables || null,
-      createdAt:  Date.now(),
+      id:           'BK-' + id,
+      title:        b.clientName + (b.sessionType ? ` — ${b.sessionType}` : b.eventType ? ` — ${EVENT_TYPE_LABELS[b.eventType] || b.eventType}` : ''),
+      date:         b.sessionDate || b.eventDate || new Date().toISOString().slice(0, 10),
+      time:         b.sessionTime || null,
+      type:         schedType,
+      clientName:   b.clientName,
+      location:     b.location || null,
+      notes:        b.deliverables || null,
+      booking_id:   id,
+      createdAt:    Date.now(),
     };
     await dbAddScheduleEntry(entry);
     showToast(`${b.clientName} confirmed — added to team schedule ✓`);
@@ -687,7 +688,7 @@ function openDetail(id) {
     ...(isEvent ? [
       ['Event Type', EVENT_TYPE_LABELS[b.eventType] || b.eventType || '—'],
       ['Event Date', fmtEventDate(b.eventDate)], ['Location', b.location || '—'],
-      ['Package', b.package || '—'], ['Budget', BUDGET_LABELS[b.budget] || b.budget || '—'],
+      ['Package', b.package || '—'], ['Cost of Event', BUDGET_LABELS[b.budget] || b.budget || '—'],
       ['Deliverables', b.deliverables || '—'],
     ] : [['Session Type', `${SESSION_EMOJI[b.sessionType] || ''} ${b.sessionType}`]]),
     ['Submitted', `${fmtDate(b.createdAt)} at ${fmtTime(b.createdAt)}`],
@@ -1229,6 +1230,7 @@ async function renderAdminSchedule() {
           </div>`;
         })()}
         <div class="task-card__actions">
+          <button class="task-action-btn task-action-btn--reports" data-sched-invoice="${s.id}">Invoice</button>
           <button class="task-action-btn task-action-btn--delete" data-sched-id="${s.id}">Delete</button>
         </div>
       </div>`;
@@ -1242,6 +1244,89 @@ async function renderAdminSchedule() {
       showToast('Removed from schedule');
     });
   });
+
+  grid.querySelectorAll('[data-sched-invoice]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const schedId = btn.dataset.schedInvoice;
+      const s = sched.find(x => x.id === schedId);
+      if (!s) return;
+      // Try to find linked booking first
+      if (s.booking_id) {
+        const linked = getBookings().find(b => b.id === s.booking_id);
+        if (linked) { openInvoice(linked.id); return; }
+      }
+      openScheduleInvoice(s);
+    });
+  });
+}
+
+function openScheduleInvoice(s) {
+  const invoiceNum = 'INV-SCH-' + s.id.replace(/[^A-Z0-9]/gi,'').toUpperCase().slice(0,8);
+  const now    = new Date();
+  const issued = now.toLocaleDateString('en-NG', { dateStyle:'long' });
+  const due    = new Date(now.getTime() + 7*86400000).toLocaleDateString('en-NG', { dateStyle:'long' });
+  const shootDate = s.date ? new Date(s.date+'T00:00:00').toLocaleDateString('en-NG',{dateStyle:'long'}) : '—';
+  const typeLabel = { studio:'Studio Session', wedding:'Wedding / Event', event:'Event Coverage', production:'Film Production', meeting:'Meeting' };
+
+  document.getElementById('invoiceBody').innerHTML = `
+    <div class="inv-header">
+      <div>
+        <div class="inv-logo-name"><span>NEJ</span>studios</div>
+        <div class="inv-tagline">Premium Photography &amp; Film Production</div>
+        <div style="font-size:0.75rem;color:#888;margin-top:4px">Lagos, Nigeria · nejstudios.com</div>
+      </div>
+      <div class="inv-title-block"><h1>Invoice</h1><div class="inv-number">${invoiceNum}</div></div>
+    </div>
+
+    <div class="inv-meta">
+      <div class="inv-meta-block">
+        <h4>Billed To</h4>
+        <p><strong>${s.clientName || '—'}</strong><br/>
+        ${s.location ? 'Location: ' + s.location + '<br/>' : ''}</p>
+      </div>
+      <div class="inv-meta-block">
+        <h4>Invoice Details</h4>
+        <p>
+          <strong>Invoice #:</strong> ${invoiceNum}<br/>
+          <strong>Schedule ID:</strong> ${s.id}<br/>
+          <strong>Date Issued:</strong> ${issued}<br/>
+          <strong>Due Date:</strong> ${due}<br/>
+          <strong>Shoot Date:</strong> ${shootDate}${s.time ? ' · ' + s.time : ''}
+        </p>
+      </div>
+    </div>
+
+    <table class="inv-table">
+      <thead><tr><th style="width:55%">Description</th><th>Qty</th><th>Unit Price</th><th>Total</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>${typeLabel[s.type] || s.type || 'Photography / Film Service'} — ${s.title}</td>
+          <td>1</td><td>—</td><td>—</td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr><td colspan="3" style="text-align:right;font-size:0.82rem;color:#555;letter-spacing:.08em;text-transform:uppercase">Total</td><td style="text-align:right"><strong>—</strong></td></tr>
+        <tr><td colspan="3" style="text-align:right;font-size:0.82rem;color:#555;letter-spacing:.08em;text-transform:uppercase">Deposit Paid</td><td style="text-align:right;color:#3ecf8e;font-weight:700">—</td></tr>
+        <tr style="border-top:2px solid #c9a84c"><td colspan="3" style="text-align:right;font-size:0.9rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Balance Due</td><td style="text-align:right;color:#c9a84c;font-size:1.05rem;font-weight:700">—</td></tr>
+      </tfoot>
+    </table>
+
+    ${s.notes ? `<div class="inv-section"><h4>Agreed Deliverables</h4><p>${s.notes}</p></div>` : ''}
+
+    <div class="inv-section">
+      <h4>Payment Details</h4>
+      <p><strong>Bank:</strong> Kuda MFB<br/><strong>Account Name:</strong> NEJstudios<br/><strong>Account Number:</strong> 3001571135<br/><strong>Reference:</strong> ${invoiceNum}</p>
+    </div>
+    <div class="inv-section">
+      <h4>Terms &amp; Notes</h4>
+      <p>Payment is due within 7 days of this invoice. A 50% deposit is required to secure your booking. All deliverables provided upon full payment.</p>
+    </div>
+    <div class="inv-footer"><strong>Thank you for choosing NEJstudios!</strong><br/><span style="font-size:0.75rem;color:#aaa">NEJstudios · Lagos, Nigeria · nejstudios.com</span></div>`;
+
+  // Clear amount fields
+  document.getElementById('invAmount').value  = '';
+  document.getElementById('invDeposit').value = '';
+  document.getElementById('invoiceModal').classList.add('open');
 }
 
 /* ════════════════════════════════════════════

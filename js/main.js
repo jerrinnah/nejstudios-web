@@ -527,4 +527,91 @@
   );
   sections.forEach((s) => sectionObserver.observe(s));
 
+  /* ── PACKAGE ENQUIRY MODAL ── */
+  const pkgOverlay  = document.getElementById('pkgEnquiryOverlay');
+  const pkgBox      = document.getElementById('pkgEnquiryBox');
+  const pkgClose    = document.getElementById('pkgEnquiryClose');
+  const pkgTitle    = document.getElementById('pkgEnquiryTitle');
+  const pkgSubmit   = document.getElementById('pkgEnquirySubmit');
+  const pkgErr      = document.getElementById('pkgEnquiryErr');
+  const pkgSuccess  = document.getElementById('pkgEnquirySuccess');
+
+  // EmailJS IDs — same as booking form
+  const PKG_SERVICE_ID  = 'service_3iv1y5a';
+  const PKG_TEMPLATE_ID = 'template_xjeuqdf'; // reuses admin notification template
+
+  function openPkgModal(packageName) {
+    pkgTitle.textContent  = packageName || 'Book This Package';
+    pkgErr.style.display     = 'none';
+    pkgSuccess.style.display = 'none';
+    pkgSubmit.disabled       = false;
+    pkgSubmit.textContent    = 'Send Me the Rate Card';
+    document.getElementById('pkgEnquiryName').value  = '';
+    document.getElementById('pkgEnquiryEmail').value = '';
+    document.getElementById('pkgEnquiryPhone').value = '';
+    pkgOverlay.style.opacity        = '1';
+    pkgOverlay.style.pointerEvents  = 'all';
+    pkgBox.style.transform          = 'scale(1)';
+  }
+  function closePkgModal() {
+    pkgOverlay.style.opacity        = '0';
+    pkgOverlay.style.pointerEvents  = 'none';
+    pkgBox.style.transform          = 'scale(.97)';
+  }
+
+  // Open on "Book This Package" buttons
+  document.querySelectorAll('.pkg-enquiry-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const card = btn.closest('.pkg-card');
+      const name = card ? (card.querySelector('h3')?.textContent || 'Package') : 'Package';
+      openPkgModal(name + ' Package Enquiry');
+    });
+  });
+
+  pkgClose.addEventListener('click', closePkgModal);
+  pkgOverlay.addEventListener('click', e => { if (e.target === pkgOverlay) closePkgModal(); });
+
+  pkgSubmit.addEventListener('click', async () => {
+    const email = document.getElementById('pkgEnquiryEmail').value.trim();
+    const name  = document.getElementById('pkgEnquiryName').value.trim();
+    const phone = document.getElementById('pkgEnquiryPhone').value.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      pkgErr.style.display = 'block'; return;
+    }
+    pkgErr.style.display  = 'none';
+    pkgSubmit.disabled    = true;
+    pkgSubmit.textContent = 'Sending…';
+
+    const rateCard = `
+NEJstudios Rate Card 2026
+─────────────────────────
+₦45,000  | Half Session — 5 pictures, 1 outfit
+₦70,000  | Regular — 8 pictures, 2 outfits, 30 mins
+₦65,000  | Birthday Session — 12 pictures, 2 outfits, 1hr
+₦150,000 | Outdoor — 15 pictures, 1hr (extra hr = ₦15k)
+
+Delivery: 2–3 business days
+Contact us to schedule your shoot!`.trim();
+
+    try {
+      if (typeof emailjs !== 'undefined') {
+        await emailjs.send(PKG_SERVICE_ID, PKG_TEMPLATE_ID, {
+          client_name:  name || email,
+          client_email: email,
+          phone:        phone || 'Not provided',
+          session_type: pkgTitle.textContent,
+          booking_id:   'ENQUIRY-' + Date.now(),
+          submitted_at: new Date().toLocaleString('en-NG'),
+          rate_card:    rateCard,
+        });
+      }
+    } catch (err) {
+      console.warn('EmailJS enquiry error:', err);
+    }
+
+    pkgSubmit.style.display  = 'none';
+    pkgSuccess.style.display = 'block';
+    setTimeout(closePkgModal, 4000);
+  });
+
 })();

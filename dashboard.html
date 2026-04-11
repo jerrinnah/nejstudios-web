@@ -816,16 +816,53 @@
         .btn-menu { display:flex; }
         .mobile-bottom-nav { display:flex; flex-direction:column; }
         .content { padding-bottom:80px; }
-        .tab-nav { padding:0 16px; }
+        .tab-nav { padding:0 12px; gap:2px; }
+        .tab-btn { font-size:0.68rem; padding:10px 10px; gap:4px; }
+        .bookings-grid { grid-template-columns:1fr; }
+        .tasks-grid { grid-template-columns:1fr; }
+      }
+      @media (max-width:768px) {
+        .header { padding:12px 16px; }
+        .content { padding:16px; padding-bottom:80px; }
+        .stats-row { grid-template-columns:repeat(2,1fr); gap:10px; }
+        .stat-card { padding:16px; }
+        .stat-card__value { font-size:1.75rem; }
+        .booking-card { padding:14px; }
+        .event-fields { grid-template-columns:1fr; }
+        .task-form { grid-template-columns:1fr; }
+        .task-form .full { grid-column:1; }
+        .gallery-file-row { grid-template-columns:1fr; gap:6px; }
+        .gallery-file-row .form-input:last-of-type { display:none; }
+        .panel-header { flex-direction:column; align-items:flex-start; }
+        .tab-nav { overflow-x:auto; -webkit-overflow-scrolling:touch; flex-wrap:nowrap; scrollbar-width:none; }
+        .tab-nav::-webkit-scrollbar { display:none; }
+        .tab-btn { flex-shrink:0; white-space:nowrap; }
       }
       @media (max-width:600px) {
-        .content { padding:16px; padding-bottom:80px; }
-        .header { padding:12px 16px; }
-        .stats-row { grid-template-columns:1fr 1fr; }
+        .content { padding:12px; padding-bottom:80px; }
+        .header { padding:10px 12px; }
+        .stats-row { grid-template-columns:1fr 1fr; gap:8px; }
         .task-form { grid-template-columns:1fr; }
         .task-form .full { grid-column:1; }
         .btn-new-booking span { display:none; }
         .btn-home span { display:none; }
+        .booking-card { padding:12px; }
+        .booking-card__name { font-size:0.95rem; }
+        .action-btn { font-size:0.62rem; padding:5px 8px; }
+        .tasks-filter { gap:5px; }
+        .tasks-filter-btn { font-size:0.65rem; padding:5px 10px; }
+        .modal-box { padding:24px 18px; }
+        .form-row { grid-template-columns:1fr; gap:0; }
+        .panel-form { padding:24px 16px; }
+      }
+      @media (max-width:420px) {
+        .stats-row { grid-template-columns:1fr; }
+        .stat-card { padding:14px 16px; display:flex; align-items:center; gap:14px; }
+        .stat-card__value { font-size:1.5rem; }
+        .tab-btn svg { display:none; }
+        .task-card { padding:14px; }
+        .inv-meta { grid-template-columns:1fr; }
+        #invoiceBody { padding:24px 16px; }
       }
     </style>
   </head>
@@ -1397,7 +1434,7 @@
                 <input class="form-input" id="bmEDate" type="date" autocomplete="off" />
               </div>
               <div class="form-field">
-                <label class="form-label">Budget</label>
+                <label class="form-label">Cost of Event</label>
                 <select class="form-select" id="bmEBudget">
                   <option value="">— Select —</option>
                   <option value="under150">Under ₦150k</option>
