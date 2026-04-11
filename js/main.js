@@ -528,49 +528,84 @@
   sections.forEach((s) => sectionObserver.observe(s));
 
   /* ── PACKAGE ENQUIRY MODAL ── */
-  const pkgOverlay  = document.getElementById('pkgEnquiryOverlay');
-  const pkgBox      = document.getElementById('pkgEnquiryBox');
-  const pkgClose    = document.getElementById('pkgEnquiryClose');
-  const pkgTitle    = document.getElementById('pkgEnquiryTitle');
-  const pkgSubmit   = document.getElementById('pkgEnquirySubmit');
-  const pkgErr      = document.getElementById('pkgEnquiryErr');
-  const pkgSuccess  = document.getElementById('pkgEnquirySuccess');
+  // ⚠️  UPDATE THESE two values with NEJstudios real numbers:
+  const NEJ_WHATSAPP = '2348000000000';   // ← replace with real WhatsApp number (no +, no spaces)
+  const NEJ_PHONE    = '+234 800 000 0000'; // ← replace with real call number
+
+  const pkgOverlay     = document.getElementById('pkgEnquiryOverlay');
+  const pkgBox         = document.getElementById('pkgEnquiryBox');
+  const pkgClose       = document.getElementById('pkgEnquiryClose');
+  const pkgTitle       = document.getElementById('pkgEnquiryTitle');
+  const pkgChoiceStep  = document.getElementById('pkgChoiceStep');
+  const pkgEmailStep   = document.getElementById('pkgEmailStep');
+  const pkgChoiceEmail = document.getElementById('pkgChoiceEmail');
+  const pkgChoiceWA    = document.getElementById('pkgChoiceWhatsapp');
+  const pkgBackBtn     = document.getElementById('pkgBackBtn');
+  const pkgSubmit      = document.getElementById('pkgEnquirySubmit');
+  const pkgErr         = document.getElementById('pkgEnquiryErr');
+  const pkgSuccess     = document.getElementById('pkgEnquirySuccess');
 
   // EmailJS IDs — same as booking form
   const PKG_SERVICE_ID  = 'service_3iv1y5a';
-  const PKG_TEMPLATE_ID = 'template_xjeuqdf'; // reuses admin notification template
+  const PKG_TEMPLATE_ID = 'template_xjeuqdf';
+
+  function showChoiceStep() {
+    pkgChoiceStep.style.display = 'flex';
+    pkgEmailStep.style.display  = 'none';
+  }
+  function showEmailStep() {
+    pkgChoiceStep.style.display = 'none';
+    pkgEmailStep.style.display  = 'flex';
+  }
 
   function openPkgModal(packageName) {
-    pkgTitle.textContent  = packageName || 'Book This Package';
-    pkgErr.style.display     = 'none';
-    pkgSuccess.style.display = 'none';
-    pkgSubmit.disabled       = false;
-    pkgSubmit.textContent    = 'Send Me the Rate Card';
+    pkgTitle.textContent = packageName || 'Book This Package';
+    // Reset email form
     document.getElementById('pkgEnquiryName').value  = '';
     document.getElementById('pkgEnquiryEmail').value = '';
     document.getElementById('pkgEnquiryPhone').value = '';
-    pkgOverlay.style.opacity        = '1';
-    pkgOverlay.style.pointerEvents  = 'all';
-    pkgBox.style.transform          = 'scale(1)';
+    pkgErr.style.display           = 'none';
+    pkgSuccess.style.display       = 'none';
+    pkgSubmit.disabled             = false;
+    pkgSubmit.style.display        = 'block';
+    pkgSubmit.textContent          = 'Send Me the Rate Card';
+    // Update WhatsApp link with current package context
+    const waMsg = encodeURIComponent(`Hi NEJstudios, I'm interested in the ${packageName || 'package'}. Can we discuss?`);
+    pkgChoiceWA.href = `https://wa.me/${NEJ_WHATSAPP}?text=${waMsg}`;
+    // Update call link
+    const callLinks = pkgBox.querySelectorAll('a[href^="tel:"]');
+    callLinks.forEach(a => { a.href = `tel:${NEJ_PHONE.replace(/\s/g, '')}`; a.querySelector('span') && (a.querySelector('span').textContent = NEJ_PHONE); });
+    // Show first step
+    showChoiceStep();
+    pkgOverlay.style.opacity       = '1';
+    pkgOverlay.style.pointerEvents = 'all';
+    pkgBox.style.transform         = 'scale(1)';
   }
+
   function closePkgModal() {
-    pkgOverlay.style.opacity        = '0';
-    pkgOverlay.style.pointerEvents  = 'none';
-    pkgBox.style.transform          = 'scale(.97)';
+    pkgOverlay.style.opacity       = '0';
+    pkgOverlay.style.pointerEvents = 'none';
+    pkgBox.style.transform         = 'scale(.97)';
   }
 
   // Open on "Book This Package" buttons
   document.querySelectorAll('.pkg-enquiry-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const card = btn.closest('.pkg-card');
-      const name = card ? (card.querySelector('h3')?.textContent || 'Package') : 'Package';
-      openPkgModal(name + ' Package Enquiry');
+      const name = card ? (card.querySelector('h3')?.textContent?.trim() || 'Package') : 'Package';
+      openPkgModal(name + ' Package');
     });
   });
+
+  // Choice: email rate card
+  pkgChoiceEmail.addEventListener('click', showEmailStep);
+  // Choice: back button
+  pkgBackBtn.addEventListener('click', showChoiceStep);
 
   pkgClose.addEventListener('click', closePkgModal);
   pkgOverlay.addEventListener('click', e => { if (e.target === pkgOverlay) closePkgModal(); });
 
+  // Submit email form
   pkgSubmit.addEventListener('click', async () => {
     const email = document.getElementById('pkgEnquiryEmail').value.trim();
     const name  = document.getElementById('pkgEnquiryName').value.trim();

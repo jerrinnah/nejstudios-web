@@ -143,7 +143,8 @@ async function dbGetSchedule() {
 }
 
 async function dbAddScheduleEntry(entry) {
-  const { error } = await _db.from("schedule").insert(_schedToRow(entry));
+  // upsert so re-confirming the same booking doesn't throw a duplicate-key error
+  const { error } = await _db.from("schedule").upsert(_schedToRow(entry), { onConflict: "id" });
   if (error) console.error("dbAddScheduleEntry:", error.message);
 }
 

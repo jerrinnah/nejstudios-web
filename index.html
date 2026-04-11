@@ -987,43 +987,93 @@
 
   <!-- ══════════════ PACKAGE ENQUIRY MODAL ══════════════ -->
   <div id="pkgEnquiryOverlay" style="
-    position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:9999;
+    position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;
     display:flex;align-items:center;justify-content:center;padding:20px;
-    opacity:0;pointer-events:none;transition:opacity .2s;
+    opacity:0;pointer-events:none;transition:opacity .25s;
   ">
     <div style="
       background:#0f0f0f;border:1px solid #2a2a2a;border-radius:16px;
-      padding:40px 36px;max-width:440px;width:100%;position:relative;
-      transform:scale(.97);transition:transform .2s;
+      padding:36px 32px;max-width:460px;width:100%;position:relative;
+      transform:scale(.97);transition:transform .25s;
     " id="pkgEnquiryBox">
       <button id="pkgEnquiryClose" aria-label="Close" style="
         position:absolute;top:14px;right:14px;width:30px;height:30px;
         border-radius:50%;border:1px solid #2a2a2a;background:#141414;
         color:#707070;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;
       ">✕</button>
+
       <div style="font-size:0.65rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#c9a84c;margin-bottom:8px">Package Enquiry</div>
-      <h3 id="pkgEnquiryTitle" style="font-family:'Playfair Display',Georgia,serif;font-size:1.5rem;color:#fff;margin-bottom:6px">Book This Package</h3>
-      <p style="font-size:0.82rem;color:#707070;margin-bottom:24px;line-height:1.6">Enter your email and we'll send you the full rate card and schedule a call to discuss your shoot.</p>
-      <div style="display:flex;flex-direction:column;gap:12px">
+      <h3 id="pkgEnquiryTitle" style="font-family:'Playfair Display',Georgia,serif;font-size:1.45rem;color:#fff;margin-bottom:6px">Book This Package</h3>
+      <p style="font-size:0.82rem;color:#707070;margin-bottom:24px;line-height:1.6">How would you like to proceed?</p>
+
+      <!-- ── Step 1: two choices ── -->
+      <div id="pkgChoiceStep" style="display:flex;flex-direction:column;gap:12px">
+        <!-- Option A — Email rate card -->
+        <button id="pkgChoiceEmail" style="
+          display:flex;align-items:center;gap:14px;padding:16px 18px;
+          background:#141414;border:1px solid #2a2a2a;border-radius:10px;
+          color:#fff;font-family:inherit;cursor:pointer;text-align:left;transition:.2s;
+        " onmouseover="this.style.borderColor='#c9a84c'" onmouseout="this.style.borderColor='#2a2a2a'">
+          <span style="width:38px;height:38px;border-radius:50%;background:#1a1a1a;border:1px solid #333;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#c9a84c" stroke-width="2" style="width:17px;height:17px"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          </span>
+          <div>
+            <div style="font-weight:600;font-size:0.9rem;margin-bottom:2px">Email me the Rate Card</div>
+            <div style="font-size:0.75rem;color:#707070">Get our full pricing guide sent to your inbox</div>
+          </div>
+        </button>
+
+        <!-- Option B — Speak to agent / WhatsApp -->
+        <a id="pkgChoiceWhatsapp" href="https://wa.me/2348000000000?text=Hi%20NEJstudios%2C%20I%27m%20interested%20in%20booking%20a%20package.%20Can%20we%20discuss%3F" target="_blank" rel="noopener" style="
+          display:flex;align-items:center;gap:14px;padding:16px 18px;
+          background:#141414;border:1px solid #2a2a2a;border-radius:10px;
+          color:#fff;font-family:inherit;cursor:pointer;text-align:left;text-decoration:none;transition:.2s;
+        " onmouseover="this.style.borderColor='#25d366'" onmouseout="this.style.borderColor='#2a2a2a'">
+          <span style="width:38px;height:38px;border-radius:50%;background:#1a1a1a;border:1px solid #333;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg viewBox="0 0 24 24" fill="#25d366" style="width:20px;height:20px"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.557 4.122 1.532 5.857L.054 23.5l5.79-1.519A11.942 11.942 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-4.964-1.345l-.357-.211-3.677.964.98-3.584-.231-.368A9.774 9.774 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182c5.43 0 9.818 4.387 9.818 9.818 0 5.43-4.387 9.818-9.818 9.818z"/></svg>
+          </span>
+          <div>
+            <div style="font-weight:600;font-size:0.9rem;margin-bottom:2px">Speak to a NEJ Agent</div>
+            <div style="font-size:0.75rem;color:#707070">Chat on WhatsApp — we reply within minutes</div>
+          </div>
+        </a>
+
+        <!-- Call option -->
+        <a href="tel:+2348000000000" id="pkgCallLink" style="
+          display:block;text-align:center;font-size:0.75rem;color:#555;margin-top:4px;text-decoration:none;transition:.2s;
+        " onmouseover="this.style.color='#c9a84c'" onmouseout="this.style.color='#555'">
+          Prefer a call? <span style="text-decoration:underline">+234 800 000 0000</span>
+        </a>
+      </div>
+
+      <!-- ── Step 2: email form (hidden until Option A selected) ── -->
+      <div id="pkgEmailStep" style="display:none;flex-direction:column;gap:12px;margin-top:4px">
+        <button id="pkgBackBtn" style="
+          background:none;border:none;color:#707070;font-size:0.78rem;font-family:inherit;
+          cursor:pointer;text-align:left;padding:0;margin-bottom:4px;display:flex;align-items:center;gap:6px;
+        ">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><polyline points="15 18 9 12 15 6"/></svg>
+          Back
+        </button>
         <div>
           <label style="font-size:0.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#707070;display:block;margin-bottom:6px">Your Name</label>
           <input id="pkgEnquiryName" type="text" placeholder="e.g. Amaka Chioma" style="
             width:100%;background:#141414;border:1px solid #2a2a2a;border-radius:8px;
-            padding:12px 14px;color:#fff;font-size:0.9rem;font-family:inherit;outline:none;
+            padding:12px 14px;color:#fff;font-size:0.9rem;font-family:inherit;outline:none;box-sizing:border-box;
           " />
         </div>
         <div>
           <label style="font-size:0.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#707070;display:block;margin-bottom:6px">Email Address *</label>
           <input id="pkgEnquiryEmail" type="email" placeholder="your@email.com" style="
             width:100%;background:#141414;border:1px solid #2a2a2a;border-radius:8px;
-            padding:12px 14px;color:#fff;font-size:0.9rem;font-family:inherit;outline:none;
+            padding:12px 14px;color:#fff;font-size:0.9rem;font-family:inherit;outline:none;box-sizing:border-box;
           " required />
         </div>
         <div>
           <label style="font-size:0.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#707070;display:block;margin-bottom:6px">Phone (optional)</label>
           <input id="pkgEnquiryPhone" type="tel" placeholder="+234 800 000 0000" style="
             width:100%;background:#141414;border:1px solid #2a2a2a;border-radius:8px;
-            padding:12px 14px;color:#fff;font-size:0.9rem;font-family:inherit;outline:none;
+            padding:12px 14px;color:#fff;font-size:0.9rem;font-family:inherit;outline:none;box-sizing:border-box;
           " />
         </div>
         <p id="pkgEnquiryErr" style="font-size:0.78rem;color:#f87171;display:none">Please enter a valid email address.</p>
