@@ -1229,13 +1229,77 @@ async function renderAdminSchedule() {
             </div>
           </div>`;
         })()}
-        <div class="task-card__actions">
+        <div class="task-card__actions" style="flex-wrap:wrap;gap:6px">
+          <button class="task-action-btn task-action-btn--start" data-sched-confirm="${s.id}" title="Confirm this shoot/event and move it to Bookings">✓ Confirm</button>
           <button class="task-action-btn task-action-btn--reports" data-sched-invoice="${s.id}">Invoice</button>
           <button class="task-action-btn task-action-btn--delete" data-sched-id="${s.id}">Delete</button>
         </div>
       </div>`;
   }).join('');
 
+  // ── Confirm → push to Bookings ──
+  grid.querySelectorAll('[data-sched-confirm]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const schedId = btn.dataset.schedConfirm;
+      const s = sched.find(x => x.id === schedId);
+      if (!s) return;
+
+      // Check if there's already a linked booking in localStorage
+      const existingBookings = getBookings();
+      const alreadyLinked = s.booking_id && existingBookings.find(b => b.id === s.booking_id);
+      if (alreadyLinked) {
+        // Just mark it confirmed and delete from schedule
+        const idx = existingBookings.findIndex(b => b.id === s.booking_id);
+        if (idx !== -1) { existingBookings[idx].status = 'confirmed'; saveBookings(existingBookings); }
+        await dbDeleteScheduleEntry(schedId);
+        await renderAdminSchedule();
+        switchTab('bookings'); renderBookings(); renderStatCards();
+        showToast(`${s.clientName || s.title} confirmed ✓ — moved to Bookings`);
+        return;
+      }
+
+      // Build a new booking object from the schedule entry
+      const rawName   = s.clientName || s.title.split(' — ')[0] || 'Client';
+      const parts     = rawName.trim().split(' ');
+      const firstName = parts[0];
+      const lastName  = parts.slice(1).join(' ') || '';
+      const isStudio  = s.type === 'studio';
+      const sessionTypePart = s.title.includes(' — ') ? s.title.split(' — ').slice(1).join(' — ') : '';
+
+      const newBooking = {
+        id:          'NEJ-' + Math.random().toString(36).slice(2, 8).toUpperCase(),
+        bookingKind: isStudio ? 'studio' : 'event',
+        firstName,
+        middleName:  '',
+        lastName,
+        clientName:  rawName,
+        phone:       '',
+        email:       '',
+        sessionType: isStudio ? (sessionTypePart || 'Studio') : null,
+        eventType:   !isStudio ? s.type : null,
+        sessionDate: s.date || null,
+        sessionTime: s.time || null,
+        eventDate:   s.date || null,
+        location:    s.location || null,
+        deliverables: s.notes || s.deliverables || null,
+        notes:       s.notes || null,
+        status:      'confirmed',
+        createdAt:   s.createdAt || Date.now(),
+        fromSchedule: true,
+      };
+
+      // Save to localStorage bookings + delete from Supabase schedule
+      const bookings = getBookings();
+      bookings.unshift(newBooking);
+      saveBookings(bookings);
+      await dbDeleteScheduleEntry(schedId);
+      await renderAdminSchedule();
+      switchTab('bookings'); renderBookings(); renderStatCards();
+      showToast(`${rawName} confirmed ✓ — moved to Bookings`);
+    });
+  });
+
+  // ── Delete ──
   grid.querySelectorAll('[data-sched-id]').forEach(btn => {
     btn.addEventListener('click', async () => {
       if (!confirm('Remove this schedule entry?')) return;
@@ -1245,6 +1309,7 @@ async function renderAdminSchedule() {
     });
   });
 
+  // ── Invoice ──
   grid.querySelectorAll('[data-sched-invoice]').forEach(btn => {
     btn.addEventListener('click', () => {
       const schedId = btn.dataset.schedInvoice;
