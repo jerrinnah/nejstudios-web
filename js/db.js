@@ -88,6 +88,9 @@ function _schedFromRow(r) {
 }
 
 function _schedToRow(s) {
+  // Note: checklist is intentionally omitted here — the column has a DB DEFAULT of '[]'
+  // for new rows, and checklist updates are handled separately by dbUpdateScheduleChecklist().
+  // Including it in upserts causes PostgREST schema-cache errors with JSONB columns.
   return {
     id: s.id,
     title: s.title,
@@ -99,8 +102,7 @@ function _schedToRow(s) {
     location: s.location || null,
     notes: s.notes || null,
     deliverables: s.deliverables || null,
-    checklist: s.checklist || [],
-    booking_id: s.booking_id || null,
+    booking_id: s.bookingId || null,
     created_at: s.createdAt || null,
   };
 }
