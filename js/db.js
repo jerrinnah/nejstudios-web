@@ -88,10 +88,10 @@ function _schedFromRow(r) {
 }
 
 function _schedToRow(s) {
-  // checklist, cost, booking_id are intentionally omitted from the base upsert.
-  // These columns were added via ALTER TABLE and PostgREST's schema cache refuses
-  // to accept them in upsert payloads. They are patched in a separate UPDATE call
-  // inside dbAddScheduleEntry() after the base row is written.
+  // ONLY original-schema columns here. All columns added via ALTER TABLE
+  // (deliverables, checklist, cost, booking_id) are patched in a separate
+  // UPDATE inside dbAddScheduleEntry() — PostgREST's schema cache refuses
+  // to accept ALTER TABLE columns in upsert payloads.
   return {
     id: s.id,
     title: s.title,
@@ -101,7 +101,6 @@ function _schedToRow(s) {
     client_name: s.clientName || null,
     location: s.location || null,
     notes: s.notes || null,
-    deliverables: s.deliverables || null,
     created_at: s.createdAt || null,
   };
 }
@@ -156,10 +155,11 @@ async function dbAddScheduleEntry(entry) {
   const { error } = await _db.from("schedule").upsert(_schedToRow(entry), { onConflict: "id" });
   if (error) { console.error("dbAddScheduleEntry:", error.message); return; }
 
-  // Step 2: patch the ALTER-TABLE columns via a plain UPDATE (PostgREST sees these fine)
+  // Step 2: patch ALL ALTER TABLE columns via a plain UPDATE (PostgREST sees these fine)
   const patch = {};
-  if (entry.cost      !== undefined) patch.cost       = entry.cost      || null;
-  if (entry.bookingId !== undefined) patch.booking_id = entry.bookingId || null;
+  if (entry.deliverables !== undefined) patch.deliverables = entry.deliverables || null;
+  if (entry.cost         !== undefined) patch.cost         = entry.cost         || null;
+  if (entry.bookingId    !== undefined) patch.booking_id   = entry.bookingId    || null;
   if (Object.keys(patch).length > 0) {
     const { error: e2 } = await _db.from("schedule").update(patch).eq("id", entry.id);
     if (e2) console.error("dbAddScheduleEntry patch:", e2.message);
