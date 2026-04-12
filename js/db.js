@@ -88,9 +88,10 @@ function _schedFromRow(r) {
 }
 
 function _schedToRow(s) {
-  // Note: checklist is intentionally omitted here — the column has a DB DEFAULT of '[]'
-  // for new rows, and checklist updates are handled separately by dbUpdateScheduleChecklist().
-  // Including it in upserts causes PostgREST schema-cache errors with JSONB columns.
+  // checklist, cost, booking_id are intentionally omitted from the base upsert.
+  // These columns were added via ALTER TABLE and PostgREST's schema cache refuses
+  // to accept them in upsert payloads. They are patched in a separate UPDATE call
+  // inside dbAddScheduleEntry() after the base row is written.
   return {
     id: s.id,
     title: s.title,
@@ -98,11 +99,9 @@ function _schedToRow(s) {
     time: s.time || null,
     type: s.type || "studio",
     client_name: s.clientName || null,
-    cost: s.cost || null,
     location: s.location || null,
     notes: s.notes || null,
     deliverables: s.deliverables || null,
-    booking_id: s.bookingId || null,
     created_at: s.createdAt || null,
   };
 }
@@ -153,9 +152,18 @@ async function dbGetSchedule() {
 }
 
 async function dbAddScheduleEntry(entry) {
-  // upsert so re-confirming the same booking doesn't throw a duplicate-key error
+  // Step 1: upsert the base row (only original-schema columns — see _schedToRow comment)
   const { error } = await _db.from("schedule").upsert(_schedToRow(entry), { onConflict: "id" });
-  if (error) console.error("dbAddScheduleEntry:", error.message);
+  if (error) { console.error("dbAddScheduleEntry:", error.message); return; }
+
+  // Step 2: patch the ALTER-TABLE columns via a plain UPDATE (PostgREST sees these fine)
+  const patch = {};
+  if (entry.cost      !== undefined) patch.cost       = entry.cost      || null;
+  if (entry.bookingId !== undefined) patch.booking_id = entry.bookingId || null;
+  if (Object.keys(patch).length > 0) {
+    const { error: e2 } = await _db.from("schedule").update(patch).eq("id", entry.id);
+    if (e2) console.error("dbAddScheduleEntry patch:", e2.message);
+  }
 }
 
 async function dbDeleteScheduleEntry(id) {
