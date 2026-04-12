@@ -1291,17 +1291,21 @@ async function renderAdminSchedule() {
       const existingBookings = getBookings();
       const alreadyLinked = s.booking_id && existingBookings.find(b => b.id === s.booking_id);
       if (alreadyLinked) {
-        // Just mark it confirmed and delete from schedule
+        // Shoot is done — mark as completed and remove from schedule
         const idx = existingBookings.findIndex(b => b.id === s.booking_id);
-        if (idx !== -1) { existingBookings[idx].status = 'confirmed'; saveBookings(existingBookings); }
+        if (idx !== -1) {
+          existingBookings[idx].status      = 'completed';
+          existingBookings[idx].completedAt = Date.now();
+          saveBookings(existingBookings);
+        }
         await dbDeleteScheduleEntry(schedId);
         await renderAdminSchedule();
         switchTab('bookings'); renderBookings(); renderStatCards();
-        showToast(`${s.clientName || s.title} confirmed ✓ — moved to Bookings`);
+        showToast(`${s.clientName || s.title} — shoot complete ✓`);
         return;
       }
 
-      // Build a new booking object from the schedule entry
+      // Build a new booking from the schedule entry (manually-added entries)
       const rawName   = s.clientName || s.title.split(' — ')[0] || 'Client';
       const parts     = rawName.trim().split(' ');
       const firstName = parts[0];
@@ -1310,35 +1314,36 @@ async function renderAdminSchedule() {
       const sessionTypePart = s.title.includes(' — ') ? s.title.split(' — ').slice(1).join(' — ') : '';
 
       const newBooking = {
-        id:          'NEJ-' + Math.random().toString(36).slice(2, 8).toUpperCase(),
-        bookingKind: isStudio ? 'studio' : 'event',
+        id:           'NEJ-' + Math.random().toString(36).slice(2, 8).toUpperCase(),
+        bookingKind:  isStudio ? 'studio' : 'event',
         firstName,
-        middleName:  '',
+        middleName:   '',
         lastName,
-        clientName:  rawName,
-        phone:       '',
-        email:       '',
-        sessionType: isStudio ? (sessionTypePart || 'Studio') : null,
-        eventType:   !isStudio ? s.type : null,
-        sessionDate: s.date || null,
-        sessionTime: s.time || null,
-        eventDate:   s.date || null,
-        location:    s.location || null,
+        clientName:   rawName,
+        phone:        '',
+        email:        '',
+        sessionType:  isStudio ? (sessionTypePart || 'Studio') : null,
+        eventType:    !isStudio ? s.type : null,
+        sessionDate:  s.date || null,
+        sessionTime:  s.time || null,
+        eventDate:    s.date || null,
+        location:     s.location || null,
         deliverables: s.notes || s.deliverables || null,
-        notes:       s.notes || null,
-        status:      'confirmed',
-        createdAt:   s.createdAt || Date.now(),
+        notes:        s.notes || null,
+        status:       'completed',
+        completedAt:  Date.now(),
+        createdAt:    s.createdAt || Date.now(),
         fromSchedule: true,
       };
 
-      // Save to localStorage bookings + delete from Supabase schedule
+      // Save to localStorage + delete from Supabase schedule
       const bookings = getBookings();
       bookings.unshift(newBooking);
       saveBookings(bookings);
       await dbDeleteScheduleEntry(schedId);
       await renderAdminSchedule();
       switchTab('bookings'); renderBookings(); renderStatCards();
-      showToast(`${rawName} confirmed ✓ — moved to Bookings`);
+      showToast(`${rawName} — shoot complete ✓`);
     });
   });
 
