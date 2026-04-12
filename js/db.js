@@ -11,15 +11,19 @@
      time         TEXT,
      type         TEXT NOT NULL DEFAULT 'studio',
      client_name  TEXT,
+     cost         TEXT,
      location     TEXT,
      notes        TEXT,
      deliverables TEXT,
      checklist    JSONB NOT NULL DEFAULT '[]',
+     booking_id   TEXT,
      created_at   BIGINT
    );
-   -- To add columns to an existing table:
-   -- ALTER TABLE schedule ADD COLUMN deliverables TEXT;
+   -- Run these ALTER TABLE commands in Supabase SQL Editor to add new columns:
+   -- ALTER TABLE schedule ADD COLUMN IF NOT EXISTS deliverables TEXT;
    -- ALTER TABLE schedule ADD COLUMN IF NOT EXISTS checklist JSONB NOT NULL DEFAULT '[]';
+   -- ALTER TABLE schedule ADD COLUMN IF NOT EXISTS cost TEXT;
+   -- ALTER TABLE schedule ADD COLUMN IF NOT EXISTS booking_id TEXT;
    ALTER TABLE schedule ENABLE ROW LEVEL SECURITY;
    CREATE POLICY "public_all" ON schedule FOR ALL USING (true) WITH CHECK (true);
 
@@ -73,10 +77,12 @@ function _schedFromRow(r) {
     time: r.time || null,
     type: r.type || "studio",
     clientName: r.client_name || null,
+    cost: r.cost || null,
     location: r.location || null,
     notes: r.notes || null,
     deliverables: r.deliverables || null,
     checklist: r.checklist || [],
+    bookingId: r.booking_id || null,
     createdAt: r.created_at || null,
   };
 }
@@ -89,10 +95,12 @@ function _schedToRow(s) {
     time: s.time || null,
     type: s.type || "studio",
     client_name: s.clientName || null,
+    cost: s.cost || null,
     location: s.location || null,
     notes: s.notes || null,
     deliverables: s.deliverables || null,
     checklist: s.checklist || [],
+    booking_id: s.booking_id || null,
     created_at: s.createdAt || null,
   };
 }

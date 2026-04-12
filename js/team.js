@@ -4,8 +4,11 @@
    Features: all tasks bar, my tasks, start/end, reports
    ══════════════════════════════════════════════ */
 
-const TEAM_KEY    = 'nej_team';
-const SESSION_KEY = 'nej_session';
+const TEAM_KEY     = 'nej_team';
+const SESSION_KEY  = 'nej_session';
+const STORAGE_KEY  = 'nej_bookings';
+
+function getBookings() { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
 
 /* ════════════════════════════════════════════
    TEAM CONFIG  ← add / edit team members here
@@ -199,6 +202,7 @@ function switchTab(name) {
   if (name === 'schedule')  renderSchedule();
   if (name === 'all-tasks') renderAllTasksBar();
   if (name === 'my-tasks')  renderMyTasks();
+  if (name === 'bookings')  renderTeamBookings();
 }
 
 document.querySelectorAll('.t-tab-btn').forEach(btn => {
@@ -397,6 +401,77 @@ async function renderSchedule() {
       cb.closest('label').style.textDecoration = cb.checked ? 'line-through' : '';
     });
   });
+}
+
+/* ════════════════════════════════════════════
+   TEAM BOOKINGS VIEW
+   (no invoice, no cost, no email, no phone)
+   ════════════════════════════════════════════ */
+function renderTeamBookings() {
+  const grid = document.getElementById('teamBookingsGrid');
+  if (!grid) return;
+
+  const bookings = getBookings()
+    .filter(b => b.status === 'confirmed' || b.status === 'pending' || b.status === 'completed')
+    .sort((a, b) => {
+      const aDate = a.sessionDate || a.eventDate || null;
+      const bDate = b.sessionDate || b.eventDate || null;
+      if (aDate && bDate) return aDate.localeCompare(bDate);
+      if (aDate) return -1;
+      if (bDate) return 1;
+      return (b.createdAt || 0) - (a.createdAt || 0);
+    });
+
+  // Update badge
+  const badge = document.getElementById('bookingsBadge');
+  const confirmed = bookings.filter(b => b.status === 'confirmed').length;
+  if (badge) {
+    badge.textContent = confirmed;
+    badge.classList.toggle('hidden', confirmed === 0);
+  }
+
+  if (bookings.length === 0) {
+    grid.innerHTML = `<div class="sch-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><h3>No active bookings</h3><p>Confirmed shoots and events will appear here.</p></div>`;
+    return;
+  }
+
+  const statusColor = { pending:'var(--orange)', confirmed:'var(--green)', completed:'var(--grey-3)' };
+  const statusLabel = { pending:'Pending', confirmed:'Confirmed', completed:'Completed' };
+  const typeLabel   = { studio:'Studio', wedding:'Wedding', event:'Event', production:'Production', 'white-wedding':'White Wedding', 'traditional-wedding':'Traditional Wedding', 'brand-film':'Brand Film', 'corporate-event':'Corporate Event', 'music-video':'Music Video', 'birthday':'Birthday' };
+
+  grid.innerHTML = bookings.map(b => {
+    const isEvent    = b.bookingKind === 'event';
+    const shootDate  = b.sessionDate || b.eventDate || null;
+    const fmtShoot   = shootDate ? new Date(shootDate + 'T00:00:00').toLocaleDateString('en-NG', { dateStyle:'medium' }) : null;
+    const shootTime  = b.sessionTime || null;
+    const typeName   = isEvent ? (typeLabel[b.eventType] || b.eventType || 'Event') : (b.sessionType || 'Studio');
+    const location   = b.location || null;
+    const delivs     = b.deliverables ? b.deliverables.slice(0, 100) + (b.deliverables.length > 100 ? '…' : '') : null;
+
+    // Equipment checklist for this type
+    const eqType     = isEvent ? (b.eventType === 'white-wedding' || b.eventType === 'traditional-wedding' ? 'wedding' : b.eventType === 'brand-film' || b.eventType === 'music-video' ? 'production' : 'event') : 'studio';
+    const eqItems    = CHECKLIST_TEMPLATES[eqType] || CHECKLIST_TEMPLATES['studio'];
+
+    return `
+    <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:16px;overflow:hidden">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+        <div>
+          <div style="font-size:0.62rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:3px">${isEvent ? 'Event' : 'Studio'}</div>
+          <div style="font-size:1rem;font-weight:600;color:var(--white)">${b.clientName}</div>
+        </div>
+        <span style="font-size:0.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:3px 10px;border-radius:99px;border:1px solid;color:${statusColor[b.status]||'var(--grey-3)'};border-color:${statusColor[b.status]||'var(--grey-3)'};background:${statusColor[b.status]||'var(--grey-3)'}1a">${statusLabel[b.status]||b.status}</span>
+      </div>
+      <div style="font-size:0.8rem;color:var(--grey-2);margin-bottom:4px">📌 ${typeName}</div>
+      ${fmtShoot ? `<div style="font-size:0.8rem;color:var(--grey-2)">📅 ${fmtShoot}${shootTime ? ' · ' + shootTime : ''}</div>` : ''}
+      ${location  ? `<div style="font-size:0.8rem;color:var(--grey-2);margin-top:2px">📍 ${location}</div>` : ''}
+      ${delivs    ? `<div style="font-size:0.75rem;color:var(--grey-3);margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">${delivs}</div>` : ''}
+      <!-- Equipment checklist (read-only on team view — use Schedule tab for interactive checklist) -->
+      <div style="margin-top:10px;padding:8px 10px;background:var(--bg-3);border:1px solid var(--border);border-radius:6px">
+        <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--gold);margin-bottom:6px">Equipment &amp; Gear Needed</div>
+        ${eqItems.map(item => `<div style="font-size:0.75rem;color:var(--grey-2);padding:2px 0">· ${item}</div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
 }
 
 /* ════════════════════════════════════════════
@@ -662,6 +737,14 @@ async function updateBadges() {
     const myBadge  = document.getElementById('myTasksBadge');
     myBadge.textContent = myActive;
     myBadge.classList.toggle('hidden', myActive === 0);
+  }
+
+  // Bookings badge: count confirmed bookings
+  const confirmedBookings = getBookings().filter(b => b.status === 'confirmed').length;
+  const bookingsBadge     = document.getElementById('bookingsBadge');
+  if (bookingsBadge) {
+    bookingsBadge.textContent = confirmedBookings;
+    bookingsBadge.classList.toggle('hidden', confirmedBookings === 0);
   }
 }
 

@@ -368,6 +368,8 @@
       .task-card__actions { display:flex; gap:6px; flex-wrap:wrap; }
       .task-action-btn { padding:6px 12px; border-radius:6px; font-size:0.68rem; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; border:1px solid; transition:var(--trans); }
       .task-action-btn--delete { border-color:var(--border); color:var(--grey-3); }
+      .task-action-btn--confirm { border-color:var(--gold); color:#000; background:var(--gold); }
+      .task-action-btn--confirm:hover { background:var(--gold-lt); border-color:var(--gold-lt); }
       .task-action-btn--delete:hover { border-color:var(--red); color:var(--red); }
       .task-action-btn--reports { border-color:var(--border-l); color:var(--grey-2); }
       .task-action-btn--reports:hover { border-color:var(--gold); color:var(--gold); }
@@ -1110,6 +1112,18 @@
                   <div class="form-field">
                     <label class="form-label">Client Name</label>
                     <input class="form-input" id="schedClient" type="text" placeholder="e.g. Kemi Afolabi" />
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label">Cost of Event</label>
+                    <select class="form-select" id="schedCost">
+                      <option value="">— Select —</option>
+                      <option value="under150">Under ₦150k</option>
+                      <option value="150-350">₦150k – ₦350k</option>
+                      <option value="350-600">₦350k – ₦600k</option>
+                      <option value="600-1m">₦600k – ₦1M</option>
+                      <option value="above1m">Above ₦1M</option>
+                      <option value="tbd">To Be Discussed</option>
+                    </select>
                   </div>
                   <div class="form-field">
                     <label class="form-label">Location</label>

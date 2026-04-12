@@ -24,6 +24,17 @@ const TEAM_CONFIG = [
 ];
 
 /* ════════════════════════════════════════════
+   EQUIPMENT CHECKLIST TEMPLATES
+   ════════════════════════════════════════════ */
+const CHECKLIST_TEMPLATES = {
+  studio:     ['Camera bodies charged', 'Memory cards formatted', 'Lighting rigs set up', 'Backdrops ready', 'Props arranged', 'Release forms printed'],
+  wedding:    ['Camera bodies charged', 'Backup camera ready', 'Flash units charged', 'Memory cards (x4 minimum)', 'Drone charged & permitted', 'Shot list printed', 'Venue scouted', 'Emergency kit packed'],
+  event:      ['Camera bodies charged', 'Memory cards formatted', 'Lighting equipment', 'Audio recorder', 'Shot list confirmed', 'Parking arranged'],
+  production: ['Camera bodies charged', 'Gimbal calibrated', 'Drone charged & permitted', 'Lights & diffusers', 'Audio kit checked', 'Script/shot list printed', 'Hard drives (2x backup)'],
+  meeting:    ['Notebook & pen', 'Contract documents', 'Pricing guide', 'Portfolio samples'],
+};
+
+/* ════════════════════════════════════════════
    STORAGE HELPERS
    ════════════════════════════════════════════ */
 function getBookings()     { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
@@ -374,6 +385,15 @@ function renderBookings() {
     grid.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><h3>No bookings found</h3><p>No bookings match the current filter.</p><a href="booking" target="_blank">+ New Studio Booking</a></div>`;
     return;
   }
+  // Sort by upcoming event/shoot date (soonest first), then by creation date
+  bookings.sort((a, b) => {
+    const aDate = a.sessionDate || a.eventDate || null;
+    const bDate = b.sessionDate || b.eventDate || null;
+    if (aDate && bDate) return aDate.localeCompare(bDate);
+    if (aDate) return -1;
+    if (bDate) return 1;
+    return (b.createdAt || 0) - (a.createdAt || 0);
+  });
   grid.innerHTML = bookings.map(b => b.bookingKind === 'event' ? buildEventCard(b) : buildStudioCard(b)).join('');
   grid.querySelectorAll('[data-action]').forEach(btn => {
     btn.addEventListener('click', e => { e.stopPropagation(); handleBookingAction(btn.dataset.id, btn.dataset.action); });
@@ -1151,6 +1171,7 @@ document.getElementById('schedForm').addEventListener('submit', async e => {
   const time         = document.getElementById('schedTime').value;
   const type         = document.getElementById('schedType').value;
   const client       = document.getElementById('schedClient').value.trim();
+  const cost         = document.getElementById('schedCost').value;
   const location     = document.getElementById('schedLocation').value.trim();
   const notes        = document.getElementById('schedNotes').value.trim();
   const deliverables = document.getElementById('schedDeliverables').value.trim();
@@ -1161,18 +1182,23 @@ document.getElementById('schedForm').addEventListener('submit', async e => {
     title, date, type,
     time:         time         || null,
     clientName:   client       || null,
+    cost:         cost         || null,
     location:     location     || null,
     notes:        notes        || null,
     deliverables: deliverables || null,
+    checklist:    [],
     createdAt:    Date.now(),
   };
 
+  const btn = e.target.querySelector('[type=submit]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Adding…'; }
   await dbAddScheduleEntry(entry);
+  if (btn) { btn.disabled = false; btn.textContent = 'Add to Schedule'; }
   e.target.reset();
   schedCreateBody.classList.remove('open');
   schedCreateToggle.classList.remove('open');
   await renderAdminSchedule();
-  showToast('Added to schedule — team can see it now');
+  showToast('Added to schedule ✓ — team can see it now');
 });
 
 async function renderAdminSchedule() {
@@ -1217,20 +1243,37 @@ async function renderAdminSchedule() {
         ${s.notes ? `<div class="task-reports-preview">${s.notes}</div>` : ''}
         ${s.deliverables ? `<div class="task-reports-preview" style="margin-top:6px"><strong style="color:var(--gold-lt);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em">Deliverables:</strong> ${s.deliverables}</div>` : ''}
         ${(() => {
-          const cl = s.checklist || [];
-          if (cl.length === 0) return '';
-          const done = cl.filter(item => typeof item === 'object' ? item.checked : false).length;
-          const total = cl.length;
-          const pct = Math.round((done / total) * 100);
-          return `<div style="margin-top:10px;padding:8px 10px;background:var(--bg-3);border:1px solid var(--border);border-radius:6px;font-size:0.75rem;color:var(--grey-3)">
-            Checklist: <strong style="color:${done===total?'var(--green)':'var(--white)'}">${done}/${total}</strong> items done
-            <div style="margin-top:6px;height:4px;background:var(--border);border-radius:99px;overflow:hidden">
-              <div style="height:100%;width:${pct}%;background:${done===total?'var(--green)':'var(--gold)'};border-radius:99px;transition:width 0.3s"></div>
+          const templateItems = CHECKLIST_TEMPLATES[s.type] || CHECKLIST_TEMPLATES['studio'];
+          const savedItems    = s.checklist && s.checklist.length > 0 ? s.checklist : null;
+          const rawItems      = savedItems || templateItems.map(text => ({ text, checked: false }));
+          const items         = rawItems.map(it => typeof it === 'string' ? { text: it, checked: false } : it);
+          const done          = items.filter(it => it.checked).length;
+          const total         = items.length;
+          const pct           = total > 0 ? Math.round((done / total) * 100) : 0;
+          const allDone       = done === total && total > 0;
+          return `
+          <div style="margin-top:10px;border:1px solid var(--border);border-radius:8px;overflow:hidden">
+            <button class="sch-eq-toggle" data-eq-id="${s.id}" style="width:100%;padding:8px 12px;background:var(--bg-3);border:none;font-family:inherit;font-size:0.72rem;font-weight:600;color:var(--grey-2);display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:.2s">
+              <span style="display:flex;align-items:center;gap:6px">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+                Equipment &amp; Gear
+              </span>
+              <span style="font-size:0.68rem;color:${allDone ? 'var(--green)' : 'var(--grey-3)'}">${allDone ? 'All ready ✓' : done + '/' + total}</span>
+            </button>
+            <div id="eq-body-${s.id}" style="display:none;padding:10px 12px;background:var(--bg-2)">
+              <div style="height:3px;background:var(--border);border-radius:99px;margin-bottom:10px;overflow:hidden">
+                <div style="height:100%;width:${pct}%;background:${allDone ? 'var(--green)' : 'var(--gold)'};border-radius:99px;transition:width .3s"></div>
+              </div>
+              ${items.map((it, idx) => `
+              <label style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:0.8rem;color:${it.checked ? 'var(--grey-4)' : 'var(--grey-1)'};${it.checked ? 'text-decoration:line-through' : ''};cursor:pointer;border-bottom:1px solid var(--border)">
+                <input type="checkbox" data-eq-sched="${s.id}" data-eq-idx="${idx}" ${it.checked ? 'checked' : ''} style="width:13px;height:13px;accent-color:var(--gold);flex-shrink:0" />
+                ${it.text}
+              </label>`).join('')}
             </div>
           </div>`;
         })()}
         <div class="task-card__actions" style="flex-wrap:wrap;gap:6px">
-          <button class="task-action-btn task-action-btn--start" data-sched-confirm="${s.id}" title="Confirm this shoot/event and move it to Bookings">✓ Confirm</button>
+          <button class="task-action-btn task-action-btn--confirm" data-sched-confirm="${s.id}" title="Confirm shoot — moves to Bookings">✓ Confirm</button>
           <button class="task-action-btn task-action-btn--reports" data-sched-invoice="${s.id}">Invoice</button>
           <button class="task-action-btn task-action-btn--delete" data-sched-id="${s.id}">Delete</button>
         </div>
@@ -1315,12 +1358,58 @@ async function renderAdminSchedule() {
       const schedId = btn.dataset.schedInvoice;
       const s = sched.find(x => x.id === schedId);
       if (!s) return;
-      // Try to find linked booking first
       if (s.booking_id) {
         const linked = getBookings().find(b => b.id === s.booking_id);
         if (linked) { openInvoice(linked.id); return; }
       }
       openScheduleInvoice(s);
+    });
+  });
+
+  // Equipment & Gear toggle
+  grid.querySelectorAll('.sch-eq-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const body = document.getElementById('eq-body-' + btn.dataset.eqId);
+      if (!body) return;
+      const open = body.style.display === 'none' || body.style.display === '';
+      body.style.display = open ? 'block' : 'none';
+    });
+  });
+
+  // Equipment checkbox persistence
+  grid.querySelectorAll('[data-eq-sched]').forEach(cb => {
+    cb.addEventListener('change', async () => {
+      const schedId = cb.dataset.eqSched;
+      const idx     = parseInt(cb.dataset.eqIdx, 10);
+      const s       = sched.find(x => x.id === schedId);
+      if (!s) return;
+
+      const templateItems = CHECKLIST_TEMPLATES[s.type] || CHECKLIST_TEMPLATES['studio'];
+      const rawItems      = s.checklist && s.checklist.length > 0
+        ? s.checklist
+        : templateItems.map(text => ({ text, checked: false }));
+      const items = rawItems.map(it => typeof it === 'string' ? { text: it, checked: false } : { ...it });
+      items[idx].checked = cb.checked;
+
+      await dbUpdateScheduleChecklist(schedId, items);
+      s.checklist = items;
+
+      // Update progress bar + counter in header
+      const body    = document.getElementById('eq-body-' + schedId);
+      const toggle  = grid.querySelector(`.sch-eq-toggle[data-eq-id="${schedId}"]`);
+      const allCbs  = body ? Array.from(body.querySelectorAll('input[type=checkbox]')) : [];
+      const done    = allCbs.filter(c => c.checked).length;
+      const total   = allCbs.length;
+      const pct     = total > 0 ? Math.round((done / total) * 100) : 0;
+      const allDone = done === total && total > 0;
+      const bar     = body ? body.querySelector('div[style*="height:3px"] > div') : null;
+      if (bar) { bar.style.width = pct + '%'; bar.style.background = allDone ? 'var(--green)' : 'var(--gold)'; }
+      if (toggle) {
+        const counter = toggle.querySelector('span:last-child');
+        if (counter) { counter.textContent = allDone ? 'All ready ✓' : done + '/' + total; counter.style.color = allDone ? 'var(--green)' : 'var(--grey-3)'; }
+      }
+      cb.closest('label').style.color          = cb.checked ? 'var(--grey-4)' : 'var(--grey-1)';
+      cb.closest('label').style.textDecoration = cb.checked ? 'line-through' : '';
     });
   });
 }
