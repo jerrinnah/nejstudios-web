@@ -101,6 +101,8 @@ function showPortal(member) {
   teamShell.style.display = 'flex';
   mobileNav.style.display = 'flex';
   document.getElementById('userBadgeName').textContent = member.name;
+  // Fresh server fetch on login so tasks and schedule are always current
+  dbRefreshAll();
   switchTab('schedule');
   updateBadges();
   requestNotifPermission();
@@ -296,16 +298,36 @@ async function renderSchedule() {
           <div class="sch-body__title">${s.title}</div>
           <div class="sch-body__meta">
             ${s.time       ? `<span>🕐 ${s.time}</span>`       : ''}
-            ${s.clientName ? `<span>👤 ${s.clientName}</span>` : ''}
+            ${s.clientName ? `<span>👤 ${s.type === 'wedding' ? 'Event: ' : ''}${s.clientName}</span>` : ''}
+            ${s.planner    ? `<span>📋 Planner: ${s.planner}</span>` : ''}
             ${s.location   ? `<span>📍 ${s.location}</span>`   : ''}
+            ${s.assignedMembers && s.assignedMembers.length ? `<span>👥 ${s.assignedMembers.map(m => m.name).join(', ')}</span>` : ''}
           </div>
           ${s.notes ? `<div class="sch-body__notes">${s.notes}</div>` : ''}
           ${s.deliverables ? `<div class="sch-body__notes" style="margin-top:6px;border-top:1px solid var(--border);padding-top:6px"><span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--gold);display:block;margin-bottom:2px">Deliverables</span>${s.deliverables}</div>` : ''}
+          ${!(s.type === 'studio' && s.shootCompleted) ? `
           <button class="sch-checklist-toggle" data-toggle-id="${s.id}" style="margin-top:12px;width:100%;padding:7px 12px;background:var(--bg-3);border:1px solid var(--border);border-radius:6px;font-size:0.72rem;font-weight:600;color:var(--grey-3);display:flex;align-items:center;justify-content:space-between;transition:var(--trans)">
             <span>Checklist ${doneCount > 0 ? `(${doneCount}/${totalCount})` : ''}</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
-          ${checklistHtml}
+          ${checklistHtml}` : ''}
+          ${s.type === 'studio' ? (() => {
+            if (s.shootCompleted) {
+              const dateStr = s.shootCompletedAt ? ' · ' + new Date(s.shootCompletedAt).toLocaleDateString('en-NG', { dateStyle:'medium' }) : '';
+              return '<div style="margin-top:14px;padding:12px 14px;background:var(--green-bg);border:1px solid rgba(62,207,142,.25);border-radius:8px">'
+                + '<div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--green);margin-bottom:8px">✓ Shoot Completed' + dateStr + '</div>'
+                + (s.shootPictureCount ? '<div style="font-size:0.8rem;color:var(--grey-2);margin-bottom:4px">📷 <strong>' + s.shootPictureCount + '</strong> pictures</div>' : '')
+                + (s.shootSelection ? '<div style="font-size:0.8rem;color:var(--grey-2);margin-bottom:4px">🎯 ' + s.shootSelection + '</div>' : '')
+                + (s.shootFileNames ? '<div style="font-size:0.75rem;color:var(--grey-3);white-space:pre-wrap;margin-top:6px;padding-top:6px;border-top:1px solid rgba(62,207,142,.15)">📁 ' + s.shootFileNames + '</div>' : '')
+                + '<button data-share-selection="' + s.id + '" style="margin-top:12px;width:100%;padding:8px 14px;background:transparent;border:1px solid var(--gold);color:var(--gold);border-radius:6px;font-size:0.75rem;font-weight:600;letter-spacing:0.04em;cursor:pointer;transition:0.2s" onmouseover="this.style.background=\'rgba(201,168,76,.1)\'" onmouseout="this.style.background=\'transparent\'">'
+                + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;display:inline-block;vertical-align:middle;margin-right:5px"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>'
+                + ' Share Selection with Client</button>'
+                + '</div>';
+            }
+            return '<button class="btn-complete" data-shoot-complete="' + s.id + '" style="margin-top:12px;width:100%;padding:9px 14px;background:transparent;border:1px solid var(--green);color:var(--green);border-radius:6px;font-size:0.78rem;font-weight:600;letter-spacing:0.04em;transition:var(--trans)" onmouseover="this.style.background=\'var(--green-bg)\'" onmouseout="this.style.background=\'transparent\'">'
+              + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;display:inline-block;vertical-align:middle;margin-right:5px"><polyline points="20 6 9 17 4 12"/></svg>'
+              + ' Mark Shoot Done</button>';
+          })() : ''}
         </div>
       </div>`;
   }
@@ -396,6 +418,16 @@ async function renderSchedule() {
       cb.closest('label').style.color          = cb.checked ? 'var(--grey-4)' : 'var(--grey-1)';
       cb.closest('label').style.textDecoration = cb.checked ? 'line-through' : '';
     });
+  });
+
+  // Mark Shoot Done buttons (studio sessions only)
+  grid.querySelectorAll('[data-shoot-complete]').forEach(btn => {
+    btn.addEventListener('click', () => openShootCompleteModal(btn.dataset.shootComplete));
+  });
+
+  // Share selection with client
+  grid.querySelectorAll('[data-share-selection]').forEach(btn => {
+    btn.addEventListener('click', () => shareSelectionLink(btn.dataset.shareSelection, shots));
   });
 }
 
@@ -716,4 +748,116 @@ dbSubscribeSchedule(() => {
   if (!currentMember) return;
   if (activeTab === 'schedule') renderSchedule();
   updateBadges();
+});
+
+/* ════════════════════════════════════════════
+   SHARE SELECTION LINK
+   ════════════════════════════════════════════ */
+function shareSelectionLink(schedId, shots) {
+  const s = shots.find(x => x.id === schedId);
+  if (!s) return;
+
+  const payload = {
+    clientName:    s.clientName  || s.title || '',
+    sessionTitle:  s.title       || '',
+    date:          s.date        || '',
+    pictureCount:  s.shootPictureCount || null,
+    selection:     s.shootSelection   || null,
+    fileNames:     s.shootFileNames   || null,
+    completedAt:   s.shootCompletedAt || null,
+    completedBy:   s.shootCompletedBy || null,
+  };
+
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+  const url     = window.location.origin + '/selection-confirm.html?d=' + encoded;
+
+  navigator.clipboard.writeText(url)
+    .then(() => showToast('Client link copied — send it to ' + (s.clientName || 'client')))
+    .catch(() => {
+      prompt('Copy this link and send to your client:', url);
+    });
+}
+
+/* ════════════════════════════════════════════
+   HOME BUTTON → SCHEDULE TAB
+   ════════════════════════════════════════════ */
+document.getElementById('homeBtn').addEventListener('click', () => switchTab('schedule'));
+
+/* ════════════════════════════════════════════
+   REFRESH BUTTON — manual server sync
+   ════════════════════════════════════════════ */
+document.getElementById('refreshBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('refreshBtn');
+  btn.style.opacity = '0.5';
+  btn.style.pointerEvents = 'none';
+  // Force fresh render of current tab
+  await renderSchedule();
+  await renderAllTasksBar();
+  await renderMyTasks();
+  await updateBadges();
+  setTimeout(() => {
+    btn.style.opacity = '';
+    btn.style.pointerEvents = '';
+    showToast('Refreshed ✓');
+  }, 500);
+});
+
+/* ════════════════════════════════════════════
+   SHOOT COMPLETE MODAL (studio sessions only)
+   ════════════════════════════════════════════ */
+const shootCompleteModal    = document.getElementById('shootCompleteModal');
+const shootCompleteBackdrop = document.getElementById('shootCompleteBackdrop');
+const shootCompleteClose    = document.getElementById('shootCompleteClose');
+const shootCompleteSubmit   = document.getElementById('shootCompleteSubmit');
+const shootCompleteTitle    = document.getElementById('shootCompleteTitle');
+const shootCompleteSubtitle = document.getElementById('shootCompleteSubtitle');
+
+let activeShootId = null;
+
+function openShootCompleteModal(schedId) {
+  activeShootId = schedId;
+  // Try to get title from the card
+  const card = document.querySelector(`[data-sched-card="${schedId}"]`);
+  const title = card ? card.querySelector('.sch-body__title')?.textContent : schedId;
+  shootCompleteTitle.textContent    = 'Mark Shoot Done';
+  shootCompleteSubtitle.textContent = title || schedId;
+  document.getElementById('scSelection').value    = '';
+  document.getElementById('scPictureCount').value = '';
+  document.getElementById('scFileNames').value    = '';
+  shootCompleteModal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('scPictureCount').focus(), 100);
+}
+
+function closeShootCompleteModal() {
+  shootCompleteModal.classList.remove('open');
+  document.body.style.overflow = '';
+  activeShootId = null;
+}
+
+shootCompleteClose.addEventListener('click', closeShootCompleteModal);
+shootCompleteBackdrop.addEventListener('click', closeShootCompleteModal);
+
+shootCompleteSubmit.addEventListener('click', async () => {
+  if (!activeShootId) return;
+  const selection    = document.getElementById('scSelection').value.trim();
+  const pictureCount = parseInt(document.getElementById('scPictureCount').value, 10) || 0;
+  const fileNames    = document.getElementById('scFileNames').value.trim();
+
+  await dbUpdateScheduleEntry(activeShootId, {
+    shootCompleted:    true,
+    shootCompletedAt:  Date.now(),
+    shootCompletedBy:  currentMember ? currentMember.name : 'Team',
+    shootSelection:    selection    || null,
+    shootPictureCount: pictureCount || null,
+    shootFileNames:    fileNames    || null,
+  });
+
+  closeShootCompleteModal();
+  showToast('Shoot marked complete ✓');
+  renderSchedule();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && shootCompleteModal.classList.contains('open')) closeShootCompleteModal();
 });

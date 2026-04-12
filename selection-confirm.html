@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Confirm Your Selection — NEJstudios</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:#080808; --bg-2:#0f0f0f; --bg-3:#141414; --border:#2a2a2a;
+      --gold:#c9a84c; --gold-lt:#e0c06a; --gold-glow:rgba(201,168,76,.12);
+      --white:#fff; --grey-1:#e8e8e8; --grey-2:#b0b0b0; --grey-3:#707070; --grey-4:#404040;
+      --green:#3ecf8e; --green-bg:rgba(62,207,142,.1);
+      --serif:'Playfair Display',Georgia,serif;
+      --sans:'Outfit',system-ui,sans-serif;
+      --r:12px;
+    }
+    *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+    html { scroll-behavior:smooth; }
+    body {
+      background:var(--bg); color:var(--grey-1); font-family:var(--sans);
+      min-height:100vh; display:flex; flex-direction:column;
+      align-items:center; justify-content:center; padding:24px;
+    }
+    button { cursor:pointer; border:none; font-family:inherit; }
+    ::-webkit-scrollbar { width:4px; }
+    ::-webkit-scrollbar-thumb { background:var(--gold); border-radius:99px; }
+    ::selection { background:var(--gold); color:#000; }
+
+    .page-logo { font-size:1.3rem; font-weight:700; margin-bottom:32px; text-align:center; }
+    .ln { color:var(--gold); font-family:var(--serif); }
+    .ls { color:var(--white); font-family:var(--sans); font-weight:300; font-size:.85rem; }
+
+    .card {
+      background:var(--bg-2); border:1px solid var(--border);
+      border-radius:20px; padding:36px 40px; width:100%; max-width:540px;
+      position:relative; overflow:hidden;
+    }
+    .card::before {
+      content:''; position:absolute; top:0; left:0; right:0; height:3px;
+      background:linear-gradient(90deg,var(--gold),var(--gold-lt),var(--gold));
+    }
+
+    .icon-wrap {
+      width:60px; height:60px; border-radius:50%;
+      background:var(--green-bg); border:2px solid var(--green);
+      display:flex; align-items:center; justify-content:center; margin:0 auto 20px;
+    }
+    .icon-wrap svg { width:28px; height:28px; color:var(--green); }
+
+    .card-title {
+      font-family:var(--serif); font-size:1.7rem; font-weight:600;
+      color:var(--white); text-align:center; margin-bottom:6px;
+    }
+    .card-sub { font-size:.82rem; color:var(--grey-3); text-align:center; margin-bottom:28px; }
+
+    .client-name-box {
+      background:var(--bg-3); border:1px solid var(--border);
+      border-radius:var(--r); padding:14px 20px; text-align:center; margin-bottom:24px;
+    }
+    .client-name-label {
+      font-size:.6rem; font-weight:700; letter-spacing:.18em;
+      text-transform:uppercase; color:var(--grey-4); margin-bottom:6px;
+    }
+    .client-name-val {
+      font-size:1.3rem; font-weight:700; color:var(--white); font-family:var(--sans);
+    }
+
+    .detail-row {
+      display:flex; align-items:flex-start; gap:12px;
+      padding:14px 0; border-bottom:1px solid var(--border);
+    }
+    .detail-row:last-of-type { border-bottom:none; }
+    .detail-icon {
+      flex-shrink:0; width:32px; height:32px; border-radius:8px;
+      background:var(--bg-3); border:1px solid var(--border);
+      display:flex; align-items:center; justify-content:center;
+    }
+    .detail-icon svg { width:15px; height:15px; color:var(--gold); }
+    .detail-label {
+      font-size:.62rem; font-weight:700; letter-spacing:.12em;
+      text-transform:uppercase; color:var(--grey-4); margin-bottom:4px;
+    }
+    .detail-val { font-size:.88rem; color:var(--grey-1); line-height:1.5; }
+    .detail-val.files {
+      font-size:.8rem; color:var(--grey-3); white-space:pre-wrap; font-family:monospace;
+    }
+
+    .picture-count {
+      font-size:2rem; font-weight:700; color:var(--gold); display:block; line-height:1;
+    }
+    .picture-count-label { font-size:.75rem; color:var(--grey-3); }
+
+    .confirm-btn {
+      width:100%; padding:15px; margin-top:28px;
+      background:var(--gold); color:#000;
+      font-weight:700; font-size:.85rem; letter-spacing:.08em;
+      text-transform:uppercase; border-radius:8px;
+      transition:background .2s;
+    }
+    .confirm-btn:hover { background:var(--gold-lt); }
+    .confirm-btn:disabled {
+      background:var(--green); color:#000; cursor:default;
+    }
+
+    .confirmed-badge {
+      display:none; margin-top:16px; padding:14px 20px;
+      background:var(--green-bg); border:1px solid rgba(62,207,142,.3);
+      border-radius:var(--r); text-align:center;
+      font-size:.85rem; color:var(--green); font-weight:600;
+    }
+
+    .footer-note {
+      margin-top:20px; font-size:.75rem; color:var(--grey-4);
+      text-align:center; line-height:1.6;
+    }
+
+    .err-card {
+      background:var(--bg-2); border:1px solid var(--border);
+      border-radius:20px; padding:48px 40px; width:100%; max-width:480px;
+      text-align:center;
+    }
+    .err-card h2 { font-family:var(--serif); color:var(--white); margin-bottom:8px; }
+    .err-card p { font-size:.85rem; color:var(--grey-3); }
+
+    @media (max-width:480px) {
+      .card, .err-card { padding:28px 20px; }
+      .card-title { font-size:1.4rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="page-logo">
+    <span class="ln">NEJ</span><span class="ls">studios</span>
+  </div>
+
+  <div id="main"></div>
+
+  <script>
+    const params  = new URLSearchParams(location.search);
+    const encoded = params.get('d');
+    const main    = document.getElementById('main');
+
+    if (!encoded) {
+      main.innerHTML = `
+        <div class="err-card">
+          <h2>Link not found</h2>
+          <p>This selection link is invalid or has expired. Please contact NEJstudios for a new link.</p>
+        </div>`;
+    } else {
+      try {
+        const data = JSON.parse(decodeURIComponent(escape(atob(encoded))));
+        const sessionDate = data.date
+          ? new Date(data.date + 'T00:00:00').toLocaleDateString('en-NG', { dateStyle:'long' })
+          : '—';
+        const completedDate = data.completedAt
+          ? new Date(data.completedAt).toLocaleDateString('en-NG', { dateStyle:'long' })
+          : null;
+
+        main.innerHTML = `
+          <div class="card">
+            <div class="icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+
+            <h1 class="card-title">Your Selection Summary</h1>
+            <p class="card-sub">Please review your photo selection and confirm below</p>
+
+            <div class="client-name-box">
+              <div class="client-name-label">Prepared for</div>
+              <div class="client-name-val">${data.clientName || '—'}</div>
+            </div>
+
+            <div class="detail-row">
+              <div class="detail-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              </div>
+              <div>
+                <div class="detail-label">Session Date</div>
+                <div class="detail-val">${sessionDate}</div>
+              </div>
+            </div>
+
+            ${data.pictureCount ? `
+            <div class="detail-row">
+              <div class="detail-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              </div>
+              <div>
+                <div class="detail-label">Number of Pictures</div>
+                <div class="detail-val">
+                  <span class="picture-count">${data.pictureCount}</span>
+                  <span class="picture-count-label">photos selected</span>
+                </div>
+              </div>
+            </div>` : ''}
+
+            ${data.selection ? `
+            <div class="detail-row">
+              <div class="detail-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+              </div>
+              <div>
+                <div class="detail-label">Selection Notes</div>
+                <div class="detail-val">${data.selection}</div>
+              </div>
+            </div>` : ''}
+
+            ${data.fileNames ? `
+            <div class="detail-row">
+              <div class="detail-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+              </div>
+              <div>
+                <div class="detail-label">File Names / Numbers</div>
+                <div class="detail-val files">${data.fileNames}</div>
+              </div>
+            </div>` : ''}
+
+            ${completedDate ? `
+            <div class="detail-row">
+              <div class="detail-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </div>
+              <div>
+                <div class="detail-label">Prepared by</div>
+                <div class="detail-val">${data.completedBy || 'NEJstudios'} · ${completedDate}</div>
+              </div>
+            </div>` : ''}
+
+            <button class="confirm-btn" id="confirmBtn">
+              I Confirm My Selection
+            </button>
+            <div class="confirmed-badge" id="confirmedBadge">
+              ✓ Selection confirmed — thank you! NEJstudios will proceed with your photos.
+            </div>
+
+            <p class="footer-note">
+              If anything looks incorrect, please contact us before confirming.<br/>
+              <strong style="color:var(--gold)">NEJstudios</strong> — Premium Photography &amp; Film Production
+            </p>
+          </div>`;
+
+        document.getElementById('confirmBtn').addEventListener('click', function() {
+          this.textContent = 'Confirmed ✓';
+          this.disabled = true;
+          document.getElementById('confirmedBadge').style.display = 'block';
+        });
+
+      } catch (e) {
+        main.innerHTML = `
+          <div class="err-card">
+            <h2>Could not load selection</h2>
+            <p>The link may be corrupted. Please ask NEJstudios to send a fresh link.</p>
+          </div>`;
+      }
+    }
+  </script>
+</body>
+</html>

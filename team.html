@@ -435,10 +435,14 @@
           </div>
         </div>
         <div class="t-header__right">
-          <a href="/" class="btn-home">
+          <button class="btn-home" id="homeBtn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
             <span>Home</span>
-          </a>
+          </button>
+          <button class="btn-logout-sm" id="refreshBtn" title="Refresh data from server">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+            <span>Refresh</span>
+          </button>
           <button class="btn-logout-sm" id="logoutBtn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             <span>Sign Out</span>
@@ -561,6 +565,40 @@
           <div class="past-reports-title">Previous Reports</div>
           <div id="pastReportsList"></div>
         </div>
+      </div>
+    </div>
+
+    <!-- Shoot Complete Modal -->
+    <div class="modal-overlay" id="shootCompleteModal">
+      <div class="modal-backdrop" id="shootCompleteBackdrop"></div>
+      <div class="modal-box">
+        <button class="modal-close" id="shootCompleteClose">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <h3 id="shootCompleteTitle">Mark Shoot Done</h3>
+        <p class="modal-subtitle" id="shootCompleteSubtitle"></p>
+
+        <div style="display:flex;flex-direction:column;gap:16px;margin-top:20px">
+          <div>
+            <label class="report-form-label">Client's Selection <span style="color:var(--grey-3);font-weight:400">(what they chose / notes on picks)</span></label>
+            <textarea class="report-textarea" id="scSelection" placeholder="e.g. Client selected 20 images from the birthday set, preferred warm tones…" rows="3"></textarea>
+          </div>
+          <div>
+            <label class="report-form-label">Number of Pictures</label>
+            <input type="number" min="0" id="scPictureCount" placeholder="e.g. 45"
+              style="width:100%;background:var(--bg-3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--white);font-size:0.9rem;font-family:var(--sans);outline:none;transition:var(--trans)"
+              onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border)'" />
+          </div>
+          <div>
+            <label class="report-form-label">File Names / Numbers <span style="color:var(--grey-3);font-weight:400">(one per line or comma-separated)</span></label>
+            <textarea class="report-textarea" id="scFileNames" placeholder="e.g. NEJ_0001.jpg, NEJ_0002.jpg&#10;or: IMG_4521 – IMG_4566" rows="4"></textarea>
+          </div>
+        </div>
+
+        <button class="btn-submit-report" id="shootCompleteSubmit" style="margin-top:20px;width:100%">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;display:inline-block;vertical-align:middle;margin-right:6px"><polyline points="20 6 9 17 4 12"/></svg>
+          Confirm Shoot Complete
+        </button>
       </div>
     </div>
 

@@ -69,16 +69,22 @@ const picker = document.getElementById("sessionPicker");
 const spError = document.getElementById("spError");
 const sessionInput = document.getElementById("sessionTypeInput");
 
-// ── Session type picker ──
-picker.querySelectorAll(".sp-card").forEach((card) => {
-  card.addEventListener("click", () => {
-    picker
-      .querySelectorAll(".sp-card")
-      .forEach((c) => c.classList.remove("selected"));
-    card.classList.add("selected");
-    sessionInput.value = card.dataset.type;
-    spError.classList.remove("show");
-  });
+// ── Session type dropdown ──
+picker.addEventListener("change", () => {
+  sessionInput.value = picker.value;
+  if (picker.value) spError.classList.remove("show");
+});
+
+// ── Rate card modal ──
+const rateCardModal = document.getElementById("rateCardModal");
+document.getElementById("rateCardBtn").addEventListener("click", () => {
+  rateCardModal.style.display = "flex";
+});
+document.getElementById("rateCardClose").addEventListener("click", () => {
+  rateCardModal.style.display = "none";
+});
+rateCardModal.addEventListener("click", (e) => {
+  if (e.target === rateCardModal) rateCardModal.style.display = "none";
 });
 
 // ── Generate a short readable booking ID ──
@@ -148,12 +154,29 @@ form.querySelectorAll("input").forEach((inp) => {
   inp.addEventListener("input", () => inp.classList.remove("error"));
 });
 
-// ── Save booking to localStorage ──
-function saveBooking(booking) {
+// ── Save booking to localStorage + server ──
+async function saveBooking(booking) {
   const key = "nej_bookings";
-  const existing = JSON.parse(localStorage.getItem(key) || "[]");
-  existing.unshift(booking);
+  // First, fetch current server bookings so we don't overwrite others
+  let existing = [];
+  try {
+    const r = await fetch('/api/sync.php?resource=bookings', { cache: 'no-store' });
+    if (r.ok) existing = await r.json();
+  } catch { /* fallback to localStorage */ }
+  if (!Array.isArray(existing) || existing.length === 0) {
+    existing = JSON.parse(localStorage.getItem(key) || "[]");
+  }
+  // Don't add duplicate IDs
+  if (!existing.find(b => b.id === booking.id)) existing.unshift(booking);
   localStorage.setItem(key, JSON.stringify(existing));
+  // Push to server
+  try {
+    await fetch('/api/sync.php?resource=bookings', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(existing),
+    });
+  } catch { /* server unreachable — saved locally */ }
 }
 
 // ── Submit handler ──
@@ -166,6 +189,7 @@ form.addEventListener("submit", async (e) => {
   const phone = document.getElementById("phone").value.trim();
   const email = document.getElementById("email").value.trim();
   const sessionType = sessionInput.value;
+  const numOutfits = document.getElementById("numOutfits").value;
   const clientName = middleName ? `${firstName} ${middleName}` : firstName;
   const bookingId = genBookingId();
   const now = Date.now();
@@ -182,6 +206,7 @@ form.addEventListener("submit", async (e) => {
     phone,
     email,
     sessionType,
+    numOutfits,
     status: "pending",
     createdAt: now,
   };
@@ -211,10 +236,26 @@ form.addEventListener("submit", async (e) => {
     // Always save to localStorage regardless of email status
     saveBooking(booking);
 
-    // Show success
+    // Show payment step first
     form.style.display = "none";
-    successScreen.classList.add("show");
-    successId.textContent = bookingId;
+    const paymentScreen = document.getElementById("paymentScreen");
+    const paymentRef    = document.getElementById("paymentRef");
+    if (paymentRef) paymentRef.textContent = bookingId;
+    paymentScreen.style.display = "block";
+
+    // "I Have Made the Transfer" button
+    const transferDoneBtn = document.getElementById("transferDoneBtn");
+    if (transferDoneBtn) {
+      transferDoneBtn.addEventListener("click", () => {
+        // Mark booking as transfer-submitted
+        booking.transferSubmitted = true;
+        booking.transferAt = Date.now();
+        saveBooking(booking);
+        paymentScreen.style.display = "none";
+        successScreen.classList.add("show");
+        successId.textContent = bookingId;
+      }, { once: true });
+    }
 
     // Inject share button if not already present
     if (!document.getElementById("studioShareBtn")) {
@@ -256,53 +297,24 @@ form.addEventListener("submit", async (e) => {
     }
   } catch (err) {
     console.error("EmailJS error:", err);
-    // Still save locally + show success (email can be configured later)
+    // Still save locally + show payment step (email can be configured later)
     saveBooking(booking);
     form.style.display = "none";
-    successScreen.classList.add("show");
-    successId.textContent = bookingId;
-    // Share button is injected by the try block above; add it here too if try failed early
-    if (!document.getElementById("studioShareBtn")) {
-      const shareWrap = document.createElement("div");
-      shareWrap.style.cssText =
-        "margin-top:16px;display:flex;align-items:center;gap:10px;justify-content:center";
-      shareWrap.innerHTML = `<button id="studioShareBtn" style="display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--grey-2);font-size:.78rem;font-family:var(--sans);cursor:pointer">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-        Share Booking</button><span id="studioShareCopied" style="display:none;font-size:.72rem;color:#3ecf8e">✓ Copied!</span>`;
-      successScreen.appendChild(shareWrap);
-      document
-        .getElementById("studioShareBtn")
-        .addEventListener("click", () => {
-          const url = makeShareUrl({
-            id: bookingId,
-            firstName: document.getElementById("firstName").value,
-            clientName: document.getElementById("firstName").value,
-            sessionType,
-            status: "pending",
-            createdAt: now,
-          });
-          navigator.clipboard
-            .writeText(url)
-            .then(() => {
-              const c = document.getElementById("studioShareCopied");
-              if (c) {
-                c.style.display = "inline";
-                setTimeout(() => {
-                  c.style.display = "none";
-                }, 2500);
-              }
-            })
-            .catch(() => prompt("Copy link:", url));
-        });
-    }
+    const paymentScreenErr = document.getElementById("paymentScreen");
+    const paymentRefErr    = document.getElementById("paymentRef");
+    if (paymentRefErr) paymentRefErr.textContent = bookingId;
+    paymentScreenErr.style.display = "block";
 
-    if (!emailjsReady) {
-      const notice = document.createElement("p");
-      notice.style.cssText =
-        "color:var(--grey-3);font-size:.75rem;margin-top:12px;";
-      notice.textContent =
-        "(Email notifications not yet configured — booking saved locally.)";
-      successScreen.querySelector("h3").after(notice);
+    const transferDoneBtnErr = document.getElementById("transferDoneBtn");
+    if (transferDoneBtnErr) {
+      transferDoneBtnErr.addEventListener("click", () => {
+        booking.transferSubmitted = true;
+        booking.transferAt = Date.now();
+        saveBooking(booking);
+        paymentScreenErr.style.display = "none";
+        successScreen.classList.add("show");
+        successId.textContent = bookingId;
+      }, { once: true });
     }
   }
 });

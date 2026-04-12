@@ -765,6 +765,18 @@
         font-size:0.78rem; color:#888; margin-top:32px;
       }
       .inv-footer strong { color:#c9a84c; }
+      @media (max-width: 600px) {
+        #invoiceBody { padding:20px 16px; margin:0 auto; }
+        .inv-header { flex-direction:column; gap:16px; }
+        .inv-title-block { text-align:left; }
+        .inv-meta { grid-template-columns:1fr; gap:16px; }
+        .inv-table thead th:nth-child(2),
+        .inv-table thead th:nth-child(3),
+        .inv-table tbody td:nth-child(2),
+        .inv-table tbody td:nth-child(3) { display:none; }
+        .inv-table tfoot td { font-size:0.82rem; padding:10px 10px; }
+        .invoice-chrome { flex-wrap:wrap; gap:8px; }
+      }
       @media print {
         body > *:not(#invoiceModal) { display:none !important; }
         #invoiceModal { display:flex !important; position:static; overflow:visible; }
@@ -897,11 +909,10 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M20.188 10.934a8 8 0 10-8.375 8.375"/><path d="M22 22l-3-3"/><circle cx="20" cy="20" r="2"/></svg>
             All Studio
           </button>
-          <button class="nav-item" data-type="Birthday" data-kind="studio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Birthday</button>
-          <button class="nav-item" data-type="Family" data-kind="studio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Family</button>
-          <button class="nav-item" data-type="Creative" data-kind="studio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Creative</button>
-          <button class="nav-item" data-type="Fashion" data-kind="studio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>Fashion</button>
-          <button class="nav-item" data-type="Product" data-kind="studio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>Product</button>
+          <button class="nav-item" data-type="Half Session" data-kind="studio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Half Session</button>
+          <button class="nav-item" data-type="Regular Session" data-kind="studio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Regular Session</button>
+          <button class="nav-item" data-type="Birthday Session" data-kind="studio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Birthday Session</button>
+          <button class="nav-item" data-type="Outdoor Session" data-kind="studio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>Outdoor Session</button>
 
           <div class="nav-section" style="margin-top:8px">Events &amp; Weddings</div>
           <button class="nav-item" data-view="all" data-kind="event"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>All Events</button>
@@ -1071,12 +1082,20 @@
                     </select>
                   </div>
                   <div class="form-field">
-                    <label class="form-label">Client Name</label>
+                    <label class="form-label" id="schedClientLabel">Client Name</label>
                     <input class="form-input" id="schedClient" type="text" placeholder="e.g. Kemi Afolabi" />
+                  </div>
+                  <div class="form-field" id="schedPlannerWrap" style="display:none">
+                    <label class="form-label">Planner / Contact Person</label>
+                    <input class="form-input" id="schedPlanner" type="text" placeholder="e.g. Ayo Events — 0800 000 0000" />
                   </div>
                   <div class="form-field">
                     <label class="form-label">Location</label>
                     <input class="form-input" id="schedLocation" type="text" placeholder="e.g. Eko Hotel, Lagos" />
+                  </div>
+                  <div class="form-field full">
+                    <label class="form-label">Assign Team Members</label>
+                    <div id="schedMembersWrap" style="display:flex;flex-wrap:wrap;gap:8px;padding:10px;background:var(--bg-3);border:1px solid var(--border);border-radius:8px;min-height:42px"></div>
                   </div>
                   <div class="form-field full">
                     <label class="form-label">Notes</label>
@@ -1334,13 +1353,13 @@
               </div>
               <div class="form-field full">
                 <label class="form-label">Session Type *</label>
-                <div class="bm-session-picker" id="bmSessionPicker">
-                  <button type="button" class="bm-sp-btn" data-session="Birthday"><span class="sp-emoji">🎂</span><span>Birthday</span></button>
-                  <button type="button" class="bm-sp-btn" data-session="Family"><span class="sp-emoji">👨‍👩‍👧</span><span>Family</span></button>
-                  <button type="button" class="bm-sp-btn" data-session="Creative"><span class="sp-emoji">✨</span><span>Creative</span></button>
-                  <button type="button" class="bm-sp-btn" data-session="Fashion"><span class="sp-emoji">👗</span><span>Fashion</span></button>
-                  <button type="button" class="bm-sp-btn" data-session="Product"><span class="sp-emoji">📦</span><span>Product</span></button>
-                </div>
+                <select class="form-select" id="bmSessionPicker" required>
+                  <option value="">— Choose a session —</option>
+                  <option value="Half Session">Half Session — ₦45,000</option>
+                  <option value="Regular Session">Regular Session — ₦70,000</option>
+                  <option value="Birthday Session">Birthday Session — ₦100,000</option>
+                  <option value="Outdoor Session">Outdoor Session — ₦200,000</option>
+                </select>
               </div>
               <div class="form-field full">
                 <p id="bmStudioErr" style="font-size:0.78rem;color:var(--red);min-height:18px"></p>
@@ -1400,11 +1419,10 @@
                 <label class="form-label">Budget</label>
                 <select class="form-select" id="bmEBudget">
                   <option value="">— Select —</option>
-                  <option value="under150">Under ₦150k</option>
-                  <option value="150-350">₦150k–₦350k</option>
-                  <option value="350-600">₦350k–₦600k</option>
-                  <option value="600-1m">₦600k–₦1M</option>
-                  <option value="above1m">Above ₦1M</option>
+                  <option value="800k-1m">₦800k–₦1M</option>
+                  <option value="1m-1.2m">₦1M–₦1.2M</option>
+                  <option value="1.2m-1.4m">₦1.2M–₦1.4M</option>
+                  <option value="above1.4m">Above ₦1.4M</option>
                 </select>
               </div>
               <div class="form-field full">
@@ -1470,6 +1488,175 @@
       <div class="lightbox__footer">
         <div class="lightbox__approval-label lightbox__approval-label--none" id="lbApproval"></div>
         <button class="lightbox__dl" id="lbDownload">↓ Download</button>
+      </div>
+    </div>
+
+    <!-- Booking Edit Modal -->
+    <div id="bookingEditModal" style="display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,0.75);align-items:center;justify-content:center;padding:20px">
+      <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:16px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;padding:32px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+          <h3 style="font-family:var(--serif);font-size:1.2rem;color:var(--white)">Edit Booking</h3>
+          <button id="bookingEditClose" style="background:none;border:none;color:var(--grey-3);font-size:1.2rem;cursor:pointer;line-height:1">✕</button>
+        </div>
+        <form id="bookingEditForm" style="display:flex;flex-direction:column;gap:14px">
+          <input type="hidden" id="bookingEditId" />
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div class="form-field">
+              <label class="form-label">First Name *</label>
+              <input class="form-input" id="beFirstName" type="text" required />
+            </div>
+            <div class="form-field">
+              <label class="form-label">Middle Name</label>
+              <input class="form-input" id="beMiddleName" type="text" />
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Phone *</label>
+            <input class="form-input" id="bePhone" type="tel" required />
+          </div>
+          <div class="form-field">
+            <label class="form-label">Email *</label>
+            <input class="form-input" id="beEmail" type="email" required />
+          </div>
+          <!-- Studio fields -->
+          <div id="beStudioFields">
+            <div class="form-field">
+              <label class="form-label">Session Type</label>
+              <select class="form-select" id="beSessionType">
+                <option value="Half Session">Half Session — ₦45,000</option>
+                <option value="Regular Session">Regular Session — ₦70,000</option>
+                <option value="Birthday Session">Birthday Session — ₦100,000</option>
+                <option value="Outdoor Session">Outdoor Session — ₦200,000</option>
+                <optgroup label="Legacy types">
+                  <option value="Birthday">Birthday</option>
+                  <option value="Family">Family</option>
+                  <option value="Creative">Creative</option>
+                  <option value="Fashion">Fashion</option>
+                  <option value="Product">Product</option>
+                </optgroup>
+              </select>
+            </div>
+            <div class="form-field" style="margin-top:14px">
+              <label class="form-label">Number of Outfits</label>
+              <select class="form-select" id="beNumOutfits">
+                <option value="1">1 outfit</option>
+                <option value="2">2 outfits</option>
+                <option value="3">3 outfits</option>
+                <option value="4">4 outfits</option>
+                <option value="5">5 outfits</option>
+                <option value="6">6 outfits</option>
+              </select>
+            </div>
+          </div>
+          <!-- Event fields -->
+          <div id="beEventFields" style="display:none">
+            <div class="form-field">
+              <label class="form-label">Event Type</label>
+              <select class="form-select" id="beEventType">
+                <option value="traditional-wedding">Traditional Wedding</option>
+                <option value="white-wedding">White Wedding</option>
+                <option value="full-wedding">Full Wedding</option>
+                <option value="engagement">Engagement Shoot</option>
+                <option value="brand-film">Brand Film</option>
+                <option value="music-video">Music Video</option>
+                <option value="corporate-event">Corporate Event</option>
+                <option value="documentary">Documentary</option>
+                <option value="other-production">Other Production</option>
+              </select>
+            </div>
+            <div class="form-field" style="margin-top:14px">
+              <label class="form-label">Event Date</label>
+              <input class="form-input" id="beEventDate" type="date" />
+            </div>
+            <div class="form-field" style="margin-top:14px">
+              <label class="form-label">Location</label>
+              <input class="form-input" id="beLocation" type="text" placeholder="e.g. Eko Hotel, Lagos" />
+            </div>
+            <div class="form-field" style="margin-top:14px">
+              <label class="form-label">Budget</label>
+              <select class="form-select" id="beBudget">
+                <option value="">— Select —</option>
+                <option value="800k-1m">₦800k–₦1M</option>
+                <option value="1m-1.2m">₦1M–₦1.2M</option>
+                <option value="1.2m-1.4m">₦1.2M–₦1.4M</option>
+                <option value="above1.4m">Above ₦1.4M</option>
+              </select>
+            </div>
+            <div class="form-field" style="margin-top:14px">
+              <label class="form-label">Deliverables</label>
+              <textarea class="form-textarea" id="beDeliverables" placeholder="e.g. Full-day coverage, 300 edited photos…"></textarea>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
+            <button type="button" id="bookingEditCancel" style="padding:10px 20px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--grey-3);cursor:pointer;font-size:0.85rem">Cancel</button>
+            <button type="submit" style="padding:10px 24px;background:var(--gold);border:none;border-radius:8px;color:#000;font-weight:700;cursor:pointer;font-size:0.85rem">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Schedule Edit Modal -->
+    <div id="schedEditModal" style="display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,0.75);align-items:center;justify-content:center;padding:20px">
+      <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:16px;width:100%;max-width:580px;max-height:90vh;overflow-y:auto;padding:32px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+          <h3 style="font-family:var(--serif);font-size:1.2rem;color:var(--white)">Edit Schedule Entry</h3>
+          <button id="schedEditClose" style="background:none;border:none;color:var(--grey-3);font-size:1.2rem;cursor:pointer;line-height:1">✕</button>
+        </div>
+        <form id="schedEditForm" style="display:flex;flex-direction:column;gap:14px">
+          <input type="hidden" id="schedEditId" />
+          <div class="form-field full">
+            <label class="form-label">Title *</label>
+            <input class="form-input" id="schedEditTitle" type="text" required />
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div class="form-field">
+              <label class="form-label">Date *</label>
+              <input class="form-input" id="schedEditDate" type="date" required />
+            </div>
+            <div class="form-field">
+              <label class="form-label">Time</label>
+              <input class="form-input" id="schedEditTime" type="time" />
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Type</label>
+            <select class="form-select" id="schedEditType">
+              <option value="studio">Studio</option>
+              <option value="wedding">Wedding</option>
+              <option value="event">Event</option>
+              <option value="production">Production</option>
+              <option value="meeting">Meeting</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="form-label" id="schedEditClientLabel">Client Name</label>
+            <input class="form-input" id="schedEditClient" type="text" placeholder="e.g. Kemi Afolabi" />
+          </div>
+          <div class="form-field" id="schedEditPlannerWrap" style="display:none">
+            <label class="form-label">Planner / Contact Person</label>
+            <input class="form-input" id="schedEditPlanner" type="text" placeholder="e.g. Ayo Events — 0800 000 0000" />
+          </div>
+          <div class="form-field">
+            <label class="form-label">Location</label>
+            <input class="form-input" id="schedEditLocation" type="text" placeholder="e.g. Eko Hotel, Lagos" />
+          </div>
+          <div class="form-field full">
+            <label class="form-label">Assign Team Members</label>
+            <div id="schedEditMembersWrap" style="display:flex;flex-wrap:wrap;gap:8px;padding:10px;background:var(--bg-3);border:1px solid var(--border);border-radius:8px;min-height:42px"></div>
+          </div>
+          <div class="form-field full">
+            <label class="form-label">Notes</label>
+            <textarea class="form-textarea" id="schedEditNotes" placeholder="Any extra details for the team…"></textarea>
+          </div>
+          <div class="form-field full">
+            <label class="form-label">Agreed Deliverables</label>
+            <textarea class="form-textarea" id="schedEditDeliverables" placeholder="e.g. Full-day coverage, 300 edited photos…"></textarea>
+          </div>
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
+            <button type="button" id="schedEditCancel" style="padding:10px 20px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--grey-3);cursor:pointer;font-size:0.85rem">Cancel</button>
+            <button type="submit" style="padding:10px 24px;background:var(--gold);border:none;border-radius:8px;color:#000;font-weight:700;cursor:pointer;font-size:0.85rem">Save Changes</button>
+          </div>
+        </form>
       </div>
     </div>
 

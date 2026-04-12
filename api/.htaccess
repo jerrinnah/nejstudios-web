@@ -1,0 +1,5 @@
+# Protect raw JSON data files from direct browser access
+<FilesMatch "\.json$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>

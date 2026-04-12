@@ -543,46 +543,27 @@
 
         <div class="session-tiles">
           <div class="session-tile">
-            <div class="session-tile__icon">🎂</div>
             <div>
-              <div class="session-tile__label">Birthday</div>
-              <div class="session-tile__desc">
-                Milestone portraits & celebrations
-              </div>
+              <div class="session-tile__label">Half Session</div>
+              <div class="session-tile__desc">5 pictures · 1 outfit</div>
             </div>
           </div>
           <div class="session-tile">
-            <div class="session-tile__icon">👨‍👩‍👧</div>
             <div>
-              <div class="session-tile__label">Family</div>
-              <div class="session-tile__desc">
-                Group portraits & family moments
-              </div>
+              <div class="session-tile__label">Regular Session</div>
+              <div class="session-tile__desc">8 pictures · 2 outfits · 30 mins</div>
             </div>
           </div>
           <div class="session-tile">
-            <div class="session-tile__icon">✨</div>
             <div>
-              <div class="session-tile__label">Creative</div>
-              <div class="session-tile__desc">Conceptual & artistic shoots</div>
+              <div class="session-tile__label">Birthday Session</div>
+              <div class="session-tile__desc">12 pictures · 3 outfits · 1 hour</div>
             </div>
           </div>
           <div class="session-tile">
-            <div class="session-tile__icon">👗</div>
             <div>
-              <div class="session-tile__label">Fashion</div>
-              <div class="session-tile__desc">
-                Lookbooks, editorials & style shoots
-              </div>
-            </div>
-          </div>
-          <div class="session-tile">
-            <div class="session-tile__icon">📦</div>
-            <div>
-              <div class="session-tile__label">Product</div>
-              <div class="session-tile__desc">
-                E-commerce & brand product photography
-              </div>
+              <div class="session-tile__label">Outdoor Session</div>
+              <div class="session-tile__desc">15 pictures · 1 hr shoot time</div>
             </div>
           </div>
         </div>
@@ -645,37 +626,70 @@
           </div>
 
           <div class="form-group">
-            <label>Session Type <span class="req">*</span></label>
-            <input
-              type="hidden"
-              id="sessionTypeInput"
-              name="sessionType"
-              required
-            />
-            <div class="session-picker" id="sessionPicker">
-              <button type="button" class="sp-card" data-type="Birthday">
-                <span class="sp-card__emoji">🎂</span>
-                <span class="sp-card__label">Birthday</span>
-              </button>
-              <button type="button" class="sp-card" data-type="Family">
-                <span class="sp-card__emoji">👨‍👩‍👧</span>
-                <span class="sp-card__label">Family</span>
-              </button>
-              <button type="button" class="sp-card" data-type="Creative">
-                <span class="sp-card__emoji">✨</span>
-                <span class="sp-card__label">Creative</span>
-              </button>
-              <button type="button" class="sp-card" data-type="Fashion">
-                <span class="sp-card__emoji">👗</span>
-                <span class="sp-card__label">Fashion</span>
-              </button>
-              <button type="button" class="sp-card" data-type="Product">
-                <span class="sp-card__emoji">📦</span>
-                <span class="sp-card__label">Product</span>
-              </button>
-            </div>
-            <div class="sp-error" id="spError">
-              Please select a session type.
+            <label style="display:flex;align-items:center;justify-content:space-between">
+              <span>Session Type <span class="req">*</span></span>
+              <button type="button" id="rateCardBtn" style="font-size:0.7rem;background:var(--gold-glow);border:1px solid rgba(201,168,76,.3);color:var(--gold);padding:3px 10px;border-radius:99px;cursor:pointer;font-family:var(--sans);transition:0.2s">ℹ Rate Card</button>
+            </label>
+            <input type="hidden" id="sessionTypeInput" name="sessionType" required />
+            <select id="sessionPicker" name="sessionTypeSelect" style="width:100%;padding:12px 36px 12px 14px;background:var(--bg-3);border:1px solid var(--border);border-radius:8px;color:var(--white);font-family:var(--sans);font-size:0.9rem;appearance:none;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23707070' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 14px center;cursor:pointer;outline:none;transition:0.25s">
+              <option value="">— Choose a session —</option>
+              <option value="Half Session">Half Session — ₦45,000</option>
+              <option value="Regular Session">Regular Session — ₦70,000</option>
+              <option value="Birthday Session">Birthday Session — ₦100,000</option>
+              <option value="Outdoor Session">Outdoor Session — ₦200,000</option>
+            </select>
+            <div class="sp-error" id="spError">Please select a session type.</div>
+          </div>
+
+          <div class="form-group">
+            <label for="numOutfits">Number of Outfits <span class="req">*</span></label>
+            <select id="numOutfits" name="numOutfits" style="width:100%;padding:12px 36px 12px 14px;background:var(--bg-3);border:1px solid var(--border);border-radius:8px;color:var(--white);font-family:var(--sans);font-size:0.9rem;appearance:none;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23707070' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 14px center;cursor:pointer;outline:none;transition:0.25s">
+              <option value="1">1 outfit</option>
+              <option value="2">2 outfits</option>
+              <option value="3">3 outfits</option>
+              <option value="4">4 outfits</option>
+              <option value="5">5 outfits</option>
+              <option value="6">6 outfits</option>
+            </select>
+          </div>
+
+          <!-- Rate Card Modal -->
+          <div id="rateCardModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.8);align-items:center;justify-content:center;padding:20px">
+            <div style="background:#111;border:1px solid var(--border);border-radius:16px;width:100%;max-width:420px;padding:28px;position:relative">
+              <button id="rateCardClose" type="button" style="position:absolute;top:16px;right:16px;background:none;border:none;color:var(--grey-3);font-size:1.1rem;cursor:pointer;line-height:1">✕</button>
+              <p style="font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:4px">NEJstudios</p>
+              <h3 style="font-family:var(--serif);font-size:1.3rem;color:var(--white);margin-bottom:20px">Studio Rate Card</h3>
+              <div style="display:flex;flex-direction:column;gap:12px">
+                <div style="background:var(--bg-3);border:1px solid var(--border);border-radius:10px;padding:16px">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                    <strong style="color:var(--white);font-size:0.95rem">Half Session</strong>
+                    <strong style="color:var(--gold);font-size:1rem">₦45,000</strong>
+                  </div>
+                  <div style="font-size:0.78rem;color:var(--grey-3);line-height:1.8">5 pictures &nbsp;·&nbsp; 1 outfit</div>
+                </div>
+                <div style="background:var(--bg-3);border:1px solid var(--border);border-radius:10px;padding:16px">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                    <strong style="color:var(--white);font-size:0.95rem">Regular Session</strong>
+                    <strong style="color:var(--gold);font-size:1rem">₦70,000</strong>
+                  </div>
+                  <div style="font-size:0.78rem;color:var(--grey-3);line-height:1.8">8 pictures &nbsp;·&nbsp; 2 outfits &nbsp;·&nbsp; 30 mins</div>
+                </div>
+                <div style="background:var(--bg-3);border:1px solid var(--border);border-radius:10px;padding:16px">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                    <strong style="color:var(--white);font-size:0.95rem">Birthday Session</strong>
+                    <strong style="color:var(--gold);font-size:1rem">₦100,000</strong>
+                  </div>
+                  <div style="font-size:0.78rem;color:var(--grey-3);line-height:1.8">12 pictures &nbsp;·&nbsp; 3 outfits &nbsp;·&nbsp; 1 hour</div>
+                </div>
+                <div style="background:var(--bg-3);border:1px solid var(--border);border-radius:10px;padding:16px">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                    <strong style="color:var(--white);font-size:0.95rem">Outdoor Session</strong>
+                    <strong style="color:var(--gold);font-size:1rem">₦200,000</strong>
+                  </div>
+                  <div style="font-size:0.78rem;color:var(--grey-3);line-height:1.8">15 pictures &nbsp;·&nbsp; 1 hr shoot time &nbsp;·&nbsp; Extra hour = ₦15,000</div>
+                </div>
+              </div>
+              <p style="font-size:0.72rem;color:var(--grey-4);text-align:center;margin-top:16px;border-top:1px solid var(--border);padding-top:14px">Delivery timeline: 2 – 3 days</p>
             </div>
           </div>
 
@@ -698,6 +712,48 @@
           </p>
         </form>
 
+        <!-- PAYMENT STEP -->
+        <div class="success-screen" id="paymentScreen">
+          <div class="success-icon" style="background:rgba(201,168,76,0.12);border-color:rgba(201,168,76,0.3)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2">
+              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+              <line x1="1" y1="10" x2="23" y2="10"/>
+            </svg>
+          </div>
+          <h3 style="color:var(--white)">Almost There — Make Your Transfer</h3>
+          <p>Your session slot has been reserved. To confirm your booking, please make a bank transfer and click the button below.</p>
+
+          <div style="background:var(--bg-3);border:1px solid var(--border);border-radius:12px;padding:24px;margin:20px 0;text-align:left;width:100%">
+            <p style="font-size:0.65rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:12px">Bank Transfer Details</p>
+            <div style="display:flex;flex-direction:column;gap:10px;font-size:0.9rem">
+              <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:8px">
+                <span style="color:var(--grey-3)">Bank</span>
+                <strong style="color:var(--white)">Kuda MFB</strong>
+              </div>
+              <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:8px">
+                <span style="color:var(--grey-3)">Account Name</span>
+                <strong style="color:var(--white)">NEJstudios</strong>
+              </div>
+              <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:8px">
+                <span style="color:var(--grey-3)">Account Number</span>
+                <strong style="color:var(--gold);font-size:1.1rem;letter-spacing:0.08em">3001571135</strong>
+              </div>
+              <div style="display:flex;justify-content:space-between">
+                <span style="color:var(--grey-3)">Reference</span>
+                <strong style="color:var(--white)" id="paymentRef">—</strong>
+              </div>
+            </div>
+          </div>
+
+          <p style="font-size:0.78rem;color:var(--grey-3);margin-bottom:20px">Use your <strong style="color:var(--white)">Booking ID</strong> as the transfer reference so we can match your payment quickly.</p>
+
+          <button id="transferDoneBtn" class="btn-submit" style="width:100%;justify-content:center">
+            <span>I Have Made the Transfer</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+          <p style="font-size:0.72rem;color:var(--grey-3);margin-top:12px">Our team will verify and confirm your booking within 24 hours.</p>
+        </div>
+
         <!-- SUCCESS STATE -->
         <div class="success-screen" id="successScreen">
           <div class="success-icon">
@@ -711,11 +767,10 @@
               <polyline points="22 4 12 14.01 9 11.01" />
             </svg>
           </div>
-          <h3>You're Booked!</h3>
-          <p>Thank you. Your studio session request has been received.</p>
+          <h3>Transfer Submitted!</h3>
+          <p>Thank you! We've received your payment notification.</p>
           <p>
-            A confirmation has been sent to your email. We'll be in touch within
-            24 hours to confirm your date and time.
+            Our team will verify your transfer and confirm your booking within 24 hours. Check your email for updates.
           </p>
           <div class="success-id" id="successId"></div>
           <br />

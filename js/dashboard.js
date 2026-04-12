@@ -27,7 +27,31 @@ const TEAM_CONFIG = [
    STORAGE HELPERS
    ════════════════════════════════════════════ */
 function getBookings()     { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
-function saveBookings(arr) { localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); }
+function saveBookings(arr) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+  // Push to server so team and other devices stay in sync
+  fetch('/api/sync.php?resource=bookings', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(arr),
+  }).catch(() => {});
+}
+
+// Pull bookings from server and merge with localStorage on startup
+async function syncBookingsFromServer() {
+  try {
+    const r = await fetch('/api/sync.php?resource=bookings', { cache: 'no-store' });
+    if (!r.ok) return;
+    const serverBookings = await r.json();
+    if (!Array.isArray(serverBookings) || serverBookings.length === 0) return;
+    const local    = getBookings();
+    const localIds = new Set(local.map(b => b.id));
+    // Server is authoritative: replace local with server version, add any local-only entries
+    const localOnly = local.filter(b => !serverBookings.find(s => s.id === b.id));
+    const merged    = [...serverBookings, ...localOnly];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+  } catch { /* server unreachable — local data used */ }
+}
 function saveTeam(arr)     { localStorage.setItem(TEAM_KEY, JSON.stringify(arr)); }
 
 // Merges hardcoded TEAM_CONFIG with members added via the UI (localStorage).
@@ -103,7 +127,7 @@ function fmtTime(ts)       { if (!ts) return ''; return new Date(ts).toLocaleTim
 function fmtEventDate(str) { if (!str) return '—'; return new Date(str + 'T12:00:00').toLocaleDateString('en-NG', { dateStyle:'long' }); }
 function fmtDateShort(ts)  { if (!ts) return '—'; return new Date(ts).toLocaleDateString('en-NG', { dateStyle:'short' }); }
 
-const SESSION_EMOJI = { Birthday:'🎂', Family:'👨‍👩‍👧', Creative:'✨', Fashion:'👗', Product:'📦' };
+const SESSION_EMOJI = { 'Half Session':'', 'Regular Session':'', 'Birthday Session':'', 'Outdoor Session':'', Birthday:'', Family:'', Creative:'', Fashion:'', Product:'' };
 const STATUS_LABELS  = { pending:'Pending', confirmed:'Confirmed', completed:'Completed', cancelled:'Cancelled' };
 const EVENT_TYPE_LABELS = {
   'brand-film':'🎬 Brand Film','music-video':'🎵 Music Video','documentary':'🎥 Documentary',
@@ -111,7 +135,7 @@ const EVENT_TYPE_LABELS = {
   'traditional-wedding':'💛 Traditional Wedding','white-wedding':'🤍 White Wedding',
   'full-wedding':'💍 Full Wedding','engagement':'💌 Engagement Shoot',
 };
-const BUDGET_LABELS = { 'under150':'Under ₦150k','150-350':'₦150k–₦350k','350-600':'₦350k–₦600k','600-1m':'₦600k–₦1M','above1m':'Above ₦1M' };
+const BUDGET_LABELS = { 'under150':'Under ₦150k','150-350':'₦150k–₦350k','350-600':'₦350k–₦600k','600-1m':'₦600k–₦1M','above1m':'Above ₦1M','800k-1m':'₦800k–₦1M','1m-1.2m':'₦1M–₦1.2M','1.2m-1.4m':'₦1.2M–₦1.4M','above1.4m':'Above ₦1.4M' };
 
 function statusBadge(status) {
   return `<span class="status-badge status-badge--${status}">${STATUS_LABELS[status] || status}</span>`;
@@ -155,8 +179,11 @@ function showDash() {
   const s = getSession();
   document.getElementById('sidebarUser').textContent = s ? `Admin — ${s.username || 'admin'}` : 'Admin';
   seedIfEmpty();
-  renderBookings();
-  renderTasksBadge();
+  // Sync bookings from server then render (server data takes precedence)
+  syncBookingsFromServer().then(() => {
+    renderBookings();
+    renderTasksBadge();
+  });
   requestNotifPermission();
 }
 
@@ -299,20 +326,20 @@ function actionButtons(b) {
   if (b.status === 'cancelled') {
     btns.push(`<button class="action-btn action-btn--pending"  data-id="${b.id}" data-action="pending">Reopen</button>`);
   }
+  btns.push(`<button class="action-btn" style="border-color:var(--blue);color:var(--blue)" data-id="${b.id}" data-action="edit">Edit</button>`);
   btns.push(`<button class="action-btn action-btn--delete" data-id="${b.id}" data-action="delete">Delete</button>`);
   btns.push(`<button class="action-btn" style="border-color:var(--border);color:var(--grey-3)" data-id="${b.id}" data-action="detail">Details</button>`);
   return btns.join('');
 }
 
 function buildStudioCard(b) {
-  const emoji = SESSION_EMOJI[b.sessionType] || '📸';
   return `
     <div class="booking-card" data-id="${b.id}">
       <div class="booking-card__top">
         <div>${kindBadge('studio')}<div class="booking-card__name">${b.clientName}</div><div class="booking-card__id">${b.id}</div></div>
         ${statusBadge(b.status)}
       </div>
-      <span class="session-pill">${emoji} ${b.sessionType}</span>
+      <span class="session-pill">${b.sessionType}</span>
       <div class="booking-card__meta">
         <div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-8-8 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0122 16.92z"/></svg><span>${b.phone}</span></div>
         <div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><span>${b.email}</span></div>
@@ -385,6 +412,7 @@ async function handleBookingAction(id, action) {
   if (action === 'delete')       { deleteBooking(id);   return; }
   if (action === 'invoice')      { openInvoice(id);     return; }
   if (action === 'send-gallery') { openSendGallery(id); return; }
+  if (action === 'edit')         { openEditBooking(id); return; }
   const bookings = getBookings(), idx = bookings.findIndex(b => b.id === id);
   if (idx === -1) return;
   bookings[idx].status = action;
@@ -426,6 +454,85 @@ function deleteBooking(id) {
   showToast('Booking deleted');
   renderBookings();
 }
+
+/* ════════════════════════════════════════════
+   BOOKING EDIT MODAL
+   ════════════════════════════════════════════ */
+const bookingEditModal = document.getElementById('bookingEditModal');
+
+function closeBookingEditModal() {
+  bookingEditModal.style.display = 'none';
+  document.body.style.overflow = '';
+}
+document.getElementById('bookingEditClose').addEventListener('click', closeBookingEditModal);
+document.getElementById('bookingEditCancel').addEventListener('click', closeBookingEditModal);
+bookingEditModal.addEventListener('click', e => { if (e.target === bookingEditModal) closeBookingEditModal(); });
+
+function openEditBooking(id) {
+  const b = getBookings().find(b => b.id === id);
+  if (!b) return;
+  const isEvent = b.bookingKind === 'event';
+
+  document.getElementById('bookingEditId').value    = id;
+  document.getElementById('beFirstName').value      = b.firstName    || b.clientName || '';
+  document.getElementById('beMiddleName').value     = b.middleName   || '';
+  document.getElementById('bePhone').value          = b.phone        || '';
+  document.getElementById('beEmail').value          = b.email        || '';
+
+  document.getElementById('beStudioFields').style.display = isEvent ? 'none' : '';
+  document.getElementById('beEventFields').style.display  = isEvent ? ''     : 'none';
+
+  if (!isEvent) {
+    document.getElementById('beSessionType').value  = b.sessionType  || '';
+    document.getElementById('beNumOutfits').value   = b.numOutfits   || '1';
+  } else {
+    document.getElementById('beEventType').value    = b.eventType    || '';
+    document.getElementById('beEventDate').value    = b.eventDate    || '';
+    document.getElementById('beLocation').value     = b.location     || '';
+    document.getElementById('beBudget').value       = b.budget       || '';
+    document.getElementById('beDeliverables').value = b.deliverables || '';
+  }
+
+  bookingEditModal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+document.getElementById('bookingEditForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const id        = document.getElementById('bookingEditId').value;
+  const bookings  = getBookings();
+  const idx       = bookings.findIndex(b => b.id === id);
+  if (idx === -1) return;
+
+  const b         = bookings[idx];
+  const isEvent   = b.bookingKind === 'event';
+  const firstName = document.getElementById('beFirstName').value.trim();
+  const middleName= document.getElementById('beMiddleName').value.trim();
+  const phone     = document.getElementById('bePhone').value.trim();
+  const email     = document.getElementById('beEmail').value.trim();
+  if (!firstName || !phone || !email) { showToast('Name, phone and email are required'); return; }
+
+  const clientName = middleName ? `${firstName} ${middleName}` : firstName;
+  const updates = { firstName, middleName, clientName, phone, email };
+
+  if (!isEvent) {
+    updates.sessionType = document.getElementById('beSessionType').value;
+    updates.numOutfits  = document.getElementById('beNumOutfits').value;
+  } else {
+    updates.eventType    = document.getElementById('beEventType').value;
+    updates.eventDate    = document.getElementById('beEventDate').value;
+    updates.location     = document.getElementById('beLocation').value.trim();
+    updates.budget       = document.getElementById('beBudget').value;
+    updates.deliverables = document.getElementById('beDeliverables').value.trim();
+  }
+
+  bookings[idx] = { ...b, ...updates };
+  saveBookings(bookings);
+  dbUpdateScheduleEntry('BK-' + id, { clientName });
+  closeBookingEditModal();
+  showToast('Booking updated ✓');
+  renderBookings();
+});
 
 /* ════════════════════════════════════════════
    SIDEBAR NAV (bookings)
@@ -798,8 +905,7 @@ function openInvoice(id) {
     itemDesc  = typeLabel + pkgLabel;
     itemPrice = BUDGET_LABELS[b.budget] || b.budget || '—';
   } else {
-    const emoji  = SESSION_EMOJI[b.sessionType] || '';
-    itemDesc  = `${emoji} ${b.sessionType || 'Studio'} Session`.trim();
+    itemDesc  = `${b.sessionType || 'Studio'} Session`;
     itemPrice = '—';
   }
 
@@ -861,6 +967,10 @@ function openInvoice(id) {
           <td colspan="3" style="text-align:right;font-size:0.82rem;color:#555;letter-spacing:0.08em;text-transform:uppercase">Total Due</td>
           <td>${itemPrice}</td>
         </tr>
+        <tr>
+          <td colspan="3" style="text-align:right;font-size:0.78rem;color:#888;letter-spacing:0.06em;text-transform:uppercase">Deposit Required (80%)</td>
+          <td style="color:#c9a84c;font-size:0.9rem">80%</td>
+        </tr>
       </tfoot>
     </table>
 
@@ -873,9 +983,9 @@ function openInvoice(id) {
     <div class="inv-section">
       <h4>Payment Details</h4>
       <p>
-        Bank: <strong>— (Admin: fill in bank details)</strong><br/>
-        Account Name: NEJstudios<br/>
-        Account Number: —<br/>
+        Bank: <strong>Kuda MFB</strong><br/>
+        Account Name: <strong>NEJstudios</strong><br/>
+        Account Number: <strong>3001571135</strong><br/>
         Reference: <strong>${invoiceNum}</strong>
       </p>
     </div>
@@ -883,6 +993,11 @@ function openInvoice(id) {
     <div class="inv-section">
       <h4>Terms &amp; Notes</h4>
       <p>Payment is due within 7 days of this invoice. All deliverables will be provided upon full payment. For queries, contact us directly.</p>
+    </div>
+
+    <div style="background:#fff8e6;border:1px solid #c9a84c;border-radius:8px;padding:14px 18px;margin-bottom:20px;text-align:center">
+      <strong style="color:#c9a84c;font-size:0.85rem">NEJstudios requires an 80% deposit upfront to secure your booking.</strong><br/>
+      <span style="font-size:0.78rem;color:#666">The remaining 20% is due upon delivery of all files and final edited photos.</span>
     </div>
 
     <div class="inv-footer">
@@ -1053,12 +1168,32 @@ initGalleryForm();
    SCHEDULE
    ════════════════════════════════════════════ */
 
-// Toggle form
 const schedCreateToggle = document.getElementById('schedCreateToggle');
 const schedCreateBody   = document.getElementById('schedCreateBody');
+
+// Wedding type → rename Client Name to Event Name + show Planner field
+document.getElementById('schedType').addEventListener('change', function() {
+  const isWedding = this.value === 'wedding';
+  document.getElementById('schedClientLabel').textContent = isWedding ? 'Event Name' : 'Client Name';
+  document.getElementById('schedClient').placeholder = isWedding ? 'e.g. Tunde & Ngozi Wedding' : 'e.g. Kemi Afolabi';
+  document.getElementById('schedPlannerWrap').style.display = isWedding ? '' : 'none';
+});
+
+// Populate member checkboxes when schedule form opens
+function populateSchedMembers() {
+  const wrap = document.getElementById('schedMembersWrap');
+  if (!wrap) return;
+  const team = getTeam().filter(m => m.role !== 'admin');
+  if (team.length === 0) { wrap.innerHTML = '<span style="color:var(--grey-3);font-size:0.78rem">No team members yet</span>'; return; }
+  wrap.innerHTML = team.map(m => `
+    <label style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:var(--bg-4);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:0.8rem;color:var(--grey-2)">
+      <input type="checkbox" value="${m.id}" data-name="${m.name}" style="accent-color:var(--gold)"> ${m.name}
+    </label>`).join('');
+}
 schedCreateToggle.addEventListener('click', () => {
   const open = schedCreateBody.classList.toggle('open');
   schedCreateToggle.classList.toggle('open', open);
+  if (open) populateSchedMembers();
 });
 
 // Submit form
@@ -1069,24 +1204,35 @@ document.getElementById('schedForm').addEventListener('submit', async e => {
   const time         = document.getElementById('schedTime').value;
   const type         = document.getElementById('schedType').value;
   const client       = document.getElementById('schedClient').value.trim();
+  const planner      = document.getElementById('schedPlanner').value.trim();
   const location     = document.getElementById('schedLocation').value.trim();
   const notes        = document.getElementById('schedNotes').value.trim();
   const deliverables = document.getElementById('schedDeliverables').value.trim();
   if (!title || !date) return;
 
+  // Collect selected team members
+  const assignedMembers = [];
+  document.querySelectorAll('#schedMembersWrap input[type=checkbox]:checked').forEach(cb => {
+    assignedMembers.push({ id: cb.value, name: cb.dataset.name });
+  });
+
   const entry = {
-    id:           'SCH-' + Math.random().toString(36).slice(2,8).toUpperCase(),
+    id:              'SCH-' + Math.random().toString(36).slice(2,8).toUpperCase(),
     title, date, type,
-    time:         time         || null,
-    clientName:   client       || null,
-    location:     location     || null,
-    notes:        notes        || null,
-    deliverables: deliverables || null,
-    createdAt:    Date.now(),
+    time:            time             || null,
+    clientName:      client           || null,
+    planner:         planner          || null,
+    location:        location         || null,
+    notes:           notes            || null,
+    deliverables:    deliverables     || null,
+    assignedMembers: assignedMembers.length ? assignedMembers : null,
+    createdAt:       Date.now(),
   };
 
   await dbAddScheduleEntry(entry);
   e.target.reset();
+  document.getElementById('schedPlannerWrap').style.display = 'none';
+  document.getElementById('schedClientLabel').textContent = 'Client Name';
   schedCreateBody.classList.remove('open');
   schedCreateToggle.classList.remove('open');
   await renderAdminSchedule();
@@ -1129,8 +1275,10 @@ async function renderAdminSchedule() {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             <strong>${dateStr}${s.time ? ' · ' + s.time : ''}</strong>
           </div>
-          ${s.clientName ? `<div class="task-info-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>${s.clientName}</div>` : ''}
+          ${s.clientName ? `<div class="task-info-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>${s.type === 'wedding' ? '<em>Event:</em>&nbsp;' : ''}${s.clientName}</div>` : ''}
+          ${s.planner    ? `<div class="task-info-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg><em>Planner:</em>&nbsp;${s.planner}</div>` : ''}
           ${s.location   ? `<div class="task-info-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>${s.location}</div>` : ''}
+          ${s.assignedMembers && s.assignedMembers.length ? `<div class="task-info-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>${s.assignedMembers.map(m => `<span style="background:var(--gold-glow);border:1px solid rgba(201,168,76,.25);border-radius:4px;padding:1px 7px;font-size:0.72rem;color:var(--gold-lt)">${m.name}</span>`).join(' ')}</div>` : ''}
         </div>
         ${s.notes ? `<div class="task-reports-preview">${s.notes}</div>` : ''}
         ${s.deliverables ? `<div class="task-reports-preview" style="margin-top:6px"><strong style="color:var(--gold-lt);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em">Deliverables:</strong> ${s.deliverables}</div>` : ''}
@@ -1148,6 +1296,7 @@ async function renderAdminSchedule() {
           </div>`;
         })()}
         <div class="task-card__actions">
+          <button class="task-action-btn" style="border-color:var(--blue);color:var(--blue)" data-sched-edit="${s.id}">Edit</button>
           <button class="task-action-btn task-action-btn--delete" data-sched-id="${s.id}">Delete</button>
         </div>
       </div>`;
@@ -1161,7 +1310,104 @@ async function renderAdminSchedule() {
       showToast('Removed from schedule');
     });
   });
+
+  grid.querySelectorAll('[data-sched-edit]').forEach(btn => {
+    btn.addEventListener('click', () => openSchedEditModal(btn.dataset.schedEdit));
+  });
 }
+
+/* ════════════════════════════════════════════
+   SCHEDULE EDIT MODAL
+   ════════════════════════════════════════════ */
+
+const schedEditModal = document.getElementById('schedEditModal');
+
+function closeSchedEditModal() {
+  schedEditModal.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+document.getElementById('schedEditClose').addEventListener('click', closeSchedEditModal);
+document.getElementById('schedEditCancel').addEventListener('click', closeSchedEditModal);
+schedEditModal.addEventListener('click', e => { if (e.target === schedEditModal) closeSchedEditModal(); });
+
+document.getElementById('schedEditType').addEventListener('change', function() {
+  const isWedding = this.value === 'wedding';
+  document.getElementById('schedEditClientLabel').textContent = isWedding ? 'Event Name' : 'Client Name';
+  document.getElementById('schedEditPlannerWrap').style.display = isWedding ? '' : 'none';
+});
+
+async function openSchedEditModal(id) {
+  const sched = await dbGetSchedule();
+  const entry = sched.find(s => s.id === id);
+  if (!entry) return;
+
+  document.getElementById('schedEditId').value          = id;
+  document.getElementById('schedEditTitle').value       = entry.title       || '';
+  document.getElementById('schedEditDate').value        = entry.date        || '';
+  document.getElementById('schedEditTime').value        = entry.time        || '';
+  document.getElementById('schedEditType').value        = entry.type        || 'studio';
+  document.getElementById('schedEditClient').value      = entry.clientName  || '';
+  document.getElementById('schedEditPlanner').value     = entry.planner     || '';
+  document.getElementById('schedEditLocation').value    = entry.location    || '';
+  document.getElementById('schedEditNotes').value       = entry.notes       || '';
+  document.getElementById('schedEditDeliverables').value = entry.deliverables || '';
+
+  const isWedding = entry.type === 'wedding';
+  document.getElementById('schedEditClientLabel').textContent = isWedding ? 'Event Name' : 'Client Name';
+  document.getElementById('schedEditPlannerWrap').style.display = isWedding ? '' : 'none';
+
+  // Populate member checkboxes
+  const wrap = document.getElementById('schedEditMembersWrap');
+  const team = getTeam().filter(m => m.role !== 'admin');
+  const assigned = entry.assignedMembers || [];
+  wrap.innerHTML = team.length === 0
+    ? '<span style="color:var(--grey-3);font-size:0.78rem">No team members yet</span>'
+    : team.map(m => {
+        const checked = assigned.find(a => a.id === m.id) ? 'checked' : '';
+        return `<label style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:var(--bg-4);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:0.8rem;color:var(--grey-2)">
+          <input type="checkbox" value="${m.id}" data-name="${m.name}" ${checked} style="accent-color:var(--gold)"> ${m.name}
+        </label>`;
+      }).join('');
+
+  schedEditModal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+document.getElementById('schedEditForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const id           = document.getElementById('schedEditId').value;
+  const title        = document.getElementById('schedEditTitle').value.trim();
+  const date         = document.getElementById('schedEditDate').value;
+  const time         = document.getElementById('schedEditTime').value;
+  const type         = document.getElementById('schedEditType').value;
+  const clientName   = document.getElementById('schedEditClient').value.trim();
+  const planner      = document.getElementById('schedEditPlanner').value.trim();
+  const location     = document.getElementById('schedEditLocation').value.trim();
+  const notes        = document.getElementById('schedEditNotes').value.trim();
+  const deliverables = document.getElementById('schedEditDeliverables').value.trim();
+  if (!title || !date) return;
+
+  const assignedMembers = [];
+  document.querySelectorAll('#schedEditMembersWrap input[type=checkbox]:checked').forEach(cb => {
+    assignedMembers.push({ id: cb.value, name: cb.dataset.name });
+  });
+
+  await dbUpdateScheduleEntry(id, {
+    title, date, type,
+    time:            time         || null,
+    clientName:      clientName   || null,
+    planner:         planner      || null,
+    location:        location     || null,
+    notes:           notes        || null,
+    deliverables:    deliverables || null,
+    assignedMembers: assignedMembers.length ? assignedMembers : null,
+  });
+
+  closeSchedEditModal();
+  await renderAdminSchedule();
+  showToast('Schedule entry updated ✓');
+});
 
 /* ════════════════════════════════════════════
    TASKS
@@ -1348,8 +1594,8 @@ async function openReassignModal(taskId) {
 
   const member = idx === 0 ? null : team[idx - 1];
   await dbUpdateTask(taskId, {
-    assigned_to:   member ? member.id   : null,
-    assigned_name: member ? member.name : null,
+    assignedTo:   member ? member.id   : null,
+    assignedName: member ? member.name : null,
   });
   await renderTasks();
   showToast(member ? `Assigned to ${member.name}` : 'Unassigned');
@@ -1774,27 +2020,18 @@ document.querySelectorAll('.bm-tab').forEach(btn => {
   });
 });
 
-// Session type picker in studio modal
-let bmSelectedSession = '';
-document.querySelectorAll('.bm-sp-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.bm-sp-btn').forEach(b => b.classList.remove('selected'));
-    btn.classList.add('selected');
-    bmSelectedSession = btn.dataset.session;
-  });
-});
-
 // Studio booking form submit
 document.getElementById('bmStudioForm').addEventListener('submit', e => {
   e.preventDefault();
   const err = document.getElementById('bmStudioErr');
-  const firstName  = document.getElementById('bmFirstName').value.trim();
-  const middleName = document.getElementById('bmMiddleName').value.trim();
-  const phone      = document.getElementById('bmPhone').value.trim();
-  const email      = document.getElementById('bmEmail').value.trim();
+  const firstName   = document.getElementById('bmFirstName').value.trim();
+  const middleName  = document.getElementById('bmMiddleName').value.trim();
+  const phone       = document.getElementById('bmPhone').value.trim();
+  const email       = document.getElementById('bmEmail').value.trim();
+  const sessionType = document.getElementById('bmSessionPicker').value;
 
   if (!firstName || !phone || !email) { err.textContent = 'First name, phone, and email are required.'; return; }
-  if (!bmSelectedSession) { err.textContent = 'Please select a session type.'; return; }
+  if (!sessionType) { err.textContent = 'Please select a session type.'; return; }
   err.textContent = '';
 
   const clientName = [firstName, middleName].filter(Boolean).join(' ');
@@ -1803,7 +2040,7 @@ document.getElementById('bmStudioForm').addEventListener('submit', e => {
     bookingKind: 'studio',
     firstName, middleName,
     clientName, phone, email,
-    sessionType: bmSelectedSession,
+    sessionType,
     status:      'pending',
     createdAt:   Date.now(),
   };
@@ -1813,8 +2050,6 @@ document.getElementById('bmStudioForm').addEventListener('submit', e => {
   saveBookings(bookings);
 
   e.target.reset();
-  document.querySelectorAll('.bm-sp-btn').forEach(b => b.classList.remove('selected'));
-  bmSelectedSession = '';
   closeNewBookingModal();
   renderBookings();
   showToast(`Booking for ${clientName} added ✓`);
