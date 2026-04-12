@@ -414,9 +414,12 @@ async function renderTeamBookings() {
 
   let shots = [];
   try {
-    shots = (await dbGetSchedule()).slice().sort((a, b) => a.date.localeCompare(b.date));
+    const raw = await dbGetSchedule();
+    console.log('[NEJ] dbGetSchedule returned', raw.length, 'entries:', raw);
+    shots = raw.slice().sort((a, b) => (a.date || '').localeCompare(b.date || ''));
   } catch (err) {
-    grid.innerHTML = `<div class="sch-empty"><p style="color:var(--red);font-size:0.85rem">Could not load bookings: ${err.message}</p><button onclick="renderTeamBookings()" style="margin-top:12px;padding:8px 18px;background:var(--gold);color:#000;border:none;border-radius:6px;font-family:inherit;font-weight:600;cursor:pointer">Retry</button></div>`;
+    console.error('[NEJ] dbGetSchedule threw:', err);
+    grid.innerHTML = `<div class="sch-empty"><p style="color:var(--red);font-size:0.85rem">Could not load: ${err.message}</p><button onclick="renderTeamBookings()" style="margin-top:12px;padding:8px 18px;background:var(--gold);color:#000;border:none;border-radius:6px;font-family:inherit;font-weight:600;cursor:pointer">Retry</button></div>`;
     return;
   }
 
@@ -424,7 +427,7 @@ async function renderTeamBookings() {
 
   // Update badge — count upcoming entries
   const badge    = document.getElementById('bookingsBadge');
-  const upcoming = shots.filter(s => s.date >= todayStr).length;
+  const upcoming = shots.filter(s => s.date && s.date >= todayStr).length;
   if (badge) {
     badge.textContent = upcoming;
     badge.classList.toggle('hidden', upcoming === 0);
@@ -439,6 +442,8 @@ async function renderTeamBookings() {
     </div>`;
     return;
   }
+
+  console.log('[NEJ] Rendering', shots.length, 'schedule entries for team');
 
   const typeLabel = { studio:'Studio', wedding:'Wedding', event:'Event', production:'Production', meeting:'Meeting' };
 
@@ -507,21 +512,26 @@ async function renderTeamBookings() {
       </div>`;
   }
 
-  const upcomingShots = shots.filter(s => s.date >= todayStr);
-  const pastShots     = shots.filter(s => s.date < todayStr).slice(-3).reverse();
+  const upcomingShots = shots.filter(s => s.date && s.date >= todayStr);
+  const pastShots     = shots.filter(s => s.date && s.date < todayStr).slice(-3).reverse();
 
-  let html = '';
-  if (upcomingShots.length > 0) {
-    html += upcomingShots.map(s => buildBookingCard(s, false)).join('');
-  } else {
-    html += `<div class="sch-empty" style="padding:32px 0"><p style="color:var(--grey-3);font-size:0.85rem">No upcoming shoots scheduled.</p></div>`;
+  try {
+    let html = '';
+    if (upcomingShots.length > 0) {
+      html += upcomingShots.map(s => buildBookingCard(s, false)).join('');
+    } else {
+      html += `<div class="sch-empty" style="padding:32px 0"><p style="color:var(--grey-3);font-size:0.85rem">No upcoming shoots — check with admin.</p></div>`;
+    }
+    if (pastShots.length > 0) {
+      html += `<div class="sch-section-label">Recent Past</div>`;
+      html += pastShots.map(s => buildBookingCard(s, true)).join('');
+    }
+    grid.innerHTML = html;
+  } catch (renderErr) {
+    console.error('[NEJ] renderTeamBookings render error:', renderErr);
+    grid.innerHTML = `<div class="sch-empty"><p style="color:var(--red);font-size:0.82rem">Render error: ${renderErr.message}</p><button onclick="renderTeamBookings()" style="margin-top:12px;padding:8px 18px;background:var(--gold);color:#000;border:none;border-radius:6px;font-family:inherit;font-weight:600;cursor:pointer">Retry</button></div>`;
+    return;
   }
-  if (pastShots.length > 0) {
-    html += `<div class="sch-section-label">Recent Past</div>`;
-    html += pastShots.map(s => buildBookingCard(s, true)).join('');
-  }
-
-  grid.innerHTML = html;
 
   // Checklist toggle
   grid.querySelectorAll('.sch-checklist-toggle').forEach(btn => {
