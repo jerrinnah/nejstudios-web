@@ -410,10 +410,17 @@ async function renderTeamBookings() {
   const grid = document.getElementById('teamBookingsGrid');
   if (!grid) return;
 
-  grid.innerHTML = `<div class="sch-empty" style="opacity:0.5"><p style="color:var(--grey-3);font-size:0.85rem">Loading…</p></div>`;
+  grid.innerHTML = `<div class="sch-empty" style="opacity:0.5"><p style="color:var(--grey-3);font-size:0.85rem">Loading bookings…</p></div>`;
+
+  let shots = [];
+  try {
+    shots = (await dbGetSchedule()).slice().sort((a, b) => a.date.localeCompare(b.date));
+  } catch (err) {
+    grid.innerHTML = `<div class="sch-empty"><p style="color:var(--red);font-size:0.85rem">Could not load bookings: ${err.message}</p><button onclick="renderTeamBookings()" style="margin-top:12px;padding:8px 18px;background:var(--gold);color:#000;border:none;border-radius:6px;font-family:inherit;font-weight:600;cursor:pointer">Retry</button></div>`;
+    return;
+  }
 
   const todayStr = new Date().toISOString().slice(0, 10);
-  const shots    = (await dbGetSchedule()).slice().sort((a, b) => a.date.localeCompare(b.date));
 
   // Update badge — count upcoming entries
   const badge    = document.getElementById('bookingsBadge');
@@ -426,8 +433,9 @@ async function renderTeamBookings() {
   if (shots.length === 0) {
     grid.innerHTML = `<div class="sch-empty">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      <h3>No upcoming bookings yet</h3>
-      <p>Confirmed shoots and events will appear here once admin confirms a booking.</p>
+      <h3>No bookings yet</h3>
+      <p>Ask admin to confirm a booking or add to the Schedule — it will appear here instantly.</p>
+      <button onclick="renderTeamBookings()" style="margin-top:16px;padding:8px 20px;background:var(--gold);color:#000;border:none;border-radius:6px;font-family:inherit;font-weight:600;font-size:0.8rem;cursor:pointer">↻ Refresh</button>
     </div>`;
     return;
   }
