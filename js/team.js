@@ -85,7 +85,7 @@ const CHECKLIST_TEMPLATES = {
    SESSION / CURRENT MEMBER
    ════════════════════════════════════════════ */
 let currentMember = null; // populated after login / session restore
-let activeTab     = 'schedule';
+let activeTab     = 'bookings';
 
 /* ════════════════════════════════════════════
    LOGIN
@@ -104,7 +104,7 @@ function showPortal(member) {
   teamShell.style.display = 'flex';
   mobileNav.style.display = 'flex';
   document.getElementById('userBadgeName').textContent = member.name;
-  switchTab('schedule');
+  switchTab('bookings');
   updateBadges();
   requestNotifPermission();
 }
@@ -199,10 +199,9 @@ function switchTab(name) {
   const panel = document.getElementById('panel-' + name);
   if (panel) panel.classList.add('active');
   document.querySelectorAll('.mobile-bottom-nav [data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
-  if (name === 'schedule')  renderSchedule();
+  if (name === 'bookings')  renderTeamBookings();
   if (name === 'all-tasks') renderAllTasksBar();
   if (name === 'my-tasks')  renderMyTasks();
-  if (name === 'bookings')  renderTeamBookings();
 }
 
 document.querySelectorAll('.t-tab-btn').forEach(btn => {
@@ -404,74 +403,168 @@ async function renderSchedule() {
 }
 
 /* ════════════════════════════════════════════
-   TEAM BOOKINGS VIEW
-   (no invoice, no cost, no email, no phone)
+   TEAM BOOKINGS VIEW — reads from Supabase so
+   all team devices see the same confirmed shoots
    ════════════════════════════════════════════ */
-function renderTeamBookings() {
+async function renderTeamBookings() {
   const grid = document.getElementById('teamBookingsGrid');
   if (!grid) return;
 
-  const bookings = getBookings()
-    .filter(b => b.status === 'confirmed' || b.status === 'pending' || b.status === 'completed')
-    .sort((a, b) => {
-      const aDate = a.sessionDate || a.eventDate || null;
-      const bDate = b.sessionDate || b.eventDate || null;
-      if (aDate && bDate) return aDate.localeCompare(bDate);
-      if (aDate) return -1;
-      if (bDate) return 1;
-      return (b.createdAt || 0) - (a.createdAt || 0);
-    });
+  grid.innerHTML = `<div class="sch-empty" style="opacity:0.5"><p style="color:var(--grey-3);font-size:0.85rem">Loading…</p></div>`;
 
-  // Update badge
-  const badge = document.getElementById('bookingsBadge');
-  const confirmed = bookings.filter(b => b.status === 'confirmed').length;
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const shots    = (await dbGetSchedule()).slice().sort((a, b) => a.date.localeCompare(b.date));
+
+  // Update badge — count upcoming entries
+  const badge    = document.getElementById('bookingsBadge');
+  const upcoming = shots.filter(s => s.date >= todayStr).length;
   if (badge) {
-    badge.textContent = confirmed;
-    badge.classList.toggle('hidden', confirmed === 0);
+    badge.textContent = upcoming;
+    badge.classList.toggle('hidden', upcoming === 0);
   }
 
-  if (bookings.length === 0) {
-    grid.innerHTML = `<div class="sch-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><h3>No active bookings</h3><p>Confirmed shoots and events will appear here.</p></div>`;
+  if (shots.length === 0) {
+    grid.innerHTML = `<div class="sch-empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <h3>No upcoming bookings yet</h3>
+      <p>Confirmed shoots and events will appear here once admin confirms a booking.</p>
+    </div>`;
     return;
   }
 
-  const statusColor = { pending:'var(--orange)', confirmed:'var(--green)', completed:'var(--grey-3)' };
-  const statusLabel = { pending:'Pending', confirmed:'Confirmed', completed:'Completed' };
-  const typeLabel   = { studio:'Studio', wedding:'Wedding', event:'Event', production:'Production', 'white-wedding':'White Wedding', 'traditional-wedding':'Traditional Wedding', 'brand-film':'Brand Film', 'corporate-event':'Corporate Event', 'music-video':'Music Video', 'birthday':'Birthday' };
+  const typeLabel = { studio:'Studio', wedding:'Wedding', event:'Event', production:'Production', meeting:'Meeting' };
 
-  grid.innerHTML = bookings.map(b => {
-    const isEvent    = b.bookingKind === 'event';
-    const shootDate  = b.sessionDate || b.eventDate || null;
-    const fmtShoot   = shootDate ? new Date(shootDate + 'T00:00:00').toLocaleDateString('en-NG', { dateStyle:'medium' }) : null;
-    const shootTime  = b.sessionTime || null;
-    const typeName   = isEvent ? (typeLabel[b.eventType] || b.eventType || 'Event') : (b.sessionType || 'Studio');
-    const location   = b.location || null;
-    const delivs     = b.deliverables ? b.deliverables.slice(0, 100) + (b.deliverables.length > 100 ? '…' : '') : null;
+  function buildBookingCard(s, isPast) {
+    const d       = new Date(s.date + 'T00:00:00');
+    const day     = d.getDate();
+    const month   = d.toLocaleString('en-NG', { month:'short' }).toUpperCase();
+    const isToday = s.date === todayStr;
+    const cls     = isToday ? 'sch-card--today' : (isPast ? 'sch-card--past' : '');
+    const lbl     = typeLabel[s.type] || s.type;
 
-    // Equipment checklist for this type
-    const eqType     = isEvent ? (b.eventType === 'white-wedding' || b.eventType === 'traditional-wedding' ? 'wedding' : b.eventType === 'brand-film' || b.eventType === 'music-video' ? 'production' : 'event') : 'studio';
-    const eqItems    = CHECKLIST_TEMPLATES[eqType] || CHECKLIST_TEMPLATES['studio'];
+    const savedItems    = s.checklist && s.checklist.length > 0 ? s.checklist : null;
+    const templateItems = CHECKLIST_TEMPLATES[s.type] || CHECKLIST_TEMPLATES['studio'];
+    const rawItems      = savedItems || templateItems.map(text => ({ text, checked: false }));
+    const items         = rawItems.map(item => typeof item === 'string' ? { text: item, checked: false } : item);
+
+    const doneCount  = items.filter(it => it.checked).length;
+    const totalCount = items.length;
+    const allDone    = doneCount === totalCount && totalCount > 0;
+    const pct        = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
+
+    const checklistHtml = `
+      <div class="sch-checklist" id="checklist-${s.id}" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--gold)">Equipment &amp; Gear</span>
+          ${allDone ? `<span style="font-size:0.7rem;font-weight:700;color:var(--green);background:var(--green-bg);padding:2px 8px;border-radius:99px">All packed ✓</span>` : `<span style="font-size:0.72rem;color:var(--grey-3)">${doneCount}/${totalCount}</span>`}
+        </div>
+        <div style="height:4px;background:var(--border);border-radius:99px;overflow:hidden;margin-bottom:12px">
+          <div style="height:100%;width:${pct}%;background:${allDone ? 'var(--green)' : 'var(--gold)'};border-radius:99px;transition:width 0.3s"></div>
+        </div>
+        <div class="sch-checklist-items" data-sched-id="${s.id}">
+          ${items.map((item, idx) => `
+            <label style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);cursor:pointer;font-size:0.82rem;color:${item.checked ? 'var(--grey-4)' : 'var(--grey-1)'};${item.checked ? 'text-decoration:line-through' : ''}">
+              <input type="checkbox" data-item-idx="${idx}" data-sched-id="${s.id}" ${item.checked ? 'checked' : ''} style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0" />
+              ${item.text}
+            </label>`).join('')}
+        </div>
+      </div>`;
 
     return `
-    <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:16px;overflow:hidden">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
-        <div>
-          <div style="font-size:0.62rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:3px">${isEvent ? 'Event' : 'Studio'}</div>
-          <div style="font-size:1rem;font-weight:600;color:var(--white)">${b.clientName}</div>
+      <div class="sch-card ${cls}" data-sched-card="${s.id}">
+        <div class="sch-date-block">
+          <div class="sch-date-block__day">${day}</div>
+          <div class="sch-date-block__month">${month}</div>
         </div>
-        <span style="font-size:0.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:3px 10px;border-radius:99px;border:1px solid;color:${statusColor[b.status]||'var(--grey-3)'};border-color:${statusColor[b.status]||'var(--grey-3)'};background:${statusColor[b.status]||'var(--grey-3)'}1a">${statusLabel[b.status]||b.status}</span>
-      </div>
-      <div style="font-size:0.8rem;color:var(--grey-2);margin-bottom:4px">📌 ${typeName}</div>
-      ${fmtShoot ? `<div style="font-size:0.8rem;color:var(--grey-2)">📅 ${fmtShoot}${shootTime ? ' · ' + shootTime : ''}</div>` : ''}
-      ${location  ? `<div style="font-size:0.8rem;color:var(--grey-2);margin-top:2px">📍 ${location}</div>` : ''}
-      ${delivs    ? `<div style="font-size:0.75rem;color:var(--grey-3);margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">${delivs}</div>` : ''}
-      <!-- Equipment checklist (read-only on team view — use Schedule tab for interactive checklist) -->
-      <div style="margin-top:10px;padding:8px 10px;background:var(--bg-3);border:1px solid var(--border);border-radius:6px">
-        <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--gold);margin-bottom:6px">Equipment &amp; Gear Needed</div>
-        ${eqItems.map(item => `<div style="font-size:0.75rem;color:var(--grey-2);padding:2px 0">· ${item}</div>`).join('')}
-      </div>
-    </div>`;
-  }).join('');
+        <div class="sch-body">
+          <div class="sch-body__top">
+            <span class="sch-type-badge sch-type--${s.type}">${lbl}</span>
+            ${isToday ? '<span class="sch-today-pill">Today</span>' : ''}
+            ${isPast  ? '<span style="font-size:0.62rem;color:var(--grey-4);font-weight:600;text-transform:uppercase;letter-spacing:.1em">Past</span>' : ''}
+          </div>
+          <div class="sch-body__title">${s.title}</div>
+          <div class="sch-body__meta">
+            ${s.time       ? `<span>🕐 ${s.time}</span>`       : ''}
+            ${s.clientName ? `<span>👤 ${s.clientName}</span>` : ''}
+            ${s.location   ? `<span>📍 ${s.location}</span>`   : ''}
+          </div>
+          ${s.notes       ? `<div class="sch-body__notes">${s.notes}</div>` : ''}
+          ${s.deliverables ? `<div class="sch-body__notes" style="margin-top:6px;border-top:1px solid var(--border);padding-top:6px"><span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--gold);display:block;margin-bottom:2px">Deliverables</span>${s.deliverables}</div>` : ''}
+          <button class="sch-checklist-toggle" data-toggle-id="${s.id}" style="margin-top:12px;width:100%;padding:7px 12px;background:var(--bg-3);border:1px solid var(--border);border-radius:6px;font-size:0.72rem;font-weight:600;color:var(--grey-3);display:flex;align-items:center;justify-content:space-between;transition:var(--trans)">
+            <span>Equipment &amp; Gear ${doneCount > 0 ? `(${doneCount}/${totalCount})` : ''}</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          ${checklistHtml}
+        </div>
+      </div>`;
+  }
+
+  const upcomingShots = shots.filter(s => s.date >= todayStr);
+  const pastShots     = shots.filter(s => s.date < todayStr).slice(-3).reverse();
+
+  let html = '';
+  if (upcomingShots.length > 0) {
+    html += upcomingShots.map(s => buildBookingCard(s, false)).join('');
+  } else {
+    html += `<div class="sch-empty" style="padding:32px 0"><p style="color:var(--grey-3);font-size:0.85rem">No upcoming shoots scheduled.</p></div>`;
+  }
+  if (pastShots.length > 0) {
+    html += `<div class="sch-section-label">Recent Past</div>`;
+    html += pastShots.map(s => buildBookingCard(s, true)).join('');
+  }
+
+  grid.innerHTML = html;
+
+  // Checklist toggle
+  grid.querySelectorAll('.sch-checklist-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.toggleId;
+      const cl = document.getElementById('checklist-' + id);
+      if (!cl) return;
+      const open = cl.style.display === 'none' || cl.style.display === '';
+      cl.style.display = open ? 'block' : 'none';
+      btn.querySelector('svg').style.transform = open ? 'rotate(180deg)' : '';
+    });
+  });
+
+  // Checklist checkboxes — persist to Supabase
+  grid.querySelectorAll('.sch-checklist-items input[type=checkbox]').forEach(cb => {
+    cb.addEventListener('change', async () => {
+      const schedId  = cb.dataset.schedId;
+      const itemIdx  = parseInt(cb.dataset.itemIdx, 10);
+      const schedObj = shots.find(s => s.id === schedId);
+      if (!schedObj) return;
+
+      const templateItems = CHECKLIST_TEMPLATES[schedObj.type] || CHECKLIST_TEMPLATES['studio'];
+      const rawItems      = schedObj.checklist && schedObj.checklist.length > 0
+        ? schedObj.checklist
+        : templateItems.map(text => ({ text, checked: false }));
+      const items = rawItems.map(item => typeof item === 'string' ? { text: item, checked: false } : { ...item });
+      items[itemIdx].checked = cb.checked;
+
+      await dbUpdateScheduleChecklist(schedId, items);
+      schedObj.checklist = items;
+
+      const container = cb.closest('.sch-checklist');
+      const allItems  = Array.from(container.querySelectorAll('input[type=checkbox]'));
+      const done      = allItems.filter(c => c.checked).length;
+      const total     = allItems.length;
+      const pct2      = total > 0 ? Math.round((done / total) * 100) : 0;
+      const allDone2  = done === total && total > 0;
+      const bar       = container.querySelector('div[style*="height:4px"] > div');
+      if (bar) { bar.style.width = pct2 + '%'; bar.style.background = allDone2 ? 'var(--green)' : 'var(--gold)'; }
+      const headerSpan = container.querySelector('div:first-child > span:last-child');
+      if (headerSpan) {
+        if (allDone2) { headerSpan.textContent = 'All packed ✓'; headerSpan.style.cssText = 'font-size:0.7rem;font-weight:700;color:var(--green);background:var(--green-bg);padding:2px 8px;border-radius:99px'; }
+        else          { headerSpan.textContent = `${done}/${total}`; headerSpan.style.cssText = 'font-size:0.72rem;color:var(--grey-3)'; }
+      }
+      const card   = container.closest('[data-sched-card]');
+      const toggle = card ? card.querySelector('.sch-checklist-toggle span') : null;
+      if (toggle) toggle.textContent = `Equipment & Gear (${done}/${total})`;
+      cb.closest('label').style.color          = cb.checked ? 'var(--grey-4)' : 'var(--grey-1)';
+      cb.closest('label').style.textDecoration = cb.checked ? 'line-through' : '';
+    });
+  });
 }
 
 /* ════════════════════════════════════════════
@@ -797,6 +890,6 @@ dbSubscribeTasks(payload => {
 
 dbSubscribeSchedule(() => {
   if (!currentMember) return;
-  if (activeTab === 'schedule') renderSchedule();
+  if (activeTab === 'bookings') renderTeamBookings();
   updateBadges();
 });
