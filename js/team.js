@@ -810,34 +810,32 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeReportM
    ════════════════════════════════════════════ */
 async function updateBadges() {
   const [allTasks, schedule] = await Promise.all([dbGetTasks(), dbGetSchedule()]);
+  const todayStr = new Date().toISOString().slice(0, 10);
 
-  // Schedule badge: count today's shots
-  const todayStr   = new Date().toISOString().slice(0, 10);
-  const todayCount = schedule.filter(s => s.date === todayStr).length;
-  const schBadge   = document.getElementById('scheduleBadge');
-  schBadge.textContent = todayCount;
-  schBadge.classList.toggle('hidden', todayCount === 0);
+  // Bookings badge: count upcoming schedule entries from Supabase
+  const upcomingCount  = schedule.filter(s => s.date >= todayStr).length;
+  const bookingsBadge  = document.getElementById('bookingsBadge');
+  if (bookingsBadge) {
+    bookingsBadge.textContent = upcomingCount;
+    bookingsBadge.classList.toggle('hidden', upcomingCount === 0);
+  }
 
   // All tasks badge: count pending
   const pendingCount = allTasks.filter(t => t.status === 'pending').length;
   const allBadge     = document.getElementById('allTasksBadge');
-  allBadge.textContent = pendingCount;
-  allBadge.classList.toggle('hidden', pendingCount === 0);
+  if (allBadge) {
+    allBadge.textContent = pendingCount;
+    allBadge.classList.toggle('hidden', pendingCount === 0);
+  }
 
   // My tasks badge: count my active tasks
   if (currentMember) {
     const myActive = allTasks.filter(t => t.assignedTo === currentMember.id && t.status !== 'completed').length;
     const myBadge  = document.getElementById('myTasksBadge');
-    myBadge.textContent = myActive;
-    myBadge.classList.toggle('hidden', myActive === 0);
-  }
-
-  // Bookings badge: count confirmed bookings
-  const confirmedBookings = getBookings().filter(b => b.status === 'confirmed').length;
-  const bookingsBadge     = document.getElementById('bookingsBadge');
-  if (bookingsBadge) {
-    bookingsBadge.textContent = confirmedBookings;
-    bookingsBadge.classList.toggle('hidden', confirmedBookings === 0);
+    if (myBadge) {
+      myBadge.textContent = myActive;
+      myBadge.classList.toggle('hidden', myActive === 0);
+    }
   }
 }
 
