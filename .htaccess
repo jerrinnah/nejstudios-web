@@ -1,6 +1,23 @@
-# ── Extensionless URLs ─────────────────────────
+# ── Canonical host + clean URLs ────────────────
 <IfModule mod_rewrite.c>
   RewriteEngine On
+
+  # Force HTTPS + www (canonical host). Preserves query string.
+  RewriteCond %{HTTPS} !=on [OR]
+  RewriteCond %{HTTP_HOST} !^www\. [NC]
+  RewriteRule ^ https://www.%{HTTP_HOST}%{REQUEST_URI} [L,R=301,NE]
+  # If already https but bare domain, rewrite host only
+  RewriteCond %{HTTP_HOST} ^nejstudios\.com$ [NC]
+  RewriteRule ^ https://www.nejstudios.com%{REQUEST_URI} [L,R=301,NE]
+
+  # Redirect /foo.html → /foo (strip .html from direct requests)
+  RewriteCond %{THE_REQUEST} \s/+([^\s?]+)\.html[\s?] [NC]
+  RewriteRule ^ /%1 [L,R=301,NE]
+
+  # Redirect /index → /  (home canonical)
+  RewriteRule ^index/?$ / [L,R=301,NE]
+
+  # Internally rewrite extensionless requests to .html files
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteCond %{REQUEST_FILENAME}.html -f

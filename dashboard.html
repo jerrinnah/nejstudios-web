@@ -176,12 +176,14 @@
       /* ── Tab Nav ── */
       .tab-nav {
         background:var(--bg-2); border-bottom:1px solid var(--border);
-        padding:0 28px; display:flex; gap:0; overflow-x:auto;
+        padding:0 28px; display:flex; flex-wrap:wrap; justify-content:center; gap:0;
       }
       .tab-btn {
         padding:13px 20px; font-size:0.8rem; font-weight:600; color:var(--grey-3);
         border-bottom:2px solid transparent; white-space:nowrap; transition:var(--trans);
         display:flex; align-items:center; gap:8px;
+        /* ensure tap targets meet 44px minimum */
+        min-height:44px; flex-shrink:0;
       }
       .tab-btn:hover { color:var(--grey-1); }
       .tab-btn.active { color:var(--gold); border-bottom-color:var(--gold); }
@@ -248,6 +250,7 @@
       .status-badge::before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; }
       .status-badge--pending { background:var(--orange-bg); color:var(--orange); }
       .status-badge--confirmed { background:var(--blue-bg); color:var(--blue); }
+      .status-badge--booked { background:rgba(201,168,76,.15); color:var(--gold); border:1px solid rgba(201,168,76,.3); }
       .status-badge--completed { background:var(--green-bg); color:var(--green); }
       .status-badge--cancelled { background:var(--red-bg); color:var(--red); }
       .status-badge--in-progress { background:var(--purple-bg); color:var(--purple); }
@@ -289,15 +292,28 @@
       .empty-state a { display:inline-flex; align-items:center; gap:8px; margin-top:20px; padding:10px 24px; background:var(--gold); color:#000; font-weight:700; font-size:0.78rem; letter-spacing:0.08em; text-transform:uppercase; border-radius:6px; transition:var(--trans); }
       .empty-state a:hover { background:var(--gold-lt); }
 
+      /* ── Portal Greeting ── */
+      .portal-greeting {
+        display:flex; align-items:center; gap:12px;
+        background:linear-gradient(135deg,rgba(201,168,76,.08),rgba(201,168,76,.03));
+        border:1px solid rgba(201,168,76,.18); border-radius:12px;
+        padding:14px 20px; margin-bottom:22px;
+      }
+      .portal-greeting__icon { font-size:1.5rem; line-height:1; }
+      .portal-greeting__text { flex:1; }
+      .portal-greeting__msg  { font-size:1rem; font-weight:600; color:var(--white); }
+      .portal-greeting__sub  { font-size:0.78rem; color:var(--grey-3); margin-top:2px; }
+
       /* ════ TASKS PANEL ════ */
       .panel-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; flex-wrap:wrap; gap:12px; }
       .panel-header h2 { font-family:var(--serif); font-size:1.3rem; color:var(--white); }
       .panel-header p { font-size:0.8rem; color:var(--grey-3); margin-top:2px; }
 
-      .task-create-wrap { background:var(--bg-2); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:28px; overflow:hidden; }
+      .task-create-wrap { background:var(--bg-2); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:28px; overflow:hidden; cursor:pointer; }
       .task-create-toggle {
         width:100%; padding:16px 20px; display:flex; align-items:center; justify-content:space-between;
         font-size:0.85rem; font-weight:600; color:var(--grey-2); transition:var(--trans);
+        cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent;
       }
       .task-create-toggle:hover { color:var(--white); background:rgba(255,255,255,.02); }
       .task-create-toggle svg { width:16px; height:16px; transition:transform var(--trans); }
@@ -336,9 +352,9 @@
       .tasks-filter-btn.active { background:var(--gold); color:#000; border-color:var(--gold); font-weight:600; }
 
       /* Task cards */
-      .tasks-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; }
-      .task-card { background:var(--bg-2); border:1px solid var(--border); border-radius:var(--radius); padding:20px; transition:var(--trans); }
-      .task-card:hover { border-color:var(--border-l); }
+      .tasks-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:5px; }
+      .task-card { background:var(--bg-2); border:1px solid var(--border); border-radius:var(--radius); padding:20px; transition:var(--trans); cursor:pointer; }
+      .task-card:hover { border-color:var(--gold); box-shadow:0 0 0 1px rgba(201,168,76,.15); }
       .task-card--pending { border-left:2px solid var(--orange); }
       .task-card--in-progress { border-left:2px solid var(--purple); }
       .task-card--completed { border-left:2px solid var(--green); opacity:.75; }
@@ -373,6 +389,13 @@
       .task-action-btn--reports:hover { border-color:var(--gold); color:var(--gold); }
       .task-action-btn--reassign { border-color:var(--border-l); color:var(--grey-2); }
       .task-action-btn--reassign:hover { border-color:var(--blue); color:var(--blue); }
+      .task-action-btn--approve { border-color:rgba(62,207,142,.35); color:var(--green); }
+      .task-action-btn--approve:hover { background:var(--green-bg); }
+      .task-action-btn--fail { border-color:rgba(248,113,113,.35); color:var(--red); }
+      .task-action-btn--fail:hover { background:var(--red-bg); }
+      .delivery-badge { display:inline-block; border-radius:5px; padding:2px 8px; font-size:0.65rem; font-weight:700; letter-spacing:0.04em; }
+      .delivery-badge--approved { background:var(--green-bg); border:1px solid rgba(62,207,142,.3); color:var(--green); }
+      .delivery-badge--failed   { background:var(--red-bg);   border:1px solid rgba(248,113,113,.3); color:var(--red); }
 
       /* ════ TEAM PANEL ════ */
       .team-layout { display:grid; grid-template-columns:380px 1fr; gap:28px; align-items:start; }
@@ -460,7 +483,7 @@
       .gallery-dropzone:hover, .gallery-dropzone.drag-over {
         border-color:var(--gold); background:var(--gold-glow);
       }
-      .gallery-dropzone input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+      .gallery-dropzone input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; z-index:10; }
       .gallery-dropzone__icon { width:32px; height:32px; margin:0 auto 8px; color:var(--grey-3); }
       .gallery-dropzone__label { font-size:0.82rem; color:var(--grey-2); }
       .gallery-dropzone__sub { font-size:0.72rem; color:var(--grey-4); margin-top:4px; }
@@ -781,10 +804,65 @@
         body > *:not(#invoiceModal) { display:none !important; }
         #invoiceModal { display:flex !important; position:static; overflow:visible; }
         .invoice-chrome { display:none !important; }
+        .inv-deposit-ctrl { display:none !important; }
         #invoiceBody { margin:0; padding:24px; max-width:100%; }
         .inv-header { border-bottom-color:#c9a84c; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
         .inv-table thead tr { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+        .inv-table tfoot tr:nth-child(2) { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+        /* POS receipt print */
+        .pos-receipt { box-shadow:none !important; }
       }
+
+      /* ════ POS RECEIPT (studio bookings) ════ */
+      .pos-receipt-wrap {
+        display:flex; justify-content:center; align-items:flex-start;
+        padding:40px 24px; background:#f0ede8; min-height:100%; flex:1;
+      }
+      .pos-receipt {
+        background:#fff; width:340px; max-width:100%;
+        font-family:"Courier New", Courier, monospace;
+        font-size:13px; color:#111; line-height:1.5;
+        padding:28px 22px 32px;
+        box-shadow:0 4px 24px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.12);
+        border-radius:2px;
+        /* torn paper top/bottom */
+        position:relative;
+      }
+      .pos-receipt::before, .pos-receipt::after {
+        content:''; display:block; height:12px;
+        background:repeating-linear-gradient(90deg, #f0ede8 0px, #f0ede8 10px, #fff 10px, #fff 20px);
+        position:absolute; left:0; right:0;
+      }
+      .pos-receipt::before { top:-12px; }
+      .pos-receipt::after  { bottom:-12px; }
+      .pos-r-center { text-align:center; }
+      .pos-r-logo   { font-size:18px; font-weight:bold; letter-spacing:2px; margin-bottom:2px; }
+      .pos-r-tagline{ font-size:10px; color:#666; letter-spacing:1px; margin-bottom:2px; }
+      .pos-r-dashes { border:none; border-top:1px dashed #bbb; margin:10px 0; }
+      .pos-r-title  { font-size:15px; font-weight:bold; letter-spacing:3px; text-transform:uppercase; margin:8px 0 6px; }
+      .pos-r-num    { font-size:11px; color:#555; margin-bottom:4px; }
+      .pos-r-date   { font-size:11px; color:#555; }
+      .pos-r-table  { width:100%; border-collapse:collapse; margin:10px 0; }
+      .pos-r-table td { padding:3px 0; font-size:12px; vertical-align:top; }
+      .pos-r-table td:last-child { text-align:right; }
+      .pos-r-label  { font-size:10px; color:#777; text-transform:uppercase; letter-spacing:1px; }
+      .pos-r-total-row { border-top:1px solid #bbb; padding-top:6px; margin-top:4px; }
+      .pos-r-total-row td { font-weight:bold; font-size:13px; }
+      .pos-r-deposit-row td { color:#a0832a; font-weight:bold; }
+      .pos-r-balance-row td { color:#888; font-size:11px; }
+      .pos-r-status { display:inline-block; padding:2px 10px; border:1px solid #ccc; font-size:11px; letter-spacing:1px; text-transform:uppercase; }
+      .pos-r-footer { font-size:10px; color:#888; margin-top:4px; line-height:1.6; }
+      .pos-r-barcode { font-size:10px; letter-spacing:3px; color:#aaa; word-break:break-all; }
+      .pos-r-payment { font-size:11px; color:#333; line-height:1.8; }
+      .pos-r-deposit-ctrl {
+        background:#f9f4e8; border:1px solid #c9a84c; border-radius:6px;
+        padding:12px 14px; margin-bottom:16px;
+        display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+        font-family:"Outfit",system-ui,sans-serif;
+      }
+      .pos-r-deposit-ctrl label { font-size:0.78rem; color:#555; display:flex; align-items:center; gap:6px; }
+      .pos-r-deposit-ctrl input { width:56px; padding:4px 6px; border:1px solid #c9a84c; border-radius:4px; font-size:0.85rem; text-align:center; }
+      .pos-r-deposit-ctrl button { padding:5px 12px; background:#c9a84c; border:none; border-radius:5px; font-size:0.75rem; font-weight:700; color:#000; cursor:pointer; }
 
       /* ════ GALLERY PANEL ════ */
       .gallery-layout { display:grid; grid-template-columns:380px 1fr; gap:28px; align-items:start; }
@@ -799,6 +877,31 @@
       .btn-remove-file:hover { border-color:var(--red); color:var(--red); }
       .btn-add-file { padding:8px 14px; border:1px dashed var(--border-l); border-radius:6px; font-size:0.75rem; color:var(--grey-3); transition:var(--trans); text-align:center; }
       .btn-add-file:hover { border-color:var(--gold); color:var(--gold); }
+      /* Gallery panel upload */
+      .gallery-upload-area { border:2px dashed var(--border-l); border-radius:10px; padding:18px 14px; margin-top:14px; }
+      .gallery-upload-area__title { font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--grey-3); margin-bottom:10px; }
+      .gallery-upload-btns { display:flex; gap:8px; flex-wrap:wrap; }
+      .btn-upload-single, .btn-upload-multi {
+        flex:1; min-width:120px; padding:9px 12px; border:1px solid var(--border);
+        border-radius:8px; font-size:0.78rem; color:var(--white); background:var(--bg-3);
+        cursor:pointer; transition:var(--trans); display:flex; align-items:center; justify-content:center; gap:6px;
+      }
+      .btn-upload-single:hover { border-color:var(--gold); color:var(--gold); }
+      .btn-upload-multi:hover  { border-color:var(--gold); color:var(--gold); }
+      .gallery-panel-progress { display:flex; flex-direction:column; gap:6px; margin-top:10px; }
+      .gallery-panel-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:10px; }
+      .gallery-panel-grid.has-items { margin-top:12px; }
+      .gp-thumb { position:relative; aspect-ratio:1; border-radius:6px; overflow:hidden; background:var(--bg-3); border:2px solid transparent; cursor:pointer; transition:border-color 0.15s; }
+      .gp-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+      .gp-thumb.selected { border-color:var(--gold); }
+      .gp-thumb__check { position:absolute; top:4px; right:4px; width:18px; height:18px; border-radius:4px; background:var(--gold); display:none; align-items:center; justify-content:center; }
+      .gp-thumb.selected .gp-thumb__check { display:flex; }
+      .gp-thumb__check svg { width:10px; height:10px; color:#000; }
+      .gallery-panel-selbar { display:flex; align-items:center; gap:8px; margin-top:8px; font-size:0.72rem; color:var(--grey-3); }
+      .btn-select-all { padding:3px 10px; border:1px solid var(--border); border-radius:99px; font-size:0.68rem; color:var(--grey-2); transition:var(--trans); }
+      .btn-select-all:hover { border-color:var(--gold); color:var(--gold); }
+      .btn-del-selected { padding:3px 10px; border:1px solid var(--border); border-radius:99px; font-size:0.68rem; color:var(--grey-3); transition:var(--trans); }
+      .btn-del-selected:hover { border-color:var(--red); color:var(--red); }
       .gallery-links-section h3 { font-family:var(--serif); font-size:1.1rem; color:var(--white); margin-bottom:16px; }
       .gallery-links-grid { display:flex; flex-direction:column; gap:10px; }
       .gallery-link-card { background:var(--bg-2); border:1px solid var(--border); border-radius:var(--radius); padding:16px 20px; }
@@ -814,12 +917,27 @@
       .btn-del-gallery:hover { border-color:var(--red); color:var(--red); }
 
       /* ════ RESPONSIVE ════ */
+
+      /* Desktop 1025px+ — default layout, all panels full-width */
+      @media (min-width:1025px) {
+        .bookings-grid { grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); }
+        .tasks-grid    { grid-template-columns:repeat(3,1fr); }
+      }
+
+      /* Laptop 769–1024px */
       @media (max-width:1100px) {
         .team-layout { grid-template-columns:1fr; }
         .team-form-card { position:static; }
         .gallery-layout { grid-template-columns:1fr; }
         .gallery-form-card { position:static; }
       }
+      @media (max-width:1024px) {
+        .stats-row { grid-template-columns:repeat(2,1fr); }
+        .bookings-grid { grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); }
+        .tasks-grid    { grid-template-columns:repeat(2,1fr); }
+      }
+
+      /* Tablet 481–768px */
       @media (max-width:900px) {
         .sidebar { transform:translateX(-100%); }
         .sidebar.open { transform:none; }
@@ -829,15 +947,73 @@
         .mobile-bottom-nav { display:flex; flex-direction:column; }
         .content { padding-bottom:80px; }
         .tab-nav { padding:0 16px; }
+        .bookings-grid { grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); }
+        .tasks-grid    { grid-template-columns:repeat(2,1fr); }
       }
+      @media (max-width:768px) {
+        .stats-row { grid-template-columns:repeat(2,1fr); gap:10px; }
+        .stat-card { padding:16px 14px; }
+        .stat-card__value { font-size:1.8rem; }
+        .toolbar { gap:8px; }
+        .filter-group { gap:3px; }
+        .filter-btn { padding:6px 11px; font-size:0.68rem; }
+        .bookings-grid { grid-template-columns:1fr; }
+        .tasks-grid    { grid-template-columns:1fr; }
+        .event-fields  { grid-template-columns:1fr; }
+        .event-field--full { grid-column:1; }
+        .team-layout   { gap:16px; }
+        .member-card   { flex-wrap:wrap; }
+        .member-actions { flex-wrap:wrap; }
+        .tab-btn { padding:11px 14px; font-size:0.75rem; }
+      }
+
+      /* Phone 320–600px */
       @media (max-width:600px) {
-        .content { padding:16px; padding-bottom:80px; }
+        .content { padding:16px; padding-bottom:80px; max-width:440px; margin-left:auto; margin-right:auto; }
         .header { padding:12px 16px; }
-        .stats-row { grid-template-columns:1fr 1fr; }
+        .stats-row { grid-template-columns:1fr; gap:8px; }
+        .stat-card { padding:12px 10px; }
+        .stat-card__value { font-size:1.5rem; }
         .task-form { grid-template-columns:1fr; }
         .task-form .full { grid-column:1; }
         .btn-new-booking span { display:none; }
         .btn-home span { display:none; }
+        .booking-card__actions { gap:4px; }
+        .action-btn { padding:5px 10px; font-size:0.65rem; }
+        .booking-card { padding:14px; }
+        .modal-box { padding:24px 18px; }
+        .header__right { gap:6px; }
+        .task-card__actions { gap:4px; }
+        .task-action-btn { padding:5px 10px; font-size:0.65rem; }
+        .member-card { gap:10px; padding:12px 14px; }
+        .member-avatar { width:36px; height:36px; font-size:0.85rem; }
+        /* ── Tab bar mobile: 2-column grid ── */
+        .tab-nav {
+          display:grid;
+          grid-template-columns:1fr 1fr;
+          padding:0;
+          overflow-x:unset;
+          border-bottom:none;
+        }
+        .tab-btn {
+          padding:11px 10px;
+          font-size:0.72rem;
+          gap:5px;
+          min-height:48px;
+          justify-content:center;
+          border-bottom:1px solid var(--border);
+          border-right:1px solid var(--border);
+          white-space:normal;
+          text-align:center;
+          flex-shrink:unset;
+        }
+        .tab-btn:nth-child(even) { border-right:none; }
+        .tab-btn.active { color:var(--gold); border-bottom-color:var(--gold); background:rgba(201,168,76,.04); }
+        .tab-btn svg { width:13px; height:13px; }
+      }
+      @media (max-width:380px) {
+        .header__right .btn-home { display:none; }
+        .filter-btn { padding:5px 8px; font-size:0.64rem; }
       }
     </style>
   </head>
@@ -849,7 +1025,7 @@
         <div class="login-logo">
           <span class="login-logo-nej">NEJ</span><span class="login-logo-studios">studios</span>
         </div>
-        <h2>Staff Login</h2>
+        <h2>Admin Login</h2>
         <p>Sign in with your credentials to continue</p>
 
         <div class="login-input-wrap">
@@ -1015,6 +1191,18 @@
 
           <!-- ══ BOOKINGS PANEL ══ -->
           <div id="panel-bookings" class="tab-panel active">
+            <!-- Client confirmations alert -->
+            <div id="confirmationsAlert" style="display:none;margin-bottom:18px;background:rgba(62,207,142,.08);border:1px solid rgba(62,207,142,.28);border-radius:10px;padding:14px 18px">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" style="width:18px;height:18px;flex-shrink:0"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                  <span style="font-size:0.85rem;font-weight:600;color:var(--green)">Client Confirmations</span>
+                  <span id="confirmBadgeCount" style="background:var(--green);color:#000;font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:99px"></span>
+                </div>
+                <button id="confirmToggle" style="font-size:0.75rem;color:var(--green);background:none;border:1px solid rgba(62,207,142,.4);border-radius:6px;padding:4px 10px;cursor:pointer">Show</button>
+              </div>
+              <div id="confirmationsList" style="display:none;margin-top:12px;display:flex;flex-direction:column;gap:8px"></div>
+            </div>
             <div class="stats-row">
               <div class="stat-card stat-card--total"><div class="stat-card__label">Total Bookings</div><div class="stat-card__value" id="statTotal">0</div></div>
               <div class="stat-card stat-card--studio"><div class="stat-card__label">Studio Sessions</div><div class="stat-card__value" id="statStudio">0</div></div>
@@ -1044,6 +1232,7 @@
 
           <!-- ══ SCHEDULE PANEL ══ -->
           <div id="panel-schedule" class="tab-panel">
+            <div id="adminGreeting" class="portal-greeting" style="display:none"></div>
             <div class="panel-header">
               <div>
                 <h2>Shoots &amp; Events Schedule</h2>
@@ -1053,7 +1242,7 @@
 
             <!-- Add schedule entry -->
             <div class="task-create-wrap">
-              <button class="task-create-toggle" id="schedCreateToggle">
+              <button class="task-create-toggle" id="schedCreateToggle" type="button">
                 <span>+ Add Shoot / Event</span>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               </button>
@@ -1079,6 +1268,7 @@
                       <option value="event">Event</option>
                       <option value="production">Production</option>
                       <option value="meeting">Meeting</option>
+                      <option value="funeral">Funeral</option>
                     </select>
                   </div>
                   <div class="form-field">
@@ -1125,7 +1315,7 @@
 
             <!-- Create task -->
             <div class="task-create-wrap">
-              <button class="task-create-toggle" id="taskCreateToggle">
+              <button class="task-create-toggle" id="taskCreateToggle" type="button">
                 <span>+ Create New Task</span>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               </button>
@@ -1153,6 +1343,10 @@
                       <option value="low">Low</option>
                     </select>
                   </div>
+                  <div class="form-field">
+                    <label class="form-label">Delivery Deadline</label>
+                    <input class="form-input" id="taskDeadline" type="date" />
+                  </div>
                   <button class="btn-create-task full" type="submit">Create Task</button>
                 </form>
               </div>
@@ -1175,6 +1369,20 @@
               <div>
                 <h2>Team Members</h2>
                 <p>Manage team accounts — each member gets a custom username and PIN</p>
+              </div>
+            </div>
+
+            <!-- Attendance log -->
+            <div style="margin-bottom:28px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                <div>
+                  <h3 style="font-family:var(--serif);font-size:1.05rem;color:var(--white)">Today's Attendance</h3>
+                  <p style="font-size:0.75rem;color:var(--grey-3);margin-top:3px">Team members who have signed in today</p>
+                </div>
+                <button id="refreshAttendanceBtn" type="button" style="font-size:0.72rem;color:var(--gold);background:none;border:1px solid rgba(201,168,76,.3);border-radius:6px;padding:5px 12px;cursor:pointer">Refresh</button>
+              </div>
+              <div id="attendanceGrid" style="display:flex;flex-direction:column;gap:8px">
+                <div style="color:var(--grey-4);font-size:0.82rem;padding:16px 0">Loading…</div>
               </div>
             </div>
 
@@ -1207,6 +1415,11 @@
                 <h3>Current Team (<span id="teamCount">0</span>)</h3>
                 <div class="team-grid" id="teamGrid"></div>
               </div>
+
+              <div style="margin-top:28px">
+                <div class="section-label" style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--grey-3);margin-bottom:12px">Completed Tasks by Member</div>
+                <div id="completedTasksByMember"></div>
+              </div>
             </div>
           </div>
 
@@ -1235,15 +1448,29 @@
                     <input class="form-input" id="galleryBookingId" type="text" placeholder="e.g. NEJ-ABC123" />
                   </div>
                   <div class="form-field">
-                    <label class="form-label">Files</label>
-                    <div class="gallery-files-list" id="galleryFilesList">
-                      <div class="gallery-file-row">
-                        <input class="form-input" type="text" placeholder="File label" data-file-label />
-                        <input class="form-input" type="text" placeholder="Download URL" data-file-url />
-                        <button type="button" class="btn-remove-file" title="Remove">✕</button>
+                    <label class="form-label">Upload Images</label>
+                    <div class="gallery-upload-area">
+                      <div class="gallery-upload-btns">
+                        <button type="button" class="btn-upload-single" id="btnUploadSingle">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                          Upload Single
+                        </button>
+                        <button type="button" class="btn-upload-multi" id="btnUploadMulti">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                          Select All
+                        </button>
                       </div>
+                      <!-- hidden file inputs -->
+                      <input type="file" id="galleryPanelInputSingle" accept="image/*,.jpg,.jpeg,.png,.webp" style="display:none">
+                      <input type="file" id="galleryPanelInputMulti"  accept="image/*,.jpg,.jpeg,.png,.webp" multiple style="display:none">
+                      <div class="gallery-panel-progress" id="galleryPanelProgress"></div>
+                      <div class="gallery-panel-selbar" id="galleryPanelSelbar" style="display:none">
+                        <span id="galleryPanelSelCount">0 selected</span>
+                        <button type="button" class="btn-select-all" id="btnGPSelectAll">Select All</button>
+                        <button type="button" class="btn-del-selected" id="btnGPDeleteSel">Delete Selected</button>
+                      </div>
+                      <div class="gallery-panel-grid" id="galleryPanelGrid"></div>
                     </div>
-                    <button type="button" class="btn-add-file" id="btnAddFile" style="margin-top:8px">+ Add File</button>
                   </div>
                   <div class="form-field">
                     <label class="form-label">Password (optional)</label>
@@ -1296,13 +1523,13 @@
     <!-- Mobile Bottom Nav -->
     <nav class="mobile-bottom-nav" id="mobileBottomNav">
       <div class="nav-inner">
-        <a href="/" class="mobile-nav-item">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-          <span>Home</span>
-        </a>
         <button class="mobile-nav-item active" data-tab="bookings">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
           <span>Bookings</span>
+        </button>
+        <button class="mobile-nav-item" data-tab="schedule">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="14" x2="8" y2="14"/><line x1="12" y1="14" x2="12" y2="14"/><line x1="16" y1="14" x2="16" y2="14"/></svg>
+          <span>Schedule</span>
         </button>
         <button class="mobile-nav-item" data-tab="tasks">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
@@ -1358,7 +1585,7 @@
                   <option value="Half Session">Half Session — ₦45,000</option>
                   <option value="Regular Session">Regular Session — ₦70,000</option>
                   <option value="Birthday Session">Birthday Session — ₦100,000</option>
-                  <option value="Outdoor Session">Outdoor Session — ₦200,000</option>
+                  <option value="Outdoor Session">Outdoor Session — ₦250,000</option>
                 </select>
               </div>
               <div class="form-field full">
@@ -1371,13 +1598,9 @@
           <!-- Event Tab -->
           <div class="bm-panel" id="bm-panel-event">
             <form class="bm-form" id="bmEventForm" novalidate>
-              <div class="form-field">
-                <label class="form-label">First Name *</label>
-                <input class="form-input" id="bmEFirstName" type="text" placeholder="e.g. David" required autocomplete="off" />
-              </div>
-              <div class="form-field">
-                <label class="form-label">Last Name</label>
-                <input class="form-input" id="bmELastName" type="text" placeholder="e.g. Okonkwo" autocomplete="off" />
+              <div class="form-field full">
+                <label class="form-label">Event Name *</label>
+                <input class="form-input" id="bmEventName" type="text" placeholder="e.g. Okonkwo & Adaeze Wedding" required autocomplete="off" />
               </div>
               <div class="form-field">
                 <label class="form-label">Phone *</label>
@@ -1416,14 +1639,8 @@
                 <input class="form-input" id="bmEDate" type="date" autocomplete="off" />
               </div>
               <div class="form-field">
-                <label class="form-label">Budget</label>
-                <select class="form-select" id="bmEBudget">
-                  <option value="">— Select —</option>
-                  <option value="800k-1m">₦800k–₦1M</option>
-                  <option value="1m-1.2m">₦1M–₦1.2M</option>
-                  <option value="1.2m-1.4m">₦1.2M–₦1.4M</option>
-                  <option value="above1.4m">Above ₦1.4M</option>
-                </select>
+                <label class="form-label">Event Cost (₦)</label>
+                <input class="form-input" id="bmEBudget" type="number" min="0" step="1000" placeholder="e.g. 950000" autocomplete="off" />
               </div>
               <div class="form-field full">
                 <label class="form-label">Location</label>
@@ -1452,6 +1669,17 @@
         </button>
         <h3>Booking Details</h3>
         <div id="modalContent"></div>
+      </div>
+    </div>
+
+    <!-- Task Detail Modal -->
+    <div class="modal-overlay" id="taskDetailModal">
+      <div class="modal-backdrop" id="taskDetailModalBackdrop"></div>
+      <div class="modal-box" style="max-width:560px">
+        <button class="modal-close" id="taskDetailModalClose">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <div id="taskDetailContent"></div>
       </div>
     </div>
 
@@ -1500,10 +1728,10 @@
         </div>
         <form id="bookingEditForm" style="display:flex;flex-direction:column;gap:14px">
           <input type="hidden" id="bookingEditId" />
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div id="beNameRow" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
             <div class="form-field">
               <label class="form-label">First Name *</label>
-              <input class="form-input" id="beFirstName" type="text" required />
+              <input class="form-input" id="beFirstName" type="text" />
             </div>
             <div class="form-field">
               <label class="form-label">Middle Name</label>
@@ -1526,7 +1754,7 @@
                 <option value="Half Session">Half Session — ₦45,000</option>
                 <option value="Regular Session">Regular Session — ₦70,000</option>
                 <option value="Birthday Session">Birthday Session — ₦100,000</option>
-                <option value="Outdoor Session">Outdoor Session — ₦200,000</option>
+                <option value="Outdoor Session">Outdoor Session — ₦250,000</option>
                 <optgroup label="Legacy types">
                   <option value="Birthday">Birthday</option>
                   <option value="Family">Family</option>
@@ -1547,10 +1775,23 @@
                 <option value="6">6 outfits</option>
               </select>
             </div>
+            <div class="form-field" style="margin-top:14px">
+              <label class="form-label">Shoot Date</label>
+              <input class="form-input" id="beShootDate" type="date" />
+              <div style="font-size:0.72rem;color:var(--grey-4);margin-top:4px">Client requested: <span id="bePreferredDateHint">—</span></div>
+            </div>
+            <div class="form-field" style="margin-top:14px">
+              <label class="form-label">Session Cost (₦)</label>
+              <input class="form-input" id="beCost" type="number" min="0" step="1000" placeholder="e.g. 70000" />
+            </div>
           </div>
           <!-- Event fields -->
           <div id="beEventFields" style="display:none">
             <div class="form-field">
+              <label class="form-label">Event Name</label>
+              <input class="form-input" id="beEventName" type="text" placeholder="e.g. Okonkwo & Adaeze Wedding" />
+            </div>
+            <div class="form-field" style="margin-top:14px">
               <label class="form-label">Event Type</label>
               <select class="form-select" id="beEventType">
                 <option value="traditional-wedding">Traditional Wedding</option>
@@ -1573,14 +1814,8 @@
               <input class="form-input" id="beLocation" type="text" placeholder="e.g. Eko Hotel, Lagos" />
             </div>
             <div class="form-field" style="margin-top:14px">
-              <label class="form-label">Budget</label>
-              <select class="form-select" id="beBudget">
-                <option value="">— Select —</option>
-                <option value="800k-1m">₦800k–₦1M</option>
-                <option value="1m-1.2m">₦1M–₦1.2M</option>
-                <option value="1.2m-1.4m">₦1.2M–₦1.4M</option>
-                <option value="above1.4m">Above ₦1.4M</option>
-              </select>
+              <label class="form-label">Event Cost (₦)</label>
+              <input class="form-input" id="beBudget" type="number" min="0" step="1000" placeholder="e.g. 950000" />
             </div>
             <div class="form-field" style="margin-top:14px">
               <label class="form-label">Deliverables</label>
@@ -1652,6 +1887,10 @@
             <label class="form-label">Agreed Deliverables</label>
             <textarea class="form-textarea" id="schedEditDeliverables" placeholder="e.g. Full-day coverage, 300 edited photos…"></textarea>
           </div>
+          <div class="form-field">
+            <label class="form-label">Delivery Deadline</label>
+            <input class="form-input" id="schedEditDeadline" type="date" />
+          </div>
           <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
             <button type="button" id="schedEditCancel" style="padding:10px 20px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--grey-3);cursor:pointer;font-size:0.85rem">Cancel</button>
             <button type="submit" style="padding:10px 24px;background:var(--gold);border:none;border-radius:8px;color:#000;font-weight:700;cursor:pointer;font-size:0.85rem">Save Changes</button>
@@ -1675,9 +1914,16 @@
       </div>
     </div>
 
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({ appId: '7a5f454d-ffd0-4c33-8d87-d165a134bfe4', serviceWorkerPath: '/OneSignalSDKWorker.js' });
+      });
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/db.js?v=2.2"></script>
-    <script src="js/dashboard.js?v=2.2"></script>
+    <script src="js/db.js?v=3.0"></script>
+    <script src="js/dashboard.js?v=3.0"></script>
   </body>
 </html>

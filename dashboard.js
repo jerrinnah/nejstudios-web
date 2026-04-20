@@ -26,68 +26,30 @@ const TEAM_CONFIG = [
 /* ════════════════════════════════════════════
    STORAGE HELPERS
    ════════════════════════════════════════════ */
-// Reads local cache, filtering out server-marked tombstones.
-function getBookings() {
-  const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-  return raw.filter(b => !b.deletedAt);
-}
-
-/**
- * saveBookings(arr) — SAFE bulk save.
- * Uses the atomic merge endpoint so it upserts by id and never wipes
- * records added by other devices. Does NOT implicitly delete items
- * missing from `arr` — use deleteBooking(id) for deletions.
- */
+function getBookings()     { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
 function saveBookings(arr) {
-  if (!Array.isArray(arr)) return;
-  // Optimistic local cache for responsive UI
-  const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-  const byId = new Map(existing.map(b => [b.id, b]));
-  arr.forEach(b => { if (b && b.id) byId.set(b.id, b); });
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(byId.values())));
-
-  // Server atomic merge (upserts only — deletions use tombstones via deleteBooking)
-  if (typeof dbUpsertBookings === 'function') {
-    dbUpsertBookings(arr).catch(() => {});
-  } else {
-    // Fallback if db.js isn't loaded yet (shouldn't happen, but be safe)
-    fetch('/api/sync.php?resource=bookings&op=merge', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ upserts: arr, deletes: [] }),
-    }).catch(() => {});
-  }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+  // Push to server so team and other devices stay in sync
+  fetch('/api/sync.php?resource=bookings', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(arr),
+  }).catch(() => {});
 }
 
-/**
- * softDeleteBooking(id) — marks a booking as deleted via server tombstone.
- * Propagates to all other devices on next sync.
- */
-async function softDeleteBooking(id) {
-  if (typeof dbSoftDeleteBooking === 'function') {
-    await dbSoftDeleteBooking(id);
-  } else {
-    await fetch('/api/sync.php?resource=bookings&op=merge', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ upserts: [], deletes: [id] }),
-    }).catch(() => {});
-    // Mark locally
-    const local = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-    const idx = local.findIndex(b => b.id === id);
-    if (idx >= 0) { local[idx].deletedAt = Date.now(); localStorage.setItem(STORAGE_KEY, JSON.stringify(local)); }
-  }
-}
-
-// Pull bookings from server — ALWAYS authoritative, even if empty
+// Pull bookings from server and merge with localStorage on startup
 async function syncBookingsFromServer() {
   try {
     const r = await fetch('/api/sync.php?resource=bookings', { cache: 'no-store' });
     if (!r.ok) return;
     const serverBookings = await r.json();
-    if (!Array.isArray(serverBookings)) return;
-    // Store full server state (including tombstones) so future merges are accurate
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(serverBookings));
+    if (!Array.isArray(serverBookings) || serverBookings.length === 0) return;
+    const local    = getBookings();
+    const localIds = new Set(local.map(b => b.id));
+    // Server is authoritative: replace local with server version, add any local-only entries
+    const localOnly = local.filter(b => !serverBookings.find(s => s.id === b.id));
+    const merged    = [...serverBookings, ...localOnly];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
   } catch { /* server unreachable — local data used */ }
 }
 function saveTeam(arr)     { localStorage.setItem(TEAM_KEY, JSON.stringify(arr)); }
@@ -105,33 +67,13 @@ function getTeam() {
   return merged;
 }
 
-function getApprovals() { return JSON.parse(localStorage.getItem(APPROVALS_KEY) || '{}'); }
-
-async function fetchApprovals() {
-  try {
-    const r = await fetch('/api/sync.php?resource=approvals', { cache: 'no-store' });
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const data = await r.json();
-    if (data && typeof data === 'object' && !Array.isArray(data)) {
-      localStorage.setItem(APPROVALS_KEY, JSON.stringify(data));
-      return data;
-    }
-  } catch { /* server unreachable — use localStorage copy */ }
-  return getApprovals();
-}
-
+function getApprovals()               { return JSON.parse(localStorage.getItem(APPROVALS_KEY) || '{}'); }
 function saveApproval(bookingId, imgId, value) {
   const all = getApprovals();
   if (!all[bookingId]) all[bookingId] = {};
   if (value === null) delete all[bookingId][imgId];
   else all[bookingId][imgId] = value;
   localStorage.setItem(APPROVALS_KEY, JSON.stringify(all));
-  // Sync to server
-  fetch('/api/sync.php?resource=approvals', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(all),
-  }).catch(() => {});
 }
 
 function getSession() {
@@ -144,26 +86,9 @@ function setSession(obj) {
 }
 
 /* ════════════════════════════════════════════
-   CACHE VERSION — bump DATA_VERSION to force-clear
-   all demo/stale localStorage on every device
-   ════════════════════════════════════════════ */
-const DATA_VERSION = 'v4';
-function clearDemoCache() {
-  if (localStorage.getItem('nej_data_version') === DATA_VERSION) return;
-  // IMPORTANT: never clear 'nej_bookings' here — real bookings live on the server
-  // and the local copy is a cache. Clearing and then saving before sync could
-  // wipe the server. The old demo-seeded flag is the only booking-related key
-  // that's safe to clear because seeding is disabled.
-  ['nej_bookings_seeded', 'nej_tasks', 'nej_cms', 'nej_gallery'].forEach(k => localStorage.removeItem(k));
-  localStorage.setItem('nej_data_version', DATA_VERSION);
-}
-
-/* ════════════════════════════════════════════
-   SEED DEMO BOOKINGS — DISABLED (kept for reference)
+   SEED DEMO BOOKINGS
    ════════════════════════════════════════════ */
 function seedIfEmpty() {
-  // Demo seeding disabled — real bookings come from server
-  return;
   if (localStorage.getItem('nej_bookings_seeded')) return;
   const now = Date.now(), day = 86400000;
   const demos = [
@@ -194,59 +119,6 @@ function notify(title, body) {
   }
 }
 
-/* ─ Team notification store (server-synced, keyed by memberId) ─ */
-const NOTIF_KEY_PREFIX = 'nej_notif_';
-
-async function pushTeamNotification(memberId, notif) {
-  const newNotif = { ...notif, id: 'N-' + Date.now() + '-' + Math.random().toString(36).slice(2,5), read: false, ts: notif.ts || Date.now() };
-
-  // 1. Fetch current notifications from server, append, save back
-  try {
-    const r   = await fetch('/api/sync.php?resource=notifications', { cache: 'no-store' });
-    let all   = r.ok ? await r.json() : {};
-    // Guard: if server returned an array (legacy/empty), convert to object
-    if (Array.isArray(all)) all = {};
-    const pool = Array.isArray(all[memberId]) ? all[memberId] : [];
-    pool.push(newNotif);
-    all[memberId] = pool;
-    await fetch('/api/sync.php?resource=notifications', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(all),
-    });
-  } catch {
-    // Server unreachable — fall back to localStorage
-    const key    = NOTIF_KEY_PREFIX + memberId;
-    const stored = JSON.parse(localStorage.getItem(key) || '[]');
-    stored.push(newNotif);
-    localStorage.setItem(key, JSON.stringify(stored));
-  }
-
-  // 2. Send real push via OneSignal → PHP proxy (cross-device)
-  fetch('/api/notify.php', {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({
-      external_id: memberId,
-      title:       notif.title   || 'NEJstudios',
-      message:     notif.message || '',
-      url:         '/team',
-    }),
-  }).catch(() => {});
-}
-function getTeamNotifications(memberId) {
-  return JSON.parse(localStorage.getItem(NOTIF_KEY_PREFIX + memberId) || '[]');
-}
-function markNotifRead(memberId, notifId) {
-  const key    = NOTIF_KEY_PREFIX + memberId;
-  const stored = JSON.parse(localStorage.getItem(key) || '[]');
-  const item   = stored.find(n => n.id === notifId);
-  if (item) { item.read = true; localStorage.setItem(key, JSON.stringify(stored)); }
-}
-function clearTeamNotifications(memberId) {
-  localStorage.removeItem(NOTIF_KEY_PREFIX + memberId);
-}
-
 /* ════════════════════════════════════════════
    FORMATTERS
    ════════════════════════════════════════════ */
@@ -255,30 +127,18 @@ function fmtTime(ts)       { if (!ts) return ''; return new Date(ts).toLocaleTim
 function fmtEventDate(str) { if (!str) return '—'; return new Date(str + 'T12:00:00').toLocaleDateString('en-NG', { dateStyle:'long' }); }
 function fmtDateShort(ts)  { if (!ts) return '—'; return new Date(ts).toLocaleDateString('en-NG', { dateStyle:'short' }); }
 
-const SESSION_EMOJI = { 'Half Session':'', 'Regular Session':'', 'Birthday Session':'', 'Outdoor Session':'', Birthday:'', Family:'', Creative:'', Fashion:'', Product:'' };
-const STATUS_LABELS  = { pending:'Pending', confirmed:'Confirmed', completed:'Completed', cancelled:'Cancelled', booked:'Booked' };
+const SESSION_EMOJI = { Birthday:'', Family:'', Creative:'', Fashion:'', Product:'' };
+const STATUS_LABELS  = { pending:'Pending', confirmed:'Confirmed', completed:'Completed', cancelled:'Cancelled' };
 const EVENT_TYPE_LABELS = {
   'brand-film':'🎬 Brand Film','music-video':'🎵 Music Video','documentary':'🎥 Documentary',
   'corporate-event':'🏢 Corporate Event','other-production':'📹 Production',
   'traditional-wedding':'💛 Traditional Wedding','white-wedding':'🤍 White Wedding',
   'full-wedding':'💍 Full Wedding','engagement':'💌 Engagement Shoot',
-  'funeral':'🕊️ Funeral / Memorial','birthday':'🎂 Birthday','other-event':'📅 Other Event',
 };
-const BUDGET_LABELS = { 'under150':'Under ₦150k','150-350':'₦150k–₦350k','350-600':'₦350k–₦600k','600-1m':'₦600k–₦1M','above1m':'Above ₦1M','800k-1m':'₦800k–₦1M','1m-1.2m':'₦1M–₦1.2M','1.2m-1.4m':'₦1.2M–₦1.4M','above1.4m':'Above ₦1.4M' };
-
-// Format event budget: numeric → ₦ amount; legacy key → range label; anything else → raw value or —
-function fmtBudget(b) {
-  if (b == null || b === '') return '—';
-  if (typeof b === 'number' && !isNaN(b)) return '₦' + b.toLocaleString('en-NG');
-  if (typeof b === 'string' && /^\d+(\.\d+)?$/.test(b)) return '₦' + Number(b).toLocaleString('en-NG');
-  return BUDGET_LABELS[b] || b;
-}
+const BUDGET_LABELS = { 'under150':'Under ₦150k','150-350':'₦150k–₦350k','350-600':'₦350k–₦600k','600-1m':'₦600k–₦1M','above1m':'Above ₦1M' };
 
 function statusBadge(status) {
-  // Show "Booked" badge for confirmed bookings that have a deposit paid flag, or always show Booked for confirmed
-  const displayStatus = status === 'confirmed' ? 'booked' : status;
-  const displayClass  = status === 'confirmed' ? 'booked' : status;
-  return `<span class="status-badge status-badge--${displayClass}">${STATUS_LABELS[displayStatus] || displayStatus}</span>`;
+  return `<span class="status-badge status-badge--${status}">${STATUS_LABELS[status] || status}</span>`;
 }
 function kindBadge(kind) {
   return kind === 'event'
@@ -313,118 +173,18 @@ function isAdminAuthed() {
   return s && s.role === 'admin';
 }
 
-function getAdminGreeting(name) {
-  const visitKey = 'nej_greeted_admin_' + name;
-  const idxKey   = visitKey + '_idx';
-  const visited  = localStorage.getItem(visitKey);
-  let msg, sub;
-  if (visited) {
-    const greetings = ['Howfar', 'Wida'];
-    const idx = parseInt(localStorage.getItem(idxKey) || '0');
-    const word = greetings[idx % 2];
-    localStorage.setItem(idxKey, String((idx + 1) % 2));
-    msg = `${word}, ${name}! 👋`;
-    sub = 'Welcome back — here\'s the schedule overview.';
-  } else {
-    localStorage.setItem(visitKey, '1');
-    const h = new Date().getHours();
-    const timeWord = h < 12 ? 'Good Morning' : h < 17 ? 'Good Afternoon' : 'Good Evening';
-    msg = `${timeWord}, ${name}! 👋`;
-    sub = 'Here\'s your shoots & events schedule.';
-  }
-  return { msg, sub };
-}
-
-function renderAdminGreeting() {
-  const el = document.getElementById('adminGreeting');
-  if (!el) return;
-  const s = getSession();
-  const rawName = s ? (s.name || s.username || 'Admin') : 'Admin';
-  const name = rawName.charAt(0).toUpperCase() + rawName.slice(1);
-  const { msg, sub } = getAdminGreeting(name);
-  const h = new Date().getHours();
-  const icon = h < 12 ? '🌅' : h < 17 ? '☀️' : '🌙';
-  el.style.display = 'flex';
-  el.innerHTML = `
-    <div class="portal-greeting__icon">${icon}</div>
-    <div class="portal-greeting__text">
-      <div class="portal-greeting__msg">${msg}</div>
-      <div class="portal-greeting__sub">${sub}</div>
-    </div>`;
-}
-
 function showDash() {
-  clearDemoCache();
   loginGate.classList.add('hidden');
   dashShell.style.display = 'flex';
   const s = getSession();
   document.getElementById('sidebarUser').textContent = s ? `Admin — ${s.username || 'admin'}` : 'Admin';
-  renderAdminGreeting();
-  // Sync bookings and gallery from server then render (server data takes precedence)
-  syncGalleryFromServer().catch(() => {});
+  seedIfEmpty();
+  // Sync bookings from server then render (server data takes precedence)
   syncBookingsFromServer().then(() => {
     renderBookings();
     renderTasksBadge();
   });
-  renderConfirmationsAlert();
   requestNotifPermission();
-}
-
-/* ════════════════════════════════════════════
-   CLIENT CONFIRMATIONS ALERT
-   ════════════════════════════════════════════ */
-async function renderConfirmationsAlert() {
-  const alertEl = document.getElementById('confirmationsAlert');
-  const listEl  = document.getElementById('confirmationsList');
-  const badgeEl = document.getElementById('confirmBadgeCount');
-  if (!alertEl || !listEl) return;
-
-  const all    = await dbGetConfirmations();
-  const unread = all.filter(c => !c.read);
-
-  if (all.length === 0) { alertEl.style.display = 'none'; return; }
-
-  alertEl.style.display = 'block';
-  badgeEl.textContent   = unread.length > 0 ? `${unread.length} new` : `${all.length} total`;
-
-  // Toggle show/hide
-  const toggleBtn = document.getElementById('confirmToggle');
-  let   listOpen  = false;
-  toggleBtn.addEventListener('click', () => {
-    listOpen = !listOpen;
-    listEl.style.display = listOpen ? 'flex' : 'none';
-    toggleBtn.textContent = listOpen ? 'Hide' : 'Show';
-    if (listOpen) renderConfirmList(all, listEl, badgeEl);
-  });
-}
-
-function renderConfirmList(all, listEl, badgeEl) {
-  listEl.innerHTML = all.slice(0, 20).map(c => {
-    const dt = c.confirmedAt ? new Date(c.confirmedAt).toLocaleString('en-NG', { dateStyle:'medium', timeStyle:'short' }) : '—';
-    return `
-      <div data-conf-id="${c.id}" style="background:var(--bg-3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;${c.read ? 'opacity:0.6' : ''}">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">
-          <div>
-            <div style="font-size:0.85rem;font-weight:600;color:var(--white)">${c.clientName || 'Client'}</div>
-            <div style="font-size:0.72rem;color:var(--grey-3);margin-top:2px">${dt}${c.bookingId ? ' · ' + c.bookingId : ''}</div>
-            ${c.pictureCount ? `<div style="font-size:0.78rem;color:var(--grey-2);margin-top:4px">📷 ${c.pictureCount} photos selected</div>` : ''}
-            ${c.selection ? `<div style="font-size:0.75rem;color:var(--grey-3);margin-top:2px;font-style:italic">"${c.selection}"</div>` : ''}
-            ${c.fileNames ? `<div style="font-size:0.72rem;color:var(--grey-4);margin-top:2px">Files: ${c.fileNames}</div>` : ''}
-          </div>
-          ${!c.read ? `<button data-mark-read="${c.id}" style="font-size:0.7rem;background:none;border:1px solid var(--green);color:var(--green);border-radius:5px;padding:3px 8px;cursor:pointer;flex-shrink:0">Mark Read</button>` : '<span style="font-size:0.68rem;color:var(--grey-4)">✓ Read</span>'}
-        </div>
-      </div>`;
-  }).join('');
-
-  listEl.querySelectorAll('[data-mark-read]').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      await dbMarkConfirmationRead(btn.dataset.markRead);
-      const updated = await dbGetConfirmations();
-      const unread  = updated.filter(c => !c.read);
-      badgeEl.textContent = unread.length > 0 ? `${unread.length} new` : `${updated.length} total`;
-      renderConfirmList(updated, listEl, badgeEl);
-    });
-  });
 }
 
 function tryLogin() {
@@ -493,13 +253,6 @@ function closeSidebar() { sidebar.classList.remove('open'); sidebarOverlay.class
 menuBtn.addEventListener('click', openSidebar);
 sidebarOverlay.addEventListener('click', closeSidebar);
 
-// Close sidebar when any nav item is clicked (mobile — sidebar slides back out)
-sidebar.querySelectorAll('.nav-item, .nav-panel-trigger').forEach(btn => {
-  btn.addEventListener('click', () => {
-    if (window.innerWidth <= 900) closeSidebar();
-  });
-});
-
 /* ════════════════════════════════════════════
    TAB SWITCHING
    ════════════════════════════════════════════ */
@@ -518,7 +271,7 @@ function switchTab(name) {
   // Load panel content
   if (name === 'schedule') renderAdminSchedule();
   if (name === 'tasks')    renderTasks();
-  if (name === 'team')     { renderTeam(); renderAttendance(); renderCompletedTasksByMember(); }
+  if (name === 'team')     renderTeam();
   if (name === 'gallery')  renderGalleryPanel();
   if (name === 'summary')  renderDailySummary();
   closeSidebar();
@@ -563,45 +316,23 @@ function actionButtons(b) {
   if (b.status === 'confirmed') {
     btns.push(`<button class="action-btn action-btn--complete" data-id="${b.id}" data-action="completed">Mark Done</button>`);
     btns.push(`<button class="action-btn action-btn--cancel"   data-id="${b.id}" data-action="cancelled">Cancel</button>`);
-    btns.push(`<button class="action-btn" style="border-color:var(--gold);color:var(--gold)" data-id="${b.id}" data-action="invoice">${b.bookingKind === 'event' ? 'Invoice' : 'Receipt'}</button>`);
-    if (b.bookingKind === 'event') {
-      btns.push(`<button class="action-btn" style="border-color:var(--green);color:var(--green)" data-id="${b.id}" data-action="share-event">Share</button>`);
-    }
+    btns.push(`<button class="action-btn" style="border-color:var(--gold);color:var(--gold)" data-id="${b.id}" data-action="invoice">Invoice</button>`);
   }
   if (b.status === 'completed') {
     btns.push(`<button class="action-btn action-btn--pending"  data-id="${b.id}" data-action="pending">Reopen</button>`);
-    btns.push(`<button class="action-btn" style="border-color:var(--gold);color:var(--gold)" data-id="${b.id}" data-action="invoice">${b.bookingKind === 'event' ? 'Invoice' : 'Receipt'}</button>`);
+    btns.push(`<button class="action-btn" style="border-color:var(--gold);color:var(--gold)" data-id="${b.id}" data-action="invoice">Invoice</button>`);
     btns.push(`<button class="action-btn" style="border-color:var(--green);color:var(--green)" data-id="${b.id}" data-action="send-gallery">Gallery</button>`);
   }
   if (b.status === 'cancelled') {
     btns.push(`<button class="action-btn action-btn--pending"  data-id="${b.id}" data-action="pending">Reopen</button>`);
   }
   btns.push(`<button class="action-btn" style="border-color:var(--blue);color:var(--blue)" data-id="${b.id}" data-action="edit">Edit</button>`);
-  btns.push(`<button class="action-btn" style="border-color:var(--purple);color:var(--purple)" data-id="${b.id}" data-action="assign-team">Team</button>`);
   btns.push(`<button class="action-btn action-btn--delete" data-id="${b.id}" data-action="delete">Delete</button>`);
   btns.push(`<button class="action-btn" style="border-color:var(--border);color:var(--grey-3)" data-id="${b.id}" data-action="detail">Details</button>`);
   return btns.join('');
 }
 
-function assignedTeamHtml(b) {
-  if (!b.assignedTeam || !b.assignedTeam.length) return '';
-  const tags = b.assignedTeam.map(m =>
-    `<span style="background:var(--gold-glow);border:1px solid rgba(201,168,76,.25);border-radius:4px;padding:1px 7px;font-size:0.7rem;color:var(--gold-lt)">${m.name}</span>`
-  ).join(' ');
-  return `<div class="meta-row" style="margin-top:4px">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-    <span style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">Team: ${tags}</span>
-  </div>`;
-}
-
 function buildStudioCard(b) {
-  const shoot = b.shootDate || b.preferredDate || '';
-  const shootLabel = shoot
-    ? `<strong>${fmtEventDate(shoot)}</strong>${b.shootDate ? '' : ' <span style="color:var(--grey-4);font-size:0.7rem">(requested)</span>'}`
-    : '<span style="color:var(--grey-4)">Not set</span>';
-  const costLabel = (b.cost != null && b.cost !== '')
-    ? `<strong>₦${Number(b.cost).toLocaleString('en-NG')}</strong>`
-    : '<span style="color:var(--grey-4)">Cost not set</span>';
   return `
     <div class="booking-card" data-id="${b.id}">
       <div class="booking-card__top">
@@ -610,12 +341,9 @@ function buildStudioCard(b) {
       </div>
       <span class="session-pill">${b.sessionType}</span>
       <div class="booking-card__meta">
-        <div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>Shoot Date: ${shootLabel}</span></div>
-        <div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg><span>Cost: ${costLabel}</span></div>
         <div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-8-8 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0122 16.92z"/></svg><span>${b.phone}</span></div>
         <div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><span>${b.email}</span></div>
         <div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>Booked <strong>${fmtDate(b.createdAt)}</strong> at ${fmtTime(b.createdAt)}</span></div>
-        ${assignedTeamHtml(b)}
       </div>
       <div class="booking-card__actions">${actionButtons(b)}</div>
     </div>`;
@@ -623,27 +351,25 @@ function buildStudioCard(b) {
 
 function buildEventCard(b) {
   const typeLabel   = EVENT_TYPE_LABELS[b.eventType] || b.eventType || '—';
-  const budgetLabel = fmtBudget(b.budget);
+  const budgetLabel = BUDGET_LABELS[b.budget] || b.budget || '—';
   const deliv       = b.deliverables ? b.deliverables.slice(0,120) + (b.deliverables.length > 120 ? '…' : '') : '—';
-  const displayName = b.eventName || b.clientName || '—';
   return `
     <div class="booking-card booking-card--event" data-id="${b.id}">
       <div class="booking-card__top">
-        <div>${kindBadge('event')}<div class="booking-card__name">${displayName}</div><div class="booking-card__id">${b.id}</div></div>
+        <div>${kindBadge('event')}<div class="booking-card__name">${b.clientName}</div><div class="booking-card__id">${b.id}</div></div>
         ${statusBadge(b.status)}
       </div>
       <span class="session-pill event-pill">${typeLabel}</span>
       <div class="event-fields">
         <div class="event-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><div><span class="ef-label">Event Date</span><span class="ef-value">${fmtEventDate(b.eventDate)}</span></div></div>
         <div class="event-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg><div><span class="ef-label">Location</span><span class="ef-value">${b.location || '—'}</span></div></div>
-        <div class="event-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg><div><span class="ef-label">Event Cost</span><span class="ef-value">${budgetLabel}</span></div></div>
+        <div class="event-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg><div><span class="ef-label">Budget</span><span class="ef-value">${budgetLabel}</span></div></div>
         <div class="event-field event-field--full"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><div><span class="ef-label">Deliverables</span><span class="ef-value ef-deliverables">${deliv}</span></div></div>
       </div>
       <div class="booking-card__meta" style="margin-top:12px">
         <div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-8-8 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0122 16.92z"/></svg><span>${b.phone}</span></div>
         <div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><span>${b.email}</span></div>
         <div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>Booked <strong>${fmtDate(b.createdAt)}</strong></span></div>
-        ${assignedTeamHtml(b)}
       </div>
       <div class="booking-card__actions">${actionButtons(b)}</div>
     </div>`;
@@ -681,63 +407,12 @@ function renderBookings() {
   });
 }
 
-async function openAssignTeamModal(bookingId) {
-  const b    = getBookings().find(b => b.id === bookingId);
-  if (!b) return;
-  const team = getTeam().filter(m => m.role !== 'admin');
-  if (team.length === 0) { showToast('No team members to assign'); return; }
-
-  const assigned = b.assignedTeam || [];
-  const checkboxes = team.map(m => {
-    const checked = assigned.find(a => a.id === m.id) ? 'checked' : '';
-    return `<label style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-3);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:0.88rem;color:var(--grey-2);margin-bottom:8px">
-      <input type="checkbox" value="${m.id}" data-name="${m.name}" ${checked} style="accent-color:var(--gold);width:16px;height:16px;cursor:pointer"> ${m.name} <span style="margin-left:auto;font-size:0.72rem;color:var(--grey-4)">@${m.username}</span>
-    </label>`;
-  }).join('');
-
-  // Reuse detail modal for team assignment
-  modalContent.innerHTML = `
-    <p style="font-size:0.8rem;color:var(--grey-3);margin-bottom:16px">Select team members to assign to <strong style="color:var(--white)">${b.clientName}</strong></p>
-    <div id="assignTeamList">${checkboxes}</div>
-    <button id="saveAssignTeam" style="margin-top:16px;width:100%;padding:11px;background:var(--gold);color:#000;font-weight:700;font-size:0.8rem;border:none;border-radius:8px;cursor:pointer;letter-spacing:0.08em;text-transform:uppercase">Save Assignment</button>`;
-
-  detailModal.querySelector('h3').textContent = 'Assign Team';
-
-  document.getElementById('saveAssignTeam').addEventListener('click', () => {
-    const selected = [];
-    document.querySelectorAll('#assignTeamList input[type=checkbox]:checked').forEach(cb => {
-      selected.push({ id: cb.value, name: cb.dataset.name });
-    });
-    const bookings = getBookings();
-    const idx = bookings.findIndex(bk => bk.id === bookingId);
-    if (idx !== -1) {
-      bookings[idx].assignedTeam = selected;
-      saveBookings(bookings);
-      // Notify assigned members via localStorage
-      selected.forEach(m => pushTeamNotification(m.id, {
-        type:    'booking-assigned',
-        title:   'New Booking Assigned',
-        message: `You have been assigned to ${b.clientName} (${b.sessionType || b.eventType || 'booking'})`,
-        bookingId, ts: Date.now(),
-      }));
-    }
-    closeDetail();
-    renderBookings();
-    showToast(selected.length ? `Team assigned to ${b.clientName}` : 'Team assignment cleared');
-  });
-
-  detailModal.classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-
 async function handleBookingAction(id, action) {
-  if (action === 'detail')       { openDetail(id);             return; }
-  if (action === 'delete')       { deleteBooking(id);           return; }
-  if (action === 'invoice')      { openInvoice(id);             return; }
-  if (action === 'send-gallery') { openSendGallery(id);         return; }
-  if (action === 'edit')         { openEditBooking(id);         return; }
-  if (action === 'assign-team')  { openAssignTeamModal(id);     return; }
-  if (action === 'share-event')  { shareEventToClient(id);      return; }
+  if (action === 'detail')       { openDetail(id);      return; }
+  if (action === 'delete')       { deleteBooking(id);   return; }
+  if (action === 'invoice')      { openInvoice(id);     return; }
+  if (action === 'send-gallery') { openSendGallery(id); return; }
+  if (action === 'edit')         { openEditBooking(id); return; }
   const bookings = getBookings(), idx = bookings.findIndex(b => b.id === id);
   if (idx === -1) return;
   bookings[idx].status = action;
@@ -748,11 +423,9 @@ async function handleBookingAction(id, action) {
     const b = bookings[idx];
     const EVENT_MAP = {
       'white-wedding':'wedding', 'traditional-wedding':'wedding',
-      'full-wedding':'wedding', 'engagement':'wedding',
       'brand-film':'production', 'corporate-event':'event',
       'music-video':'production', 'documentary':'production',
-      'other-production':'production',
-      'birthday':'event', 'funeral':'event', 'other-event':'event'
+      'birthday':'event', 'other-event':'event'
     };
     const schedType = b.bookingKind === 'event' ? (EVENT_MAP[b.eventType] || 'event') : 'studio';
     const entry = {
@@ -775,124 +448,44 @@ async function handleBookingAction(id, action) {
   renderBookings();
 }
 
-function shareEventToClient(id) {
-  const b = getBookings().find(b => b.id === id);
-  if (!b) return;
-  // Short URL: the booking lives on the server, so we only need its ID.
-  // booking-view.html fetches the full record and filters sensitive fields (budget, team).
-  const url = `${location.origin}/booking-view?b=${b.id}`;
-  navigator.clipboard.writeText(url)
-    .then(() => showToast('Confirmation link copied — send it to the client ✓'))
-    .catch(() => prompt('Copy this link and send to the client:', url));
-}
-
-async function deleteBooking(id) {
+function deleteBooking(id) {
   if (!confirm(`Delete booking ${id}? This cannot be undone.`)) return;
-  await softDeleteBooking(id);
+  saveBookings(getBookings().filter(b => b.id !== id));
   showToast('Booking deleted');
   renderBookings();
 }
-
-/* ════════════════════════════════════════════
-   BOOKING EDIT MODAL
-   ════════════════════════════════════════════ */
-const bookingEditModal = document.getElementById('bookingEditModal');
-
-function closeBookingEditModal() {
-  bookingEditModal.style.display = 'none';
-  document.body.style.overflow = '';
-}
-document.getElementById('bookingEditClose').addEventListener('click', closeBookingEditModal);
-document.getElementById('bookingEditCancel').addEventListener('click', closeBookingEditModal);
-bookingEditModal.addEventListener('click', e => { if (e.target === bookingEditModal) closeBookingEditModal(); });
 
 function openEditBooking(id) {
   const b = getBookings().find(b => b.id === id);
   if (!b) return;
   const isEvent = b.bookingKind === 'event';
+  const newName = prompt('Edit client / event name:', b.clientName || '');
+  if (newName === null) return; // cancelled
+  const trimmed = newName.trim();
+  if (!trimmed) { showToast('Name cannot be empty'); return; }
 
-  document.getElementById('bookingEditId').value    = id;
-  document.getElementById('beFirstName').value      = b.firstName    || b.clientName || '';
-  document.getElementById('beMiddleName').value     = b.middleName   || '';
-  document.getElementById('bePhone').value          = b.phone        || '';
-  document.getElementById('beEmail').value          = b.email        || '';
-
-  // Events use a single "Event Name" field instead of first/middle name
-  const nameRow = document.getElementById('beNameRow');
-  if (nameRow) nameRow.style.display = isEvent ? 'none' : 'grid';
-  document.getElementById('beStudioFields').style.display = isEvent ? 'none' : '';
-  document.getElementById('beEventFields').style.display  = isEvent ? ''     : 'none';
-
-  if (!isEvent) {
-    document.getElementById('beSessionType').value  = b.sessionType  || '';
-    document.getElementById('beNumOutfits').value   = b.numOutfits   || '1';
-    document.getElementById('beShootDate').value    = b.shootDate    || b.preferredDate || '';
-    document.getElementById('beCost').value         = b.cost != null ? b.cost : '';
-    const hint = document.getElementById('bePreferredDateHint');
-    if (hint) hint.textContent = b.preferredDate ? fmtEventDate(b.preferredDate) : '—';
+  let extraUpdates = {};
+  if (isEvent) {
+    const newEventName = prompt('Edit event title (e.g. "White Wedding — Tunde & Ngozi"):', b.eventTitle || b.clientName || '');
+    if (newEventName !== null && newEventName.trim()) extraUpdates.eventTitle = newEventName.trim();
   } else {
-    document.getElementById('beEventName').value    = b.eventName    || b.clientName || '';
-    document.getElementById('beEventType').value    = b.eventType    || '';
-    document.getElementById('beEventDate').value    = b.eventDate    || '';
-    document.getElementById('beLocation').value     = b.location     || '';
-    // Budget may be legacy label key or a raw number. Number input accepts only numbers.
-    document.getElementById('beBudget').value       = (typeof b.budget === 'number' || /^\d+(\.\d+)?$/.test(b.budget || '')) ? b.budget : '';
-    document.getElementById('beDeliverables').value = b.deliverables || '';
+    const types = ['Birthday','Family','Creative','Fashion','Product'];
+    const curIdx = types.indexOf(b.sessionType);
+    const newType = prompt('Edit session type (' + types.join(', ') + '):', b.sessionType || '');
+    if (newType !== null && types.includes(newType.trim())) extraUpdates.sessionType = newType.trim();
   }
 
-  bookingEditModal.style.display = 'flex';
-  document.body.style.overflow = 'hidden';
-}
-
-document.getElementById('bookingEditForm').addEventListener('submit', e => {
-  e.preventDefault();
-  const id        = document.getElementById('bookingEditId').value;
-  const bookings  = getBookings();
-  const idx       = bookings.findIndex(b => b.id === id);
+  const bookings = getBookings();
+  const idx = bookings.findIndex(b => b.id === id);
   if (idx === -1) return;
-
-  const b         = bookings[idx];
-  const isEvent   = b.bookingKind === 'event';
-  const phone     = document.getElementById('bePhone').value.trim();
-  const email     = document.getElementById('beEmail').value.trim();
-
-  let updates = { phone, email };
-
-  if (!isEvent) {
-    const firstName  = document.getElementById('beFirstName').value.trim();
-    const middleName = document.getElementById('beMiddleName').value.trim();
-    if (!firstName || !phone || !email) { showToast('Name, phone and email are required'); return; }
-    const clientName = middleName ? `${firstName} ${middleName}` : firstName;
-    updates = { ...updates, firstName, middleName, clientName };
-    updates.sessionType = document.getElementById('beSessionType').value;
-    updates.numOutfits  = document.getElementById('beNumOutfits').value;
-    updates.shootDate   = document.getElementById('beShootDate').value || '';
-    const costRaw       = document.getElementById('beCost').value;
-    updates.cost        = costRaw === '' ? null : Number(costRaw);
-  } else {
-    const eventName = document.getElementById('beEventName').value.trim();
-    if (!eventName || !phone || !email) { showToast('Event name, phone and email are required'); return; }
-    updates.eventName    = eventName;
-    updates.clientName   = eventName;
-    updates.eventType    = document.getElementById('beEventType').value;
-    updates.eventDate    = document.getElementById('beEventDate').value;
-    updates.location     = document.getElementById('beLocation').value.trim();
-    const budgetRaw      = document.getElementById('beBudget').value;
-    updates.budget       = budgetRaw === '' ? null : Number(budgetRaw);
-    updates.deliverables = document.getElementById('beDeliverables').value.trim();
-  }
-  const clientName = updates.clientName;
-
-  bookings[idx] = { ...b, ...updates };
+  bookings[idx] = { ...bookings[idx], clientName: trimmed, ...extraUpdates };
   saveBookings(bookings);
-  const schedPatch = { clientName };
-  if (!isEvent && updates.shootDate) schedPatch.date = updates.shootDate;
-  if (isEvent && updates.eventDate)  schedPatch.date = updates.eventDate;
-  dbUpdateScheduleEntry('BK-' + id, schedPatch);
-  closeBookingEditModal();
+
+  // Also update the schedule entry if one exists
+  dbUpdateScheduleEntry('BK-' + id, { clientName: trimmed });
   showToast('Booking updated ✓');
   renderBookings();
-});
+}
 
 /* ════════════════════════════════════════════
    SIDEBAR NAV (bookings)
@@ -968,26 +561,6 @@ function saveClientGallery(bookingId, imgs) {
   const all = getGalleries();
   all[bookingId] = imgs;
   localStorage.setItem(GALLERY_KEY, JSON.stringify(all));
-  // Persist full gallery map to server so it survives localStorage clears
-  fetch('/api/sync.php?resource=gallery', {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify(all),
-  }).catch(() => {});
-}
-
-// Pull gallery from server on startup; server is authoritative
-async function syncGalleryFromServer() {
-  try {
-    const r = await fetch('/api/sync.php?resource=gallery', { cache: 'no-store' });
-    if (!r.ok) return;
-    const serverGallery = await r.json();
-    if (!serverGallery || typeof serverGallery !== 'object' || Array.isArray(serverGallery)) return;
-    // Merge: server entries take precedence; keep any local-only booking galleries
-    const local  = getGalleries();
-    const merged = Object.assign({}, local, serverGallery);
-    localStorage.setItem(GALLERY_KEY, JSON.stringify(merged));
-  } catch { /* server unreachable — local data used */ }
 }
 
 function downloadDataUrl(url, filename) {
@@ -998,21 +571,14 @@ function downloadDataUrl(url, filename) {
 async function downloadAsZip(imgs, zipName) {
   if (!window.JSZip) { showToast('ZIP library not loaded yet, try again.', 'err'); return; }
   const zip = new JSZip();
-  await Promise.all(imgs.map(async (img, i) => {
-    const safeName = img.name || ('photo_' + (i + 1) + '.jpg');
-    if (img.url && img.url.startsWith('data:')) {
-      // Legacy base64 — split header and add directly
-      const b64  = img.url.split(',')[1];
-      zip.file(safeName, b64, { base64: true });
-    } else if (img.url) {
-      // Real server URL — fetch as blob
-      try {
-        const res  = await fetch(img.url);
-        const blob = await res.blob();
-        zip.file(safeName, blob);
-      } catch { /* skip unreachable file */ }
-    }
-  }));
+  imgs.forEach((img, i) => {
+    const ext  = img.name.includes('.') ? '' : '.jpg';
+    const name = img.name + ext;
+    // strip data URL header → raw base64
+    const b64  = img.url.split(',')[1];
+    const mime = img.url.match(/data:([^;]+)/)?.[1] || 'image/jpeg';
+    zip.file(name, b64, { base64: true });
+  });
   const blob = await zip.generateAsync({ type: 'blob' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
@@ -1112,17 +678,9 @@ function toggleSelectMode(bookingId) {
 }
 
 function deleteGalleryImg(bookingId, imgId) {
-  const all  = getClientGallery(bookingId);
-  const img  = all.find(i => i.id === imgId);
-  const imgs = all.filter(i => i.id !== imgId);
+  const imgs = getClientGallery(bookingId).filter(i => i.id !== imgId);
   saveClientGallery(bookingId, imgs);
   renderGallery(bookingId);
-  // If the image was stored as a real server file, delete it from disk too
-  if (img && img.url && img.url.startsWith('/uploads/')) {
-    const filename = img.url.split('/').pop();
-    fetch('/api/upload.php?action=delete&file=' + encodeURIComponent(filename), { method: 'POST' })
-      .catch(() => {}); // fire-and-forget; gallery metadata already removed
-  }
 }
 
 function handleGalleryUpload(bookingId, files) {
@@ -1131,7 +689,7 @@ function handleGalleryUpload(bookingId, files) {
   const fileArr = Array.from(files).filter(f => f.type.startsWith('image/'));
   if (!fileArr.length) { showToast('Please select image files.', 'err'); return; }
 
-  fileArr.forEach(async file => {
+  fileArr.forEach(file => {
     const itemId = 'prog-' + Math.random().toString(36).slice(2, 8);
     const item = document.createElement('div');
     item.className = 'gallery-progress-item';
@@ -1139,88 +697,59 @@ function handleGalleryUpload(bookingId, files) {
     item.innerHTML = `
       <div class="gallery-progress-item__name">${file.name}</div>
       <div class="gallery-progress-bar"><div class="gallery-progress-bar__fill" style="width:0%"></div></div>
-      <div class="gallery-progress-item__pct">Compressing…</div>`;
+      <div class="gallery-progress-item__pct">0%</div>`;
     list.appendChild(item);
 
-    const fill  = item.querySelector('.gallery-progress-bar__fill');
-    const pctEl = item.querySelector('.gallery-progress-item__pct');
-
-    // Compress before upload (skips HEIC/HEIF automatically)
-    const uploadFile = await compressImage(file);
-
-    if (pctEl) pctEl.textContent = '0%';
-
-    const xhr = new XMLHttpRequest();
-    xhr.upload.addEventListener('progress', e => {
+    const reader = new FileReader();
+    reader.onprogress = e => {
       if (!e.lengthComputable) return;
-      const pct = Math.round((e.loaded / e.total) * 95); // go to 95% during upload
-      if (fill)  fill.style.width  = pct + '%';
+      const pct = Math.round((e.loaded / e.total) * 90); // go to 90% during read
+      const fill = item.querySelector('.gallery-progress-bar__fill');
+      const pctEl = item.querySelector('.gallery-progress-item__pct');
+      if (fill) fill.style.width = pct + '%';
       if (pctEl) pctEl.textContent = pct + '%';
-    });
-    xhr.addEventListener('load', () => {
-      if (fill)  fill.style.width  = '100%';
+    };
+    reader.onload = e => {
+      const fill = item.querySelector('.gallery-progress-bar__fill');
+      const pctEl = item.querySelector('.gallery-progress-item__pct');
+      if (fill) fill.style.width = '100%';
       if (pctEl) pctEl.textContent = '100%';
       item.classList.add('done');
 
-      let data;
-      try { data = JSON.parse(xhr.responseText); } catch { data = null; }
-
-      if (!data || !data.ok) {
-        const errMsg = (data && data.error) ? data.error : 'Upload failed (server error)';
-        showToast(errMsg, 'err');
-        if (pctEl) pctEl.textContent = 'Error';
-        setTimeout(() => item.remove(), 2500);
-        return;
+      try {
+        const imgs = getClientGallery(bookingId);
+        imgs.push({ id: 'img-' + Date.now() + '-' + Math.random().toString(36).slice(2,6), name: file.name, url: e.target.result, uploadedAt: Date.now() });
+        saveClientGallery(bookingId, imgs);
+        renderGallery(bookingId);
+      } catch {
+        showToast('Storage full — try smaller or fewer images.', 'err');
       }
 
-      const imgs = getClientGallery(bookingId);
-      imgs.push({
-        id:         'img-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
-        name:       data.name || file.name,
-        url:        data.url,
-        uploadedAt: Date.now(),
-      });
-      saveClientGallery(bookingId, imgs);
-      renderGallery(bookingId);
-
+      // Remove progress item after a short delay
       setTimeout(() => item.remove(), 1200);
-    });
-    xhr.addEventListener('error', () => {
-      if (pctEl) pctEl.textContent = 'Error';
-      showToast('Upload failed — check your connection.', 'err');
-      setTimeout(() => item.remove(), 2500);
-    });
-
-    const formData = new FormData();
-    formData.append('file', uploadFile);
-    xhr.open('POST', '/api/upload.php');
-    xhr.send(formData);
+    };
+    reader.onerror = () => {
+      item.querySelector('.gallery-progress-item__pct').textContent = 'Error';
+      setTimeout(() => item.remove(), 2000);
+    };
+    reader.readAsDataURL(file);
   });
 }
 
 function openDetail(id) {
   const b = getBookings().find(b => b.id === id);
   if (!b) return;
-  // Reset modal h3 title in case it was changed by assign-team flow
-  detailModal.querySelector('h3').textContent = 'Booking Details';
   const isEvent = b.bookingKind === 'event';
-  const displayStatus = b.status === 'confirmed' ? 'Booked' : (STATUS_LABELS[b.status] || b.status);
   const rows = [
     ['Booking ID', b.id], ['Type', isEvent ? 'Event / Wedding' : 'Studio Session'],
     ['Name', b.clientName], ['Phone', b.phone], ['Email', b.email],
-    ['Status', displayStatus],
-    ...(b.assignedTeam && b.assignedTeam.length ? [['Assigned Team', b.assignedTeam.map(m => m.name).join(', ')]] : []),
+    ['Status', STATUS_LABELS[b.status] || b.status],
     ...(isEvent ? [
-      ['Event Name', b.eventName || b.clientName || '—'],
       ['Event Type', EVENT_TYPE_LABELS[b.eventType] || b.eventType || '—'],
       ['Event Date', fmtEventDate(b.eventDate)], ['Location', b.location || '—'],
-      ['Package', b.package || '—'], ['Event Cost', fmtBudget(b.budget)],
+      ['Package', b.package || '—'], ['Budget', BUDGET_LABELS[b.budget] || b.budget || '—'],
       ['Deliverables', b.deliverables || '—'],
-    ] : [
-      ['Session Type', `${SESSION_EMOJI[b.sessionType] || ''} ${b.sessionType}`],
-      ['Shoot Date', b.shootDate ? fmtEventDate(b.shootDate) : (b.preferredDate ? `${fmtEventDate(b.preferredDate)} (client requested)` : '—')],
-      ['Session Cost', (b.cost != null && b.cost !== '') ? `₦${Number(b.cost).toLocaleString('en-NG')}` : '—'],
-    ]),
+    ] : [['Session Type', `${SESSION_EMOJI[b.sessionType] || ''} ${b.sessionType}`]]),
     ['Submitted', `${fmtDate(b.createdAt)} at ${fmtTime(b.createdAt)}`],
   ];
 
@@ -1237,13 +766,13 @@ function openDetail(id) {
         </div>
       </div>
       <div class="gallery-dropzone" id="galleryDropzone">
-        <input type="file" id="galleryInput" accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.heic,.heif" multiple>
+        <input type="file" id="galleryInput" accept="image/*" multiple>
         <svg class="gallery-dropzone__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
           <polyline points="21 15 16 10 5 21"/>
         </svg>
         <div class="gallery-dropzone__label">Click or drag &amp; drop photos</div>
-        <div class="gallery-dropzone__sub">JPG, JPEG, PNG, WEBP · multiple files supported</div>
+        <div class="gallery-dropzone__sub">JPG, PNG, WEBP · multiple files supported</div>
       </div>
       <div class="gallery-progress-list" id="galleryProgressList"></div>
       <div class="gallery-grid" id="galleryGrid"></div>
@@ -1253,8 +782,6 @@ function openDetail(id) {
   const input = document.getElementById('galleryInput');
   const dropzone = document.getElementById('galleryDropzone');
   input.addEventListener('change', () => handleGalleryUpload(id, input.files));
-  // Programmatic click fallback — ensures file picker opens even inside overflow modal
-  dropzone.addEventListener('click', e => { if (e.target !== input) input.click(); });
   dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
   dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
   dropzone.addEventListener('drop', e => {
@@ -1313,61 +840,29 @@ modalBackdrop.addEventListener('click', closeDetail);
    INVOICE GENERATOR
    ════════════════════════════════════════════ */
 
-/* ── Invoice deposit helpers ── */
-const BUDGET_AMOUNTS = {
-  'under150':  100000,  '150-350': 250000,  '350-600': 475000,
-  '600-1m':    800000,  'above1m': 1200000, '800k-1m': 900000,
-  '1m-1.2m':   1100000, '1.2m-1.4m': 1300000, 'above1.4m': 1500000,
-};
-function fmtNGN(amt) {
-  if (!amt || isNaN(amt)) return '—';
-  return '₦' + Number(amt).toLocaleString('en-NG');
-}
-
 function openInvoice(id) {
   const b = getBookings().find(b => b.id === id);
   if (!b) return;
 
-  const isEvent = b.bookingKind === 'event';
+  const isEvent    = b.bookingKind === 'event';
+  const invoiceNum = 'INV-' + id;
+  const now        = new Date();
+  const issued     = now.toLocaleDateString('en-NG', { dateStyle:'long' });
+  const due        = new Date(now.getTime() + 7 * 86400000).toLocaleDateString('en-NG', { dateStyle:'long' });
 
-  if (!isEvent) {
-    // ── Studio booking → POS Receipt ──
-    openStudioReceipt(b);
-    return;
+  // Item description
+  let itemDesc, itemPrice;
+  if (isEvent) {
+    const typeLabel   = EVENT_TYPE_LABELS[b.eventType] || b.eventType || 'Event';
+    const pkgLabel    = b.package ? ` — ${b.package.charAt(0).toUpperCase() + b.package.slice(1)} Package` : '';
+    itemDesc  = typeLabel + pkgLabel;
+    itemPrice = BUDGET_LABELS[b.budget] || b.budget || '—';
+  } else {
+    itemDesc  = `${b.sessionType || 'Studio'} Session`;
+    itemPrice = '—';
   }
 
-  // ── Event booking → A4 Invoice ──
-  const invoiceNum    = 'INV-' + id;
-  const now           = new Date();
-  const issued        = now.toLocaleDateString('en-NG', { dateStyle:'long' });
-  const due           = new Date(now.getTime() + 7 * 86400000).toLocaleDateString('en-NG', { dateStyle:'long' });
-
-  const savedDep  = JSON.parse(localStorage.getItem('nej_deposit_' + id) || 'null');
-  let   depPct    = savedDep ? savedDep.pct    : 80;
-  let   customAmt = savedDep ? savedDep.custom : null;
-
-  const typeLabel   = EVENT_TYPE_LABELS[b.eventType] || b.eventType || 'Event';
-  const pkgLabel    = b.package ? ` — ${b.package.charAt(0).toUpperCase() + b.package.slice(1)} Package` : '';
-  const itemDesc    = typeLabel + pkgLabel;
-  const itemPrice   = fmtBudget(b.budget);
-  const numericAmt  = (typeof b.budget === 'number' && !isNaN(b.budget))
-    ? b.budget
-    : (typeof b.budget === 'string' && /^\d+(\.\d+)?$/.test(b.budget))
-      ? Number(b.budget)
-      : (BUDGET_AMOUNTS[b.budget] || null);
-
-  function computeDeposit() {
-    if (customAmt !== null && customAmt > 0) return { dep: customAmt, bal: numericAmt ? numericAmt - customAmt : null };
-    if (numericAmt) return { dep: Math.round(numericAmt * depPct / 100), bal: Math.round(numericAmt * (100 - depPct) / 100) };
-    return { dep: null, bal: null };
-  }
-  const { dep, bal } = computeDeposit();
-  const depositStr  = dep !== null ? fmtNGN(dep)  : `${depPct}% of total`;
-  const balanceStr  = bal !== null ? fmtNGN(bal)   : `${100 - depPct}% remaining`;
-  const bookingStatus = (b.status === 'confirmed') ? 'Booked' : (STATUS_LABELS[b.status] || b.status);
-  const deliverables  = b.deliverables || '';
-
-  document.getElementById('invoiceModal').querySelector('.invoice-chrome h2').textContent = 'Invoice — ' + (b.clientName || id);
+  const deliverables = b.deliverables || (isEvent ? '' : '');
 
   document.getElementById('invoiceBody').innerHTML = `
     <div class="inv-header">
@@ -1388,7 +883,7 @@ function openInvoice(id) {
           <strong>${b.clientName || '—'}</strong><br/>
           ${b.phone  ? b.phone  + '<br/>' : ''}
           ${b.email  ? b.email  + '<br/>' : ''}
-          ${b.location ? b.location : ''}
+          ${isEvent && b.location ? b.location : ''}
         </p>
       </div>
       <div class="inv-meta-block">
@@ -1397,22 +892,10 @@ function openInvoice(id) {
           <strong>Invoice #:</strong> ${invoiceNum}<br/>
           <strong>Booking ID:</strong> ${id}<br/>
           <strong>Date Issued:</strong> ${issued}<br/>
-          <strong>Deposit Due:</strong> ${due}<br/>
-          <strong>Status:</strong> <span style="color:#c9a84c;font-weight:700">${bookingStatus}</span>
+          <strong>Due Date:</strong> ${due}<br/>
+          <strong>Status:</strong> ${STATUS_LABELS[b.status] || b.status}
         </p>
       </div>
-    </div>
-
-    <div class="inv-deposit-ctrl" style="background:#f9f4e8;border:1px solid #c9a84c;border-radius:8px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-      <span style="font-size:0.78rem;font-weight:700;color:#a0832a;text-transform:uppercase;letter-spacing:0.08em">Deposit Settings</span>
-      <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:#555">
-        Percent: <input id="invDepPct" type="number" min="1" max="100" value="${depPct}" style="width:56px;padding:4px 6px;border:1px solid #c9a84c;border-radius:4px;font-size:0.85rem;color:#111;background:#fff;text-align:center">%
-      </label>
-      <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:#555">
-        Or fixed (₦): <input id="invDepCustom" type="number" min="0" placeholder="e.g. 150000" value="${customAmt || ''}" style="width:110px;padding:4px 6px;border:1px solid #c9a84c;border-radius:4px;font-size:0.85rem;color:#111;background:#fff">
-      </label>
-      <button id="invDepApply" style="padding:6px 14px;background:#c9a84c;border:none;border-radius:6px;font-size:0.78rem;font-weight:700;color:#000;cursor:pointer">Apply</button>
-      <span style="font-size:0.72rem;color:#888">(hidden on print)</span>
     </div>
 
     <table class="inv-table">
@@ -1420,7 +903,7 @@ function openInvoice(id) {
         <tr>
           <th style="width:50%">Description</th>
           <th>Qty</th>
-          <th>Package / Rate</th>
+          <th>Unit Price</th>
           <th>Total</th>
         </tr>
       </thead>
@@ -1429,21 +912,17 @@ function openInvoice(id) {
           <td>${itemDesc}</td>
           <td>1</td>
           <td>${itemPrice}</td>
-          <td>${numericAmt ? fmtNGN(numericAmt) : itemPrice}</td>
+          <td>${itemPrice}</td>
         </tr>
       </tbody>
       <tfoot>
         <tr>
-          <td colspan="3" style="text-align:right;font-size:0.82rem;color:#555;letter-spacing:0.08em;text-transform:uppercase">Total</td>
-          <td id="invTotalCell">${numericAmt ? fmtNGN(numericAmt) : itemPrice}</td>
-        </tr>
-        <tr style="background:#fff8e6">
-          <td colspan="3" style="text-align:right;font-size:0.82rem;color:#a0832a;letter-spacing:0.08em;text-transform:uppercase;font-weight:700">Deposit Due (${depPct}%)</td>
-          <td id="invDepositCell" style="color:#c9a84c;font-size:1rem;font-weight:700">${depositStr}</td>
+          <td colspan="3" style="text-align:right;font-size:0.82rem;color:#555;letter-spacing:0.08em;text-transform:uppercase">Total Due</td>
+          <td>${itemPrice}</td>
         </tr>
         <tr>
-          <td colspan="3" style="text-align:right;font-size:0.78rem;color:#888;letter-spacing:0.06em;text-transform:uppercase">Balance on Delivery</td>
-          <td id="invBalanceCell" style="color:#888;font-size:0.9rem">${balanceStr}</td>
+          <td colspan="3" style="text-align:right;font-size:0.78rem;color:#888;letter-spacing:0.06em;text-transform:uppercase">Deposit Required (80%)</td>
+          <td style="color:#c9a84c;font-size:0.9rem">80%</td>
         </tr>
       </tfoot>
     </table>
@@ -1457,16 +936,21 @@ function openInvoice(id) {
     <div class="inv-section">
       <h4>Payment Details</h4>
       <p>
-        Bank: <strong>Kuda MFB</strong><br/>
-        Account Name: <strong>NEJstudios</strong><br/>
-        Account Number: <strong>3001571135</strong><br/>
+        Bank: <strong>Guaranty Trust Bank (GTB)</strong><br/>
+        Account Name: <strong>NEJstudios Ltd</strong><br/>
+        Account Number: <strong>0123456789</strong><br/>
         Reference: <strong>${invoiceNum}</strong>
       </p>
     </div>
 
     <div class="inv-section">
       <h4>Terms &amp; Notes</h4>
-      <p>Deposit is due within 7 days to secure your booking date. The remaining balance is due upon delivery of all edited files.</p>
+      <p>Payment is due within 7 days of this invoice. All deliverables will be provided upon full payment. For queries, contact us directly.</p>
+    </div>
+
+    <div style="background:#fff8e6;border:1px solid #c9a84c;border-radius:8px;padding:14px 18px;margin-bottom:20px;text-align:center">
+      <strong style="color:#c9a84c;font-size:0.85rem">NEJstudios requires an 80% deposit upfront to secure your booking.</strong><br/>
+      <span style="font-size:0.78rem;color:#666">The remaining 20% is due upon delivery of all files and final edited photos.</span>
     </div>
 
     <div class="inv-footer">
@@ -1475,159 +959,11 @@ function openInvoice(id) {
     </div>
   `;
 
-  document.getElementById('invDepApply').addEventListener('click', () => {
-    const pctInput    = document.getElementById('invDepPct');
-    const customInput = document.getElementById('invDepCustom');
-    depPct    = Math.max(1, Math.min(100, parseInt(pctInput.value, 10) || 80));
-    customAmt = customInput.value ? parseFloat(customInput.value) : null;
-    localStorage.setItem('nej_deposit_' + id, JSON.stringify({ pct: depPct, custom: customAmt }));
-    const { dep: d2, bal: b2 } = computeDeposit();
-    const label = customAmt ? '' : `${depPct}%`;
-    document.querySelector('#invoiceBody tfoot tr:nth-child(2) td:first-child').innerHTML =
-      `<span style="display:block;text-align:right;font-size:0.82rem;color:#a0832a;letter-spacing:0.08em;text-transform:uppercase;font-weight:700">Deposit Due${label ? ' (' + label + ')' : ''}</span>`;
-    document.getElementById('invDepositCell').textContent = d2 !== null ? fmtNGN(d2) : (customAmt ? fmtNGN(customAmt) : `${depPct}%`);
-    document.getElementById('invBalanceCell').textContent = b2 !== null ? fmtNGN(b2) : `${100 - depPct}% remaining`;
-    pctInput.value = depPct;
-  });
-
-  document.getElementById('invoiceModal').classList.add('open');
-}
-
-/* ════════════════════════════════════════════
-   POS RECEIPT  (studio bookings)
-   ════════════════════════════════════════════ */
-function openStudioReceipt(b) {
-  const id         = b.id;
-  const receiptNum = 'RCT-' + id;
-  const now        = new Date();
-  const issued     = now.toLocaleDateString('en-NG', { dateStyle:'medium' });
-  const issuedTime = now.toLocaleTimeString('en-NG', { timeStyle:'short' });
-
-  const savedDep   = JSON.parse(localStorage.getItem('nej_deposit_' + id) || 'null');
-  let   depPct     = savedDep ? savedDep.pct    : 50;
-  let   customAmt  = savedDep ? savedDep.custom : null;
-
-  const sessionDesc = b.sessionType ? b.sessionType + ' Session' : 'Studio Session';
-  const numericAmt  = b.agreedPrice ? Number(b.agreedPrice) : null;
-  const totalStr    = numericAmt ? fmtNGN(numericAmt) : '—';
-  const bookingStatus = (b.status === 'confirmed') ? 'CONFIRMED' : (b.status || 'PENDING').toUpperCase();
-
-  function computeDep() {
-    if (customAmt !== null && customAmt > 0) return { dep: customAmt, bal: numericAmt ? numericAmt - customAmt : null };
-    if (numericAmt) return { dep: Math.round(numericAmt * depPct / 100), bal: Math.round(numericAmt * (100 - depPct) / 100) };
-    return { dep: null, bal: null };
-  }
-
-  function renderReceipt() {
-    const { dep, bal } = computeDep();
-    const depStr = dep !== null ? fmtNGN(dep) : `${depPct}% of total`;
-    const balStr = bal !== null ? fmtNGN(bal) : 'Balance on delivery';
-
-    // Bar-code style ID from booking ID
-    const barcode = id.split('').join(' ');
-
-    return `
-      <div class="pos-receipt-wrap">
-        <!-- Deposit control (not printed) -->
-        <div style="position:absolute;top:0;left:0;right:0;padding:12px 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:#e8e4de;z-index:2" class="pos-r-deposit-ctrl" id="posDepCtrl">
-          <span style="font-size:0.72rem;font-weight:700;color:#a0832a;text-transform:uppercase;letter-spacing:0.08em">Deposit %</span>
-          <label style="display:flex;align-items:center;gap:5px;font-size:0.78rem;color:#555">
-            Pct: <input id="posDepPct" type="number" min="1" max="100" value="${depPct}" style="width:48px;padding:3px 5px;border:1px solid #c9a84c;border-radius:4px;font-size:0.82rem;text-align:center">%
-          </label>
-          <label style="display:flex;align-items:center;gap:5px;font-size:0.78rem;color:#555">
-            Fixed(₦): <input id="posDepCustom" type="number" min="0" placeholder="amount" value="${customAmt || ''}" style="width:90px;padding:3px 5px;border:1px solid #c9a84c;border-radius:4px;font-size:0.82rem">
-          </label>
-          <button id="posDepApply" style="padding:4px 12px;background:#c9a84c;border:none;border-radius:5px;font-size:0.72rem;font-weight:700;color:#000;cursor:pointer">Apply</button>
-        </div>
-
-        <div class="pos-receipt" id="posReceiptBody" style="margin-top:56px">
-          <div class="pos-r-center">
-            <div class="pos-r-logo">NEJstudios</div>
-            <div class="pos-r-tagline">PHOTOGRAPHY &amp; FILM PRODUCTION</div>
-            <div class="pos-r-tagline">Lagos, Nigeria</div>
-          </div>
-          <hr class="pos-r-dashes"/>
-          <div class="pos-r-center">
-            <div class="pos-r-title">RECEIPT</div>
-            <div class="pos-r-num">${receiptNum}</div>
-            <div class="pos-r-date">${issued}  ${issuedTime}</div>
-          </div>
-          <hr class="pos-r-dashes"/>
-          <table class="pos-r-table">
-            <tr><td class="pos-r-label">CLIENT</td><td></td></tr>
-            <tr><td colspan="2" style="font-weight:bold;padding-bottom:6px">${b.clientName || '—'}</td></tr>
-            ${b.phone ? `<tr><td class="pos-r-label">PHONE</td><td style="text-align:right">${b.phone}</td></tr>` : ''}
-            ${b.email ? `<tr><td class="pos-r-label">EMAIL</td><td style="text-align:right;font-size:10px">${b.email}</td></tr>` : ''}
-            ${b.sessionDate ? `<tr><td class="pos-r-label">DATE</td><td style="text-align:right">${b.sessionDate}</td></tr>` : ''}
-          </table>
-          <hr class="pos-r-dashes"/>
-          <table class="pos-r-table">
-            <tr><td colspan="2" class="pos-r-label" style="padding-bottom:4px">ITEM</td></tr>
-            <tr>
-              <td>${sessionDesc}</td>
-              <td style="text-align:right;font-weight:bold">${totalStr}</td>
-            </tr>
-            ${b.deliverables ? `<tr><td colspan="2" style="font-size:10px;color:#666;padding-top:2px">${b.deliverables}</td></tr>` : ''}
-          </table>
-          <hr class="pos-r-dashes"/>
-          <table class="pos-r-table">
-            <tr class="pos-r-total-row">
-              <td>TOTAL</td>
-              <td style="text-align:right;font-weight:bold">${totalStr}</td>
-            </tr>
-            <tr class="pos-r-deposit-row" id="posDepRow">
-              <td>DEPOSIT (${customAmt ? 'FIXED' : depPct + '%'})</td>
-              <td style="text-align:right" id="posDepCell">${depStr}</td>
-            </tr>
-            <tr class="pos-r-balance-row" id="posBalRow">
-              <td>BAL. ON DELIVERY</td>
-              <td style="text-align:right" id="posBalCell">${balStr}</td>
-            </tr>
-          </table>
-          <hr class="pos-r-dashes"/>
-          <div class="pos-r-center">
-            <span class="pos-r-status">${bookingStatus}</span>
-          </div>
-          <hr class="pos-r-dashes"/>
-          <div class="pos-r-payment">
-            PAYMENT TO:<br/>
-            BANK: KUDA MFB<br/>
-            ACCT: NEJstudios<br/>
-            NO: 3001571135<br/>
-            REF: ${receiptNum}
-          </div>
-          <hr class="pos-r-dashes"/>
-          <div class="pos-r-center pos-r-footer">
-            THANK YOU FOR CHOOSING<br/>
-            <strong>NEJSTUDIOS</strong><br/>
-            hello@nejstudios.com<br/>
-            <div class="pos-r-barcode" style="margin-top:8px">||| ${barcode} |||</div>
-          </div>
-        </div>
-      </div>`;
-  }
-
-  document.getElementById('invoiceModal').querySelector('.invoice-chrome h2').textContent = 'Receipt — ' + (b.clientName || id);
-  document.getElementById('invoiceBody').innerHTML = renderReceipt();
-  document.getElementById('invoiceBody').style.cssText = 'padding:0;margin:0;background:#f0ede8;flex:1;display:flex;flex-direction:column;max-width:100%;position:relative;';
-
-  document.getElementById('posDepApply').addEventListener('click', () => {
-    depPct    = Math.max(1, Math.min(100, parseInt(document.getElementById('posDepPct').value, 10) || 50));
-    customAmt = document.getElementById('posDepCustom').value ? parseFloat(document.getElementById('posDepCustom').value) : null;
-    localStorage.setItem('nej_deposit_' + id, JSON.stringify({ pct: depPct, custom: customAmt }));
-    const { dep, bal } = computeDep();
-    document.getElementById('posDepRow').cells[0].textContent = `DEPOSIT (${customAmt ? 'FIXED' : depPct + '%'})`;
-    document.getElementById('posDepCell').textContent = dep !== null ? fmtNGN(dep) : `${depPct}% of total`;
-    document.getElementById('posBalCell').textContent = bal !== null ? fmtNGN(bal) : 'Balance on delivery';
-  });
-
   document.getElementById('invoiceModal').classList.add('open');
 }
 
 document.getElementById('invoiceClose').addEventListener('click', () => {
   document.getElementById('invoiceModal').classList.remove('open');
-  // Reset invoiceBody styles in case POS receipt was shown
-  document.getElementById('invoiceBody').style.cssText = '';
 });
 document.getElementById('invoicePrint').addEventListener('click', () => {
   window.print();
@@ -1637,196 +973,24 @@ document.getElementById('invoicePrint').addEventListener('click', () => {
    GALLERY PANEL
    ════════════════════════════════════════════ */
 
-/* ─ Image compression helper ─────────────────────────────────────── */
-function compressImage(file, maxWidth = 2400, quality = 0.85) {
-  return new Promise((resolve) => {
-    // HEIC/HEIF cannot be decoded by Canvas API — skip compression
-    const lowerName = file.name.toLowerCase();
-    const lowerType = (file.type || '').toLowerCase();
-    if (lowerType.includes('heic') || lowerType.includes('heif') ||
-        lowerName.endsWith('.heic') || lowerName.endsWith('.heif')) {
-      resolve(file);
-      return;
-    }
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      // Only scale down — never scale up
-      const scale  = Math.min(1, maxWidth / Math.max(img.width, img.height));
-      const canvas = document.createElement('canvas');
-      canvas.width  = Math.round(img.width  * scale);
-      canvas.height = Math.round(img.height * scale);
-      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-
-      // PNG files: keep as PNG to preserve transparency
-      const isPng   = file.type === 'image/png' || file.name.toLowerCase().endsWith('.png');
-      const outMime = isPng ? 'image/png'  : 'image/jpeg';
-      const outExt  = isPng ? '.png'       : '.jpg';
-      const outQual = isPng ? undefined    : quality; // PNG ignores quality
-
-      canvas.toBlob(blob => {
-        // If canvas.toBlob returns null (some browsers), fall back to original file
-        if (!blob) { resolve(file); return; }
-        resolve(new File([blob], file.name.replace(/\.[^.]+$/, outExt), { type: outMime }));
-      }, outMime, outQual);
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
-    img.src = url;
-  });
-}
-
-/* ─ Gallery panel uploaded images (stored in server gallery JSON) ─ */
-const GALLERY_PANEL_KEY = '__panel__';
-
-function getGalleryPanelImages() {
-  return getClientGallery(GALLERY_PANEL_KEY);
-}
-function saveGalleryPanelImages(imgs) {
-  saveClientGallery(GALLERY_PANEL_KEY, imgs);
-}
-
-function renderGalleryPanelGrid() {
-  const imgs   = getGalleryPanelImages();
-  const grid   = document.getElementById('galleryPanelGrid');
-  const selbar = document.getElementById('galleryPanelSelbar');
-  if (!grid) return;
-  if (imgs.length === 0) { grid.innerHTML = ''; selbar.style.display = 'none'; return; }
-
-  selbar.style.display = 'flex';
-  grid.innerHTML = imgs.map(img => `
-    <div class="gp-thumb" data-id="${img.id}" title="${img.name}">
-      <img src="${img.url}" alt="${img.name}" loading="lazy">
-      <div class="gp-thumb__check">
-        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="2 6 5 9 10 3"/></svg>
-      </div>
-    </div>`).join('');
-
-  grid.querySelectorAll('.gp-thumb').forEach(thumb => {
-    thumb.addEventListener('click', () => {
-      thumb.classList.toggle('selected');
-      updateGPSelCount();
-    });
-  });
-  updateGPSelCount();
-}
-
-function updateGPSelCount() {
-  const grid    = document.getElementById('galleryPanelGrid');
-  const countEl = document.getElementById('galleryPanelSelCount');
-  if (!grid || !countEl) return;
-  const count = grid.querySelectorAll('.gp-thumb.selected').length;
-  countEl.textContent = `${count} selected`;
-}
-
-function handleGalleryPanelUpload(files) {
-  const progress = document.getElementById('galleryPanelProgress');
-  const fileArr  = Array.from(files).filter(f => f.type.startsWith('image/'));
-  if (!fileArr.length) { showToast('Please select image files.'); return; }
-
-  fileArr.forEach(async file => {
-    const item = document.createElement('div');
-    item.className = 'gallery-progress-item';
-    item.innerHTML = `
-      <div class="gallery-progress-item__name">${file.name}</div>
-      <div class="gallery-progress-bar"><div class="gallery-progress-bar__fill" style="width:0%"></div></div>
-      <div class="gallery-progress-item__pct">Compressing…</div>`;
-    progress.appendChild(item);
-
-    const fill  = item.querySelector('.gallery-progress-bar__fill');
-    const pctEl = item.querySelector('.gallery-progress-item__pct');
-
-    // Compress before upload (skips HEIC/HEIF automatically)
-    const uploadFile = await compressImage(file);
-
-    pctEl.textContent = '0%';
-
-    const xhr = new XMLHttpRequest();
-    xhr.upload.addEventListener('progress', e => {
-      if (!e.lengthComputable) return;
-      const pct = Math.round((e.loaded / e.total) * 95);
-      fill.style.width  = pct + '%';
-      pctEl.textContent = pct + '%';
-    });
-    xhr.addEventListener('load', () => {
-      fill.style.width  = '100%';
-      pctEl.textContent = '100%';
-      item.classList.add('done');
-
-      let data;
-      try { data = JSON.parse(xhr.responseText); } catch { data = null; }
-
-      if (!data || !data.ok) {
-        const errMsg = (data && data.error) ? data.error : 'Upload failed (server error)';
-        showToast(errMsg);
-        pctEl.textContent = 'Error';
-        setTimeout(() => item.remove(), 2500);
-        return;
-      }
-
-      const imgs = getGalleryPanelImages();
-      imgs.push({
-        id:         'gp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 5),
-        name:       data.name || file.name,
-        url:        data.url,
-        uploadedAt: Date.now(),
-      });
-      saveGalleryPanelImages(imgs);
-      renderGalleryPanelGrid();
-      setTimeout(() => item.remove(), 1200);
-    });
-    xhr.addEventListener('error', () => {
-      pctEl.textContent = 'Error';
-      showToast('Upload failed — check your connection.');
-      setTimeout(() => item.remove(), 2500);
-    });
-
-    const formData = new FormData();
-    formData.append('file', uploadFile);
-    xhr.open('POST', '/api/upload.php');
-    xhr.send(formData);
-  });
-}
-
 function initGalleryForm() {
-  // Upload Single
-  const inputSingle = document.getElementById('galleryPanelInputSingle');
-  const inputMulti  = document.getElementById('galleryPanelInputMulti');
-  document.getElementById('btnUploadSingle').addEventListener('click', () => inputSingle.click());
-  document.getElementById('btnUploadMulti').addEventListener('click',  () => inputMulti.click());
-  inputSingle.addEventListener('change', () => { handleGalleryPanelUpload(inputSingle.files); inputSingle.value = ''; });
-  inputMulti.addEventListener('change',  () => { handleGalleryPanelUpload(inputMulti.files);  inputMulti.value  = ''; });
-
-  // Select All / Delete Selected
-  document.getElementById('btnGPSelectAll').addEventListener('click', () => {
-    const grid    = document.getElementById('galleryPanelGrid');
-    const thumbs  = grid.querySelectorAll('.gp-thumb');
-    const allSel  = grid.querySelectorAll('.gp-thumb.selected').length === thumbs.length;
-    thumbs.forEach(t => t.classList.toggle('selected', !allSel));
-    updateGPSelCount();
-  });
-  document.getElementById('btnGPDeleteSel').addEventListener('click', () => {
-    const grid    = document.getElementById('galleryPanelGrid');
-    const ids     = Array.from(grid.querySelectorAll('.gp-thumb.selected')).map(t => t.dataset.id);
-    if (!ids.length) { showToast('Select images first.'); return; }
-    const allImgs   = getGalleryPanelImages();
-    const toDelete  = allImgs.filter(img => ids.includes(img.id));
-    const remaining = allImgs.filter(img => !ids.includes(img.id));
-    saveGalleryPanelImages(remaining);
-    renderGalleryPanelGrid();
-    showToast(`${ids.length} image${ids.length > 1 ? 's' : ''} deleted`);
-    // Delete server files for any real uploaded paths
-    toDelete.forEach(img => {
-      if (img.url && img.url.startsWith('/uploads/')) {
-        const filename = img.url.split('/').pop();
-        fetch('/api/upload.php?action=delete&file=' + encodeURIComponent(filename), { method: 'POST' })
-          .catch(() => {});
-      }
-    });
+  // Add file row
+  document.getElementById('btnAddFile').addEventListener('click', () => {
+    const row = document.createElement('div');
+    row.className = 'gallery-file-row';
+    row.innerHTML = `
+      <input class="form-input" type="text" placeholder="File label" data-file-label />
+      <input class="form-input" type="text" placeholder="Download URL" data-file-url />
+      <button type="button" class="btn-remove-file" title="Remove">✕</button>
+    `;
+    row.querySelector('.btn-remove-file').addEventListener('click', () => row.remove());
+    document.getElementById('galleryFilesList').appendChild(row);
   });
 
-  // Render existing panel images on load
-  renderGalleryPanelGrid();
+  // Remove buttons on existing rows
+  document.querySelectorAll('#galleryFilesList .btn-remove-file').forEach(btn => {
+    btn.addEventListener('click', () => btn.closest('.gallery-file-row').remove());
+  });
 
   // Create gallery link
   document.getElementById('btnCreateGallery').addEventListener('click', createGalleryLink);
@@ -1836,13 +1000,17 @@ async function createGalleryLink() {
   const clientName = document.getElementById('galleryClientName').value.trim();
   if (!clientName) { showToast('Client name is required'); return; }
 
-  const bookingId = document.getElementById('galleryBookingId').value.trim() || null;
-  const password  = document.getElementById('galleryPassword').value.trim()  || null;
-  const expiry    = document.getElementById('galleryExpiry').value           || null;
+  const bookingId  = document.getElementById('galleryBookingId').value.trim() || null;
+  const password   = document.getElementById('galleryPassword').value.trim()  || null;
+  const expiry     = document.getElementById('galleryExpiry').value           || null;
 
-  // Use uploaded panel images as the files for this gallery link
-  const panelImgs = getGalleryPanelImages();
-  const files = panelImgs.map(img => ({ label: img.name, url: img.url, id: img.id }));
+  // Collect files
+  const files = [];
+  document.querySelectorAll('#galleryFilesList .gallery-file-row').forEach(row => {
+    const label = row.querySelector('[data-file-label]').value.trim();
+    const url   = row.querySelector('[data-file-url]').value.trim();
+    if (label && url) files.push({ label, url });
+  });
 
   const token = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10);
   const delivery = {
@@ -1858,13 +1026,21 @@ async function createGalleryLink() {
   };
 
   await dbCreateGalleryDelivery(delivery);
-  showToast(`Gallery link created for ${clientName} · ${files.length} image${files.length !== 1 ? 's' : ''} included`);
+  showToast(`Gallery link created for ${clientName}`);
 
-  // Reset form fields only (keep uploaded images for re-use)
+  // Reset form
   document.getElementById('galleryClientName').value = '';
   document.getElementById('galleryBookingId').value  = '';
   document.getElementById('galleryPassword').value   = '';
   document.getElementById('galleryExpiry').value     = '';
+  const list = document.getElementById('galleryFilesList');
+  list.innerHTML = `
+    <div class="gallery-file-row">
+      <input class="form-input" type="text" placeholder="File label" data-file-label />
+      <input class="form-input" type="text" placeholder="Download URL" data-file-url />
+      <button type="button" class="btn-remove-file" title="Remove">✕</button>
+    </div>`;
+  list.querySelector('.btn-remove-file').addEventListener('click', e => e.target.closest('.gallery-file-row').remove());
 
   await renderGalleryPanel();
 }
@@ -1876,36 +1052,14 @@ async function renderGalleryPanel() {
   grid.innerHTML = '<p style="color:var(--grey-3);font-size:0.85rem">Loading…</p>';
   const deliveries = await dbGetAllGalleryDeliveries();
 
-  // Fetch download logs to count per token
-  let downloadLogs = [];
-  try {
-    const logsRes = await fetch('/api/data/download_logs.json', { cache: 'no-store' });
-    if (logsRes.ok) {
-      const logsData = await logsRes.json();
-      if (Array.isArray(logsData)) downloadLogs = logsData;
-    }
-  } catch { /* logs file may not exist yet */ }
-
-  // Build a map: token → log count
-  const logCountByToken = {};
-  downloadLogs.forEach(entry => {
-    if (entry.token) {
-      logCountByToken[entry.token] = (logCountByToken[entry.token] || 0) + 1;
-    }
-  });
-
   if (deliveries.length === 0) {
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><h3>No gallery links yet</h3><p>Create your first gallery link using the form.</p></div>`;
     return;
   }
 
   grid.innerHTML = deliveries.map(d => {
-    const galleryUrl   = `${location.origin}/gallery.html?t=${d.token}`;
-    const expired      = d.expires_at && d.expires_at < new Date().toISOString().slice(0, 10);
-    const logCount     = logCountByToken[d.token] || 0;
-    const downloadInfo = logCount > 0
-      ? `${d.download_count || 0} download${(d.download_count || 0) !== 1 ? 's' : ''} · <span title="Individual file download events tracked by server">${logCount} file log${logCount !== 1 ? 's' : ''}</span>`
-      : `${d.download_count || 0} download${(d.download_count || 0) !== 1 ? 's' : ''}`;
+    const galleryUrl = `${location.origin}/gallery?t=${d.token}`;
+    const expired    = d.expires_at && d.expires_at < new Date().toISOString().slice(0, 10);
     return `
       <div class="gallery-link-card">
         <div class="gallery-link-card__top">
@@ -1914,7 +1068,7 @@ async function renderGalleryPanel() {
             <div class="gallery-link-card__meta">
               ${d.booking_id ? `Booking: ${d.booking_id} · ` : ''}
               ${d.files ? d.files.length : 0} file${(d.files && d.files.length !== 1) ? 's' : ''} ·
-              ${downloadInfo}
+              ${d.download_count} download${d.download_count !== 1 ? 's' : ''}
               ${d.expires_at ? ` · Expires: ${d.expires_at}` : ''}
               ${expired ? ' · <span style="color:var(--red)">EXPIRED</span>' : ''}
               ${d.password ? ' · 🔒 Password protected' : ''}
@@ -1992,10 +1146,7 @@ function populateSchedMembers() {
 schedCreateToggle.addEventListener('click', () => {
   const open = schedCreateBody.classList.toggle('open');
   schedCreateToggle.classList.toggle('open', open);
-  if (open) {
-    populateSchedMembers();
-    setTimeout(() => schedCreateBody.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
-  }
+  if (open) populateSchedMembers();
 });
 
 // Submit form
@@ -2085,19 +1236,6 @@ async function renderAdminSchedule() {
         ${s.notes ? `<div class="task-reports-preview">${s.notes}</div>` : ''}
         ${s.deliverables ? `<div class="task-reports-preview" style="margin-top:6px"><strong style="color:var(--gold-lt);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em">Deliverables:</strong> ${s.deliverables}</div>` : ''}
         ${(() => {
-          if (!s.deadline) return '';
-          const today    = new Date(); today.setHours(0,0,0,0);
-          const deadDate = new Date(s.deadline + 'T00:00:00');
-          const diffDays = Math.round((deadDate - today) / 86400000);
-          const fmtDead  = deadDate.toLocaleDateString('en-NG', { dateStyle:'medium' });
-          if (!isPast) {
-            if (diffDays < 0) return `<div style="margin-top:8px;padding:6px 10px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);border-radius:6px;font-size:0.75rem;color:#f87171;font-weight:700">⚠ Delivery OVERDUE · ${fmtDead}</div>`;
-            if (diffDays === 0) return `<div style="margin-top:8px;padding:6px 10px;background:rgba(251,146,60,.1);border:1px solid rgba(251,146,60,.3);border-radius:6px;font-size:0.75rem;color:var(--orange);font-weight:700">⏰ Delivery DUE TODAY</div>`;
-            if (diffDays <= 3) return `<div style="margin-top:8px;padding:6px 10px;background:rgba(251,146,60,.07);border:1px solid rgba(251,146,60,.2);border-radius:6px;font-size:0.75rem;color:var(--orange)">Delivery due in <strong>${diffDays}d</strong> · ${fmtDead}</div>`;
-          }
-          return `<div style="margin-top:8px;padding:6px 10px;background:var(--bg-3);border:1px solid var(--border);border-radius:6px;font-size:0.75rem;color:var(--grey-3)">📦 Delivery deadline: ${fmtDead}</div>`;
-        })()}
-        ${(() => {
           const cl = s.checklist || [];
           if (cl.length === 0) return '';
           const done = cl.filter(item => typeof item === 'object' ? item.checked : false).length;
@@ -2111,96 +1249,11 @@ async function renderAdminSchedule() {
           </div>`;
         })()}
         <div class="task-card__actions">
-          ${(() => {
-            if (s.id.startsWith('BK-')) {
-              const bookingId = s.id.slice(3);
-              const linked = getBookings().find(b => b.id === bookingId);
-              if (linked && linked.status === 'pending') {
-                return `<button class="task-action-btn" style="border-color:var(--green);color:var(--green)" data-sched-confirm-bk="${bookingId}">Confirm Booking</button>`;
-              }
-              if (linked && (linked.status === 'confirmed' || linked.status === 'completed')) {
-                return `<button class="task-action-btn" style="border-color:var(--green);color:var(--green);opacity:.5;cursor:default">Confirmed ✓</button>`;
-              }
-            } else {
-              // Manually added SCH- entry — offer to create a confirmed booking from it
-              return `<button class="task-action-btn" style="border-color:var(--green);color:var(--green)" data-sched-confirm-sch="${s.id}">Confirm → Booking</button>`;
-            }
-            return '';
-          })()}
           <button class="task-action-btn" style="border-color:var(--blue);color:var(--blue)" data-sched-edit="${s.id}">Edit</button>
           <button class="task-action-btn task-action-btn--delete" data-sched-id="${s.id}">Delete</button>
         </div>
       </div>`;
   }).join('');
-
-  // Confirm a BK- linked pending booking
-  grid.querySelectorAll('[data-sched-confirm-bk]').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const bookingId = btn.dataset.schedConfirmBk;
-      const bookings  = getBookings();
-      const idx       = bookings.findIndex(b => b.id === bookingId);
-      if (idx === -1) return;
-      bookings[idx].status = 'confirmed';
-      saveBookings(bookings);
-      await renderAdminSchedule();
-      renderBookings();
-      showToast(`${bookings[idx].clientName} confirmed ✓`);
-    });
-  });
-
-  // Confirm a manually-added SCH- entry → create a booking record
-  grid.querySelectorAll('[data-sched-confirm-sch]').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const schedId = btn.dataset.schedConfirmSch;
-      const sched   = await dbGetSchedule();
-      const entry   = sched.find(s => s.id === schedId);
-      if (!entry) return;
-
-      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-      let newId = 'NEJ-';
-      for (let i = 0; i < 6; i++) newId += chars[Math.floor(Math.random() * chars.length)];
-
-      const typeMap = { wedding:'full-wedding', event:'corporate-event', production:'other-production', studio:'', meeting:'' };
-      const booking = {
-        id:          newId,
-        bookingKind: entry.type === 'studio' ? 'studio' : 'event',
-        clientName:  entry.clientName || entry.title,
-        firstName:   (entry.clientName || entry.title || '').split(' ')[0],
-        lastName:    (entry.clientName || entry.title || '').split(' ').slice(1).join(' '),
-        phone:       '',
-        email:       '',
-        eventType:   typeMap[entry.type] || 'corporate-event',
-        sessionType: entry.type === 'studio' ? (entry.title || 'Studio') : '',
-        eventDate:   entry.date || '',
-        location:    entry.location || '',
-        deliverables:entry.deliverables || entry.notes || '',
-        status:      'confirmed',
-        createdAt:   entry.createdAt || Date.now(),
-      };
-
-      // Persist booking atomically (server-authoritative)
-      if (typeof dbUpsertBooking === 'function') {
-        await dbUpsertBooking(booking);
-      } else {
-        const bookings = getBookings();
-        bookings.unshift(booking);
-        saveBookings(bookings);
-      }
-
-      // MOVE semantics: remove the schedule entry and tombstone the auto-sync
-      // ID for the new booking so it doesn't reappear on the schedule.
-      const deletedKey = 'nej_deleted_sched';
-      const deleted    = JSON.parse(localStorage.getItem(deletedKey) || '[]');
-      if (!deleted.includes(schedId))           deleted.push(schedId);
-      if (!deleted.includes('BK-' + newId))     deleted.push('BK-' + newId);
-      localStorage.setItem(deletedKey, JSON.stringify(deleted));
-      await dbDeleteScheduleEntry(schedId);
-
-      await renderAdminSchedule();
-      renderBookings();
-      showToast(`${booking.clientName} moved to Bookings ✓`);
-    });
-  });
 
   grid.querySelectorAll('[data-sched-id]').forEach(btn => {
     btn.addEventListener('click', async () => {
@@ -2212,104 +1265,21 @@ async function renderAdminSchedule() {
   });
 
   grid.querySelectorAll('[data-sched-edit]').forEach(btn => {
-    btn.addEventListener('click', () => openSchedEditModal(btn.dataset.schedEdit));
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.schedEdit;
+      const sched = await dbGetSchedule();
+      const entry = sched.find(s => s.id === id);
+      if (!entry) return;
+      const newTitle = prompt('Edit event / shoot name:', entry.title || '');
+      if (newTitle === null) return;
+      const trimmed = newTitle.trim();
+      if (!trimmed) { showToast('Title cannot be empty'); return; }
+      await dbUpdateScheduleEntry(id, { title: trimmed });
+      await renderAdminSchedule();
+      showToast('Schedule entry updated ✓');
+    });
   });
 }
-
-/* ════════════════════════════════════════════
-   SCHEDULE EDIT MODAL
-   ════════════════════════════════════════════ */
-
-const schedEditModal = document.getElementById('schedEditModal');
-
-function closeSchedEditModal() {
-  schedEditModal.style.display = 'none';
-  document.body.style.overflow = '';
-}
-
-document.getElementById('schedEditClose').addEventListener('click', closeSchedEditModal);
-document.getElementById('schedEditCancel').addEventListener('click', closeSchedEditModal);
-schedEditModal.addEventListener('click', e => { if (e.target === schedEditModal) closeSchedEditModal(); });
-
-document.getElementById('schedEditType').addEventListener('change', function() {
-  const isWedding = this.value === 'wedding';
-  document.getElementById('schedEditClientLabel').textContent = isWedding ? 'Event Name' : 'Client Name';
-  document.getElementById('schedEditPlannerWrap').style.display = isWedding ? '' : 'none';
-});
-
-async function openSchedEditModal(id) {
-  const sched = await dbGetSchedule();
-  const entry = sched.find(s => s.id === id);
-  if (!entry) return;
-
-  document.getElementById('schedEditId').value           = id;
-  document.getElementById('schedEditTitle').value        = entry.title        || '';
-  document.getElementById('schedEditDate').value         = entry.date         || '';
-  document.getElementById('schedEditTime').value         = entry.time         || '';
-  document.getElementById('schedEditType').value         = entry.type         || 'studio';
-  document.getElementById('schedEditClient').value       = entry.clientName   || '';
-  document.getElementById('schedEditPlanner').value      = entry.planner      || '';
-  document.getElementById('schedEditLocation').value     = entry.location     || '';
-  document.getElementById('schedEditNotes').value        = entry.notes        || '';
-  document.getElementById('schedEditDeliverables').value = entry.deliverables || '';
-  document.getElementById('schedEditDeadline').value     = entry.deadline     || '';
-
-  const isWedding = entry.type === 'wedding';
-  document.getElementById('schedEditClientLabel').textContent = isWedding ? 'Event Name' : 'Client Name';
-  document.getElementById('schedEditPlannerWrap').style.display = isWedding ? '' : 'none';
-
-  // Populate member checkboxes
-  const wrap = document.getElementById('schedEditMembersWrap');
-  const team = getTeam().filter(m => m.role !== 'admin');
-  const assigned = entry.assignedMembers || [];
-  wrap.innerHTML = team.length === 0
-    ? '<span style="color:var(--grey-3);font-size:0.78rem">No team members yet</span>'
-    : team.map(m => {
-        const checked = assigned.find(a => a.id === m.id) ? 'checked' : '';
-        return `<label style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:var(--bg-4);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:0.8rem;color:var(--grey-2)">
-          <input type="checkbox" value="${m.id}" data-name="${m.name}" ${checked} style="accent-color:var(--gold)"> ${m.name}
-        </label>`;
-      }).join('');
-
-  schedEditModal.style.display = 'flex';
-  document.body.style.overflow = 'hidden';
-}
-
-document.getElementById('schedEditForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  const id           = document.getElementById('schedEditId').value;
-  const title        = document.getElementById('schedEditTitle').value.trim();
-  const date         = document.getElementById('schedEditDate').value;
-  const time         = document.getElementById('schedEditTime').value;
-  const type         = document.getElementById('schedEditType').value;
-  const clientName   = document.getElementById('schedEditClient').value.trim();
-  const planner      = document.getElementById('schedEditPlanner').value.trim();
-  const location     = document.getElementById('schedEditLocation').value.trim();
-  const notes        = document.getElementById('schedEditNotes').value.trim();
-  const deliverables = document.getElementById('schedEditDeliverables').value.trim();
-  const deadline     = document.getElementById('schedEditDeadline').value || null;
-  if (!title || !date) return;
-
-  const assignedMembers = [];
-  document.querySelectorAll('#schedEditMembersWrap input[type=checkbox]:checked').forEach(cb => {
-    assignedMembers.push({ id: cb.value, name: cb.dataset.name });
-  });
-
-  await dbUpdateScheduleEntry(id, {
-    title, date, type, deadline,
-    time:            time         || null,
-    clientName:      clientName   || null,
-    planner:         planner      || null,
-    location:        location     || null,
-    notes:           notes        || null,
-    deliverables:    deliverables || null,
-    assignedMembers: assignedMembers.length ? assignedMembers : null,
-  });
-
-  closeSchedEditModal();
-  await renderAdminSchedule();
-  showToast('Schedule entry updated ✓');
-});
 
 /* ════════════════════════════════════════════
    TASKS
@@ -2321,7 +1291,6 @@ const taskCreateBody   = document.getElementById('taskCreateBody');
 taskCreateToggle.addEventListener('click', () => {
   const open = taskCreateBody.classList.toggle('open');
   taskCreateToggle.classList.toggle('open', open);
-  if (open) setTimeout(() => taskCreateBody.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
 });
 
 // Task form
@@ -2331,7 +1300,6 @@ document.getElementById('taskForm').addEventListener('submit', async e => {
   const desc     = document.getElementById('taskDesc').value.trim();
   const assignee = document.getElementById('taskAssignee').value;
   const priority = document.getElementById('taskPriority').value;
-  const deadline = document.getElementById('taskDeadline').value || null;
   if (!title) return;
 
   const team   = getTeam();
@@ -2342,7 +1310,6 @@ document.getElementById('taskForm').addEventListener('submit', async e => {
     assignedTo:   assignee || null,
     assignedName: member ? member.name : null,
     priority,
-    deadline,
     status:       'pending',
     createdAt:    Date.now(),
     startedAt:    null,
@@ -2356,17 +1323,7 @@ document.getElementById('taskForm').addEventListener('submit', async e => {
   taskCreateToggle.classList.remove('open');
   await renderTasks();
   await renderTasksBadge();
-  // Notify assigned team member
-  if (member) {
-    pushTeamNotification(member.id, {
-      type:    'task-assigned',
-      title:   'New Task Assigned',
-      message: `"${title}" has been assigned to you.`,
-      taskId:  task.id, ts: Date.now(),
-    });
-    notify('New Task — NEJstudios', `${member.name}: "${title}" has been assigned to you.`);
-  }
-  showToast('Task created' + (member ? ` & ${member.name} notified` : ''));
+  showToast('Task created');
 });
 
 // Task status filter
@@ -2383,15 +1340,6 @@ async function renderTasks() {
   let tasks = await dbGetTasks();
   if (activeTaskStatus !== 'all') tasks = tasks.filter(t => t.status === activeTaskStatus);
 
-  // Sort: in-progress first, then pending, then completed; within each group newest first
-  const statusOrder = { 'in-progress': 0, 'pending': 1, 'completed': 2 };
-  tasks.sort((a, b) => {
-    const sa = statusOrder[a.status] ?? 1;
-    const sb = statusOrder[b.status] ?? 1;
-    if (sa !== sb) return sa - sb;
-    return (b.createdAt || 0) - (a.createdAt || 0);
-  });
-
   const grid = document.getElementById('tasksGrid');
   if (tasks.length === 0) {
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg><h3>No tasks yet</h3><p>Create a task above to get started.</p></div>`;
@@ -2399,12 +1347,6 @@ async function renderTasks() {
   }
 
   grid.innerHTML = tasks.map(t => buildTaskCard(t)).join('');
-
-  // Card click → open detail modal
-  grid.querySelectorAll('.task-card').forEach(card => {
-    card.addEventListener('click', () => openTaskDetailModal(card.dataset.taskId));
-  });
-
   grid.querySelectorAll('[data-task-action]').forEach(btn => {
     btn.addEventListener('click', e => {
       e.stopPropagation();
@@ -2415,39 +1357,16 @@ async function renderTasks() {
 
 function buildTaskCard(t) {
   const priorityMap = { high:'high', medium:'medium', low:'low' };
-  const prClass     = priorityMap[t.priority] || 'medium';
-  const lastReport  = t.reports && t.reports.length > 0 ? t.reports[t.reports.length - 1] : null;
+  const prClass = priorityMap[t.priority] || 'medium';
+  const lastReport = t.reports && t.reports.length > 0 ? t.reports[t.reports.length - 1] : null;
   const reportCount = t.reports ? t.reports.length : 0;
 
-  // Deadline display
-  let deadlineBadge = '';
-  if (t.deadline) {
-    const today    = new Date(); today.setHours(0,0,0,0);
-    const deadDate = new Date(t.deadline + 'T00:00:00');
-    const diffDays = Math.round((deadDate - today) / 86400000);
-    const fmtDead  = deadDate.toLocaleDateString('en-NG', { dateStyle:'medium' });
-    if (t.status !== 'completed') {
-      if (diffDays < 0) {
-        deadlineBadge = `<span style="background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.3);color:#f87171;border-radius:5px;padding:2px 8px;font-size:0.65rem;font-weight:700">OVERDUE · ${fmtDead}</span>`;
-      } else if (diffDays === 0) {
-        deadlineBadge = `<span style="background:rgba(251,146,60,.12);border:1px solid rgba(251,146,60,.3);color:var(--orange);border-radius:5px;padding:2px 8px;font-size:0.65rem;font-weight:700">DUE TODAY</span>`;
-      } else if (diffDays <= 3) {
-        deadlineBadge = `<span style="background:rgba(251,146,60,.08);border:1px solid rgba(251,146,60,.25);color:var(--orange);border-radius:5px;padding:2px 8px;font-size:0.65rem;font-weight:600">Due in ${diffDays}d · ${fmtDead}</span>`;
-      } else {
-        deadlineBadge = `<span style="background:var(--bg-3);border:1px solid var(--border);color:var(--grey-3);border-radius:5px;padding:2px 8px;font-size:0.65rem">Deadline: ${fmtDead}</span>`;
-      }
-    }
-  }
-
   return `
-    <div class="task-card task-card--${t.status}" data-task-id="${t.id}">
+    <div class="task-card task-card--${t.status}">
       <div class="task-card__top">
         <div class="task-card__badges">
           <span class="priority-badge priority-badge--${prClass}">${t.priority}</span>
           <span class="status-badge status-badge--${t.status}">${t.status === 'in-progress' ? 'In Progress' : t.status.charAt(0).toUpperCase()+t.status.slice(1)}</span>
-          ${deadlineBadge}
-          ${t.deliveryStatus === 'approved' ? `<span class="delivery-badge delivery-badge--approved">✓ Delivery Approved</span>` : ''}
-          ${t.deliveryStatus === 'failed'   ? `<span class="delivery-badge delivery-badge--failed">✗ Failed to Deliver</span>` : ''}
         </div>
       </div>
       <div class="task-card__title">${t.title}</div>
@@ -2460,7 +1379,7 @@ function buildTaskCard(t) {
         <div class="task-info-row">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
           Created: <strong>${fmtDateShort(t.createdAt)}</strong>
-          ${t.startedAt   ? `&nbsp;·&nbsp; Started: <strong>${fmtDateShort(t.startedAt)}</strong>` : ''}
+          ${t.startedAt ? `&nbsp;·&nbsp; Started: <strong>${fmtDateShort(t.startedAt)}</strong>` : ''}
           ${t.completedAt ? `&nbsp;·&nbsp; Done: <strong>${fmtDateShort(t.completedAt)}</strong>` : ''}
         </div>
       </div>
@@ -2468,8 +1387,6 @@ function buildTaskCard(t) {
       <div class="task-card__actions">
         <button class="task-action-btn task-action-btn--reports" data-id="${t.id}" data-task-action="reports">Reports (${reportCount})</button>
         <button class="task-action-btn task-action-btn--reassign" data-id="${t.id}" data-task-action="reassign">Reassign</button>
-        ${t.status === 'completed' && t.deliveryStatus !== 'approved' ? `<button class="task-action-btn task-action-btn--approve" data-id="${t.id}" data-task-action="approve-delivery">✓ Approve Delivery</button>` : ''}
-        ${t.status === 'completed' && t.deliveryStatus !== 'failed'   ? `<button class="task-action-btn task-action-btn--fail" data-id="${t.id}" data-task-action="fail-delivery">✗ Failed to Deliver</button>` : ''}
         <button class="task-action-btn task-action-btn--delete" data-id="${t.id}" data-task-action="delete">Delete</button>
       </div>
     </div>`;
@@ -2486,38 +1403,6 @@ async function handleTaskAction(id, action) {
   }
   if (action === 'reports')  { openReportsModal(id); return; }
   if (action === 'reassign') { openReassignModal(id); return; }
-  if (action === 'approve-delivery') { await approveDelivery(id); return; }
-  if (action === 'fail-delivery')    { await failDelivery(id);    return; }
-}
-
-async function approveDelivery(id) {
-  const task = await dbGetTask(id);
-  if (!task) return;
-  await dbUpdateTask(id, { deliveryStatus: 'approved', deliveryStatusAt: Date.now() });
-  if (task.assignedTo) {
-    pushTeamNotification(task.assignedTo, {
-      type: 'delivery-approved', title: 'Delivery Approved ✓',
-      message: `Your delivery for "${task.title}" has been approved. Great work!`,
-      taskId: id, ts: Date.now(),
-    });
-  }
-  await renderTasks();
-  showToast('Delivery approved ✓');
-}
-
-async function failDelivery(id) {
-  const task = await dbGetTask(id);
-  if (!task) return;
-  await dbUpdateTask(id, { deliveryStatus: 'failed', deliveryStatusAt: Date.now() });
-  if (task.assignedTo) {
-    pushTeamNotification(task.assignedTo, {
-      type: 'delivery-failed', title: 'Delivery Not Accepted',
-      message: `Your delivery for "${task.title}" was not accepted. Please review and resubmit.`,
-      taskId: id, ts: Date.now(),
-    });
-  }
-  await renderTasks();
-  showToast('Marked as failed to deliver');
 }
 
 async function renderTasksBadge() {
@@ -2565,81 +1450,6 @@ reportsModalClose.addEventListener('click', closeReportsModal);
 reportsModalBack.addEventListener('click', closeReportsModal);
 
 /* ════════════════════════════════════════════
-   TASK DETAIL MODAL
-   ════════════════════════════════════════════ */
-const taskDetailModal        = document.getElementById('taskDetailModal');
-const taskDetailModalClose   = document.getElementById('taskDetailModalClose');
-const taskDetailModalBackdrop = document.getElementById('taskDetailModalBackdrop');
-
-async function openTaskDetailModal(taskId) {
-  const task = await dbGetTask(taskId);
-  if (!task) return;
-
-  const reportCount  = task.reports ? task.reports.length : 0;
-  const statusLabel  = { 'pending': 'Pending', 'in-progress': 'In Progress', 'completed': 'Completed' }[task.status] || task.status;
-  const prClass      = task.priority || 'medium';
-  const prLabel      = prClass.charAt(0).toUpperCase() + prClass.slice(1);
-
-  document.getElementById('taskDetailContent').innerHTML = `
-    <div style="margin-bottom:20px;padding-right:32px">
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
-        <span class="priority-badge priority-badge--${prClass}">${prLabel}</span>
-        <span class="status-badge status-badge--${task.status}">${statusLabel}</span>
-      </div>
-      <h3 style="font-family:var(--serif);font-size:1.25rem;color:var(--white);margin-bottom:10px;line-height:1.35">${task.title}</h3>
-      ${task.desc ? `<p style="font-size:0.875rem;color:var(--grey-2);line-height:1.65;white-space:pre-wrap;margin:0">${task.desc}</p>` : ''}
-    </div>
-
-    <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:20px">
-      <div class="detail-row"><span class="detail-row__key">Assigned To</span><span class="detail-row__val">${task.assignedName || 'Unassigned'}</span></div>
-      <div class="detail-row"><span class="detail-row__key">Created</span><span class="detail-row__val">${fmtDate(task.createdAt)} ${fmtTime(task.createdAt)}</span></div>
-      ${task.startedAt ? `<div class="detail-row"><span class="detail-row__key">Started</span><span class="detail-row__val">${fmtDate(task.startedAt)}</span></div>` : ''}
-      ${task.completedAt ? `<div class="detail-row"><span class="detail-row__key">Completed</span><span class="detail-row__val">${fmtDate(task.completedAt)}</span></div>` : ''}
-    </div>
-
-    ${reportCount > 0 ? `
-      <div style="margin-bottom:20px">
-        <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--grey-4);margin-bottom:10px;display:flex;align-items:center;gap:8px">
-          Reports (${reportCount})<span style="flex:1;height:1px;background:var(--border);display:block"></span>
-        </div>
-        <div class="reports-list">
-          ${task.reports.map(r => `
-            <div class="report-item">
-              <div class="report-item__header">
-                <span class="report-item__author">${r.memberName || 'Unknown'}</span>
-                <span class="report-item__date">${fmtDate(r.createdAt)} ${fmtTime(r.createdAt)}</span>
-              </div>
-              <div class="report-item__body">${r.content}</div>
-            </div>`).join('')}
-        </div>
-      </div>` : `<p style="font-size:0.82rem;color:var(--grey-4);font-style:italic;margin-bottom:20px">No reports submitted yet.</p>`}
-
-    <div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:16px">
-      <button class="task-action-btn task-action-btn--reassign" data-id="${task.id}" data-task-action="reassign">Reassign</button>
-      <button class="task-action-btn task-action-btn--delete" data-id="${task.id}" data-task-action="delete">Delete</button>
-    </div>`;
-
-  document.querySelectorAll('#taskDetailContent [data-task-action]').forEach(btn => {
-    btn.addEventListener('click', async e => {
-      e.stopPropagation();
-      closeTaskDetailModal();
-      await handleTaskAction(btn.dataset.id, btn.dataset.taskAction);
-    });
-  });
-
-  taskDetailModal.classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-
-function closeTaskDetailModal() {
-  taskDetailModal.classList.remove('open');
-  document.body.style.overflow = '';
-}
-
-taskDetailModalClose.addEventListener('click', closeTaskDetailModal);
-taskDetailModalBackdrop.addEventListener('click', closeTaskDetailModal);
-
-/* ════════════════════════════════════════════
    REASSIGN MODAL (inline prompt)
    ════════════════════════════════════════════ */
 async function openReassignModal(taskId) {
@@ -2660,15 +1470,6 @@ async function openReassignModal(taskId) {
     assignedName: member ? member.name : null,
   });
   await renderTasks();
-  if (member) {
-    pushTeamNotification(member.id, {
-      type:    'task-assigned',
-      title:   'Task Reassigned to You',
-      message: `"${task.title}" has been reassigned to you.`,
-      taskId, ts: Date.now(),
-    });
-    notify('Task Reassigned — NEJstudios', `${member.name}: "${task.title}" reassigned to you.`);
-  }
   showToast(member ? `Assigned to ${member.name}` : 'Unassigned');
 }
 
@@ -2750,9 +1551,7 @@ async function renderTeam() {
 
   grid.innerHTML = team.map(m => {
     const initials  = m.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
-    const memberTasks    = allTasks.filter(t => t.assignedTo === m.id);
-    const taskCount      = memberTasks.length;
-    const completedCount = memberTasks.filter(t => t.status === 'completed').length;
+    const taskCount = allTasks.filter(t => t.assignedTo === m.id).length;
     return `
       <div class="member-card">
         <div class="member-avatar">${initials}</div>
@@ -2760,7 +1559,6 @@ async function renderTeam() {
           <div class="member-name">${m.name}</div>
           <div class="member-username">@${m.username}</div>
           <div class="member-meta">${taskCount} task${taskCount !== 1 ? 's' : ''} assigned · Added ${fmtDateShort(m.createdAt)}</div>
-          ${completedCount > 0 ? `<div style="font-size:0.72rem;color:var(--green);margin-top:2px">✓ ${completedCount} completed</div>` : ''}
         </div>
         <div class="member-actions">
           <button class="member-action-btn member-action-btn--link" data-mid="${m.id}" title="Copy login link to share with ${m.name}">🔗 Login Link</button>
@@ -2779,43 +1577,6 @@ async function renderTeam() {
   grid.querySelectorAll('.member-action-btn--delete').forEach(btn => {
     btn.addEventListener('click', () => removeMember(btn.dataset.mid, btn.dataset.mname));
   });
-}
-
-async function renderCompletedTasksByMember() {
-  const container = document.getElementById('completedTasksByMember');
-  if (!container) return;
-  const [allTasks] = await Promise.all([dbGetTasks()]);
-  const team = getTeam();
-  const completedTasks = allTasks.filter(t => t.status === 'completed');
-
-  if (completedTasks.length === 0) {
-    container.innerHTML = `<div class="empty-state"><p style="color:var(--grey-3)">No completed tasks yet.</p></div>`;
-    return;
-  }
-
-  const byMember = {};
-  completedTasks.forEach(t => {
-    const key = t.assignedTo || 'unassigned';
-    if (!byMember[key]) byMember[key] = [];
-    byMember[key].push(t);
-  });
-
-  container.innerHTML = team.map(m => {
-    const done = byMember[m.id] || [];
-    if (done.length === 0) return '';
-    done.sort((a, b) => (b.completed_at || b.completedAt || 0) - (a.completed_at || a.completedAt || 0));
-    return `
-      <div style="margin-bottom:20px">
-        <div style="font-weight:700;color:var(--gold);margin-bottom:8px;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.05em">
-          ${m.name} <span style="color:var(--green);font-size:0.8rem">${done.length} completed</span>
-        </div>
-        ${done.map(t => `
-          <div style="padding:8px 12px;background:var(--bg-3);border-radius:6px;margin-bottom:6px;border-left:3px solid var(--green)">
-            <div style="font-weight:600;font-size:0.85rem">${t.title}</div>
-            ${t.completed_at || t.completedAt ? `<div style="font-size:0.72rem;color:var(--grey-4);margin-top:2px">Completed ${new Date(t.completed_at || t.completedAt).toLocaleDateString('en-NG', { dateStyle:'medium' })}</div>` : ''}
-          </div>`).join('')}
-      </div>`;
-  }).join('');
 }
 
 function copyLoginLink(id) {
@@ -2851,83 +1612,6 @@ async function removeMember(id, name) {
   populateAssigneeSelect();
   showToast(`${name} removed`);
 }
-
-/* ════════════════════════════════════════════
-   ATTENDANCE VIEW (admin)
-   ════════════════════════════════════════════ */
-async function renderAttendance() {
-  const grid = document.getElementById('attendanceGrid');
-  if (!grid) return;
-
-  const today    = new Date().toISOString().slice(0, 10);
-  const data     = await dbGetAttendance();
-  const team     = getTeam();
-
-  const rows = team.map(m => {
-    const records  = (data[m.id] || []);
-    const todayRec = records.find(r => r.date === today);
-    const initials = m.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
-    return { member: m, todayRec, initials };
-  });
-
-  // Sort: signed in first
-  rows.sort((a, b) => (b.todayRec ? 1 : 0) - (a.todayRec ? 1 : 0));
-
-  const nowHour   = new Date().getHours();
-  const nowDow    = new Date().getDay();
-  const isWorkday = nowDow >= 1 && nowDow <= 5;
-  const pastNoon  = nowHour >= 12;
-
-  // Sort: signed-in first, then absent, then not yet
-  rows.sort((a, b) => {
-    const rank = r => (r.todayRec && !r.todayRec.absent) ? 0 : (r.todayRec && r.todayRec.absent) ? 1 : 2;
-    return rank(a) - rank(b);
-  });
-
-  grid.innerHTML = rows.map(({ member: m, todayRec, initials }) => {
-    const isAbsent   = todayRec && todayRec.absent;
-    const signedIn   = todayRec && !todayRec.absent;
-    const autoAbsent = !todayRec && isWorkday && pastNoon;
-    let dotBg, dotBorder, dotColor, statusHtml;
-    if (signedIn) {
-      dotBg = 'rgba(62,207,142,.15)'; dotBorder = 'rgba(62,207,142,.3)'; dotColor = 'var(--green)';
-      const lateStr = (() => {
-        if (!todayRec.ts) return null;
-        const d = new Date(todayRec.ts); const res = new Date(d); res.setHours(9,0,0,0);
-        const mins = Math.floor((d - res) / 60000);
-        if (mins <= 0) return null;
-        const h = Math.floor(mins/60), rm = mins%60;
-        return h > 0 ? `${h}h ${rm}m late` : `${mins}m late`;
-      })();
-      statusHtml = `<div style="text-align:right">
-        <div style="font-size:0.75rem;font-weight:700;color:var(--green)">✓ Signed In${todayRec.signOutTime ? ' &amp; Out' : ''}</div>
-        <div style="font-size:0.68rem;color:var(--grey-3)">${todayRec.time}${todayRec.signOutTime ? ' → ' + todayRec.signOutTime : ''}</div>
-        ${lateStr ? `<div style="font-size:0.65rem;color:var(--red);font-weight:600">${lateStr}</div>` : ''}
-      </div>`;
-    } else if (isAbsent || autoAbsent) {
-      dotBg = 'rgba(248,113,113,.12)'; dotBorder = 'rgba(248,113,113,.3)'; dotColor = 'var(--red)';
-      statusHtml = `<div style="text-align:right"><div style="font-size:0.75rem;font-weight:700;color:var(--red)">✗ Absent</div><div style="font-size:0.65rem;color:var(--grey-4)">No sign-in by 12 PM</div></div>`;
-    } else {
-      dotBg = 'var(--bg-3)'; dotBorder = 'var(--border)'; dotColor = 'var(--grey-3)';
-      statusHtml = `<div style="font-size:0.72rem;color:var(--grey-4);font-style:italic">Not yet signed in</div>`;
-    }
-    return `
-    <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px">
-      <div style="width:34px;height:34px;border-radius:50%;background:${dotBg};border:1px solid ${dotBorder};display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:700;color:${dotColor};flex-shrink:0">${initials}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:0.82rem;font-weight:600;color:var(--white)">${m.name}</div>
-        <div style="font-size:0.72rem;color:var(--grey-3)">@${m.username}</div>
-      </div>
-      ${statusHtml}
-    </div>`;
-  }).join('');
-
-  if (rows.length === 0) {
-    grid.innerHTML = '<div style="color:var(--grey-4);font-size:0.82rem;padding:16px 0">No team members added yet.</div>';
-  }
-}
-
-document.getElementById('refreshAttendanceBtn')?.addEventListener('click', () => renderAttendance());
 
 /* ════════════════════════════════════════════
    TOAST
@@ -3026,7 +1710,6 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     closeDetail();
     closeReportsModal();
-    closeTaskDetailModal();
     if (typeof closeNewBookingModal === 'function') closeNewBookingModal();
     const inv = document.getElementById('invoiceModal');
     if (inv) inv.classList.remove('open');
@@ -3072,7 +1755,7 @@ async function renderDailySummary() {
 
   container.innerHTML = `<div class="summary-section"><p class="summary-empty">Loading…</p></div>`;
 
-  const [schedule, tasks, signOutBriefs] = await Promise.all([dbGetSchedule(), dbGetTasks(), dbGetSignOutBriefs()]);
+  const [schedule, tasks] = await Promise.all([dbGetSchedule(), dbGetTasks()]);
   const bookings = getBookings();
 
   // Schedule today
@@ -3174,22 +1857,6 @@ async function renderDailySummary() {
               <span style="color:var(--grey-4)"> — ${b.bookingKind === 'event' ? (EVENT_TYPE_LABELS[b.eventType] || b.eventType || 'Event') : b.sessionType || 'Studio'} · ${STATUS_LABELS[b.status] || b.status}</span>
             </div>`).join('')}</div>`
       }
-    </div>
-
-    <div class="summary-section">
-      <div class="summary-section-title">Team Sign-Out Briefs</div>
-      ${(() => {
-        const todayBriefs = (signOutBriefs || []).filter(b => b.date === todayStr);
-        if (todayBriefs.length === 0) return `<p class="summary-empty">No team sign-out reports submitted today.</p>`;
-        return `<div class="summary-list">${todayBriefs.map(b => `
-          <div class="summary-list-item" style="border-left:3px solid var(--gold);padding-left:10px">
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <strong>${b.memberName}</strong>
-              <span style="font-size:0.72rem;color:var(--grey-4)">Signed out ${b.signOutTime}</span>
-            </div>
-            <div style="font-size:0.82rem;color:var(--grey-2);margin-top:4px;font-style:italic">"${b.summary}"</div>
-          </div>`).join('')}</div>`;
-      })()}
     </div>`;
 }
 
@@ -3225,18 +1892,27 @@ document.querySelectorAll('.bm-tab').forEach(btn => {
   });
 });
 
+// Session type picker in studio modal
+let bmSelectedSession = '';
+document.querySelectorAll('.bm-sp-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.bm-sp-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    bmSelectedSession = btn.dataset.session;
+  });
+});
+
 // Studio booking form submit
 document.getElementById('bmStudioForm').addEventListener('submit', e => {
   e.preventDefault();
   const err = document.getElementById('bmStudioErr');
-  const firstName   = document.getElementById('bmFirstName').value.trim();
-  const middleName  = document.getElementById('bmMiddleName').value.trim();
-  const phone       = document.getElementById('bmPhone').value.trim();
-  const email       = document.getElementById('bmEmail').value.trim();
-  const sessionType = document.getElementById('bmSessionPicker').value;
+  const firstName  = document.getElementById('bmFirstName').value.trim();
+  const middleName = document.getElementById('bmMiddleName').value.trim();
+  const phone      = document.getElementById('bmPhone').value.trim();
+  const email      = document.getElementById('bmEmail').value.trim();
 
   if (!firstName || !phone || !email) { err.textContent = 'First name, phone, and email are required.'; return; }
-  if (!sessionType) { err.textContent = 'Please select a session type.'; return; }
+  if (!bmSelectedSession) { err.textContent = 'Please select a session type.'; return; }
   err.textContent = '';
 
   const clientName = [firstName, middleName].filter(Boolean).join(' ');
@@ -3245,7 +1921,7 @@ document.getElementById('bmStudioForm').addEventListener('submit', e => {
     bookingKind: 'studio',
     firstName, middleName,
     clientName, phone, email,
-    sessionType,
+    sessionType: bmSelectedSession,
     status:      'pending',
     createdAt:   Date.now(),
   };
@@ -3255,6 +1931,8 @@ document.getElementById('bmStudioForm').addEventListener('submit', e => {
   saveBookings(bookings);
 
   e.target.reset();
+  document.querySelectorAll('.bm-sp-btn').forEach(b => b.classList.remove('selected'));
+  bmSelectedSession = '';
   closeNewBookingModal();
   renderBookings();
   showToast(`Booking for ${clientName} added ✓`);
@@ -3264,30 +1942,31 @@ document.getElementById('bmStudioForm').addEventListener('submit', e => {
 document.getElementById('bmEventForm').addEventListener('submit', e => {
   e.preventDefault();
   const err = document.getElementById('bmEventErr');
-  const eventName  = document.getElementById('bmEventName').value.trim();
+  const firstName  = document.getElementById('bmEFirstName').value.trim();
+  const lastName   = document.getElementById('bmELastName').value.trim();
   const phone      = document.getElementById('bmEPhone').value.trim();
   const email      = document.getElementById('bmEEmail').value.trim();
   const eventType  = document.getElementById('bmEType').value;
   const pkg        = document.getElementById('bmEPackage').value;
   const eventDate  = document.getElementById('bmEDate').value;
-  const budgetRaw  = document.getElementById('bmEBudget').value;
+  const budget     = document.getElementById('bmEBudget').value;
   const location   = document.getElementById('bmELocation').value.trim();
   const deliverables = document.getElementById('bmEDeliverables').value.trim();
 
-  if (!eventName || !phone || !email) { err.textContent = 'Event name, phone, and email are required.'; return; }
+  if (!firstName || !phone || !email) { err.textContent = 'First name, phone, and email are required.'; return; }
   if (!eventType) { err.textContent = 'Please select an event type.'; return; }
   err.textContent = '';
 
+  const clientName = [firstName, lastName].filter(Boolean).join(' ');
   const booking = {
     id:          'NEJ-' + Math.random().toString(36).slice(2,8).toUpperCase(),
     bookingKind: 'event',
-    eventName,
-    clientName: eventName,
-    phone, email,
+    firstName, lastName,
+    clientName, phone, email,
     eventType,
     package:      pkg || null,
     eventDate:    eventDate || null,
-    budget:       budgetRaw === '' ? null : Number(budgetRaw),
+    budget:       budget || null,
     location:     location || null,
     deliverables: deliverables || null,
     status:       'pending',
@@ -3301,5 +1980,5 @@ document.getElementById('bmEventForm').addEventListener('submit', e => {
   e.target.reset();
   closeNewBookingModal();
   renderBookings();
-  showToast(`Event booking for ${eventName} added ✓`);
+  showToast(`Event booking for ${clientName} added ✓`);
 });

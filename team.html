@@ -113,7 +113,7 @@
       /* ── Tab Nav ── */
       .t-tab-nav {
         background:var(--bg-2); border-bottom:1px solid var(--border);
-        padding:0 28px; display:flex; overflow-x:auto;
+        padding:0 28px; display:flex; flex-wrap:wrap; justify-content:center;
       }
       .t-tab-btn {
         padding:13px 20px; font-size:0.8rem; font-weight:600; color:var(--grey-3);
@@ -127,6 +127,18 @@
         padding:1px 5px; border-radius:99px; min-width:16px; text-align:center;
       }
       .t-tab-badge.hidden { display:none; }
+
+      /* ── Portal Greeting ── */
+      .portal-greeting {
+        display:flex; align-items:center; gap:12px;
+        background:linear-gradient(135deg,rgba(201,168,76,.08),rgba(201,168,76,.03));
+        border:1px solid rgba(201,168,76,.18); border-radius:12px;
+        padding:14px 20px; margin-bottom:22px;
+      }
+      .portal-greeting__icon { font-size:1.5rem; line-height:1; }
+      .portal-greeting__text { flex:1; }
+      .portal-greeting__msg  { font-size:1rem; font-weight:600; color:var(--white); }
+      .portal-greeting__sub  { font-size:0.78rem; color:var(--grey-3); margin-top:2px; }
 
       /* ── Panels ── */
       .t-panel { display:none; }
@@ -162,8 +174,8 @@
       .tasks-bar-filter:hover { border-color:var(--border-l); color:var(--white); }
       .tasks-bar-filter.active { background:var(--gold); color:#000; border-color:var(--gold); font-weight:600; }
 
-      .tasks-bar-scroll { padding:16px 20px; display:flex; gap:10px; overflow-x:auto; }
-      .tasks-bar-scroll::-webkit-scrollbar { height:4px; }
+      .tasks-bar-scroll { padding:16px 20px; display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+      .tasks-bar-scroll::-webkit-scrollbar { display:none; }
 
       .task-pill {
         flex-shrink:0; background:var(--bg-3); border:1px solid var(--border);
@@ -301,14 +313,57 @@
       .toast { position:fixed; bottom:80px; right:20px; z-index:99999; background:var(--bg-2); border:1px solid var(--border); border-left:3px solid var(--gold); border-radius:8px; padding:14px 20px; font-size:0.85rem; color:var(--grey-1); transform:translateY(16px); opacity:0; transition:var(--trans); pointer-events:none; max-width:300px; }
       .toast.show { transform:translateY(0); opacity:1; }
 
+      /* ── Notification bell ── */
+      .notif-bell {
+        position:relative; width:34px; height:34px; display:flex; align-items:center; justify-content:center;
+        background:var(--bg-3); border:1px solid var(--border); border-radius:6px;
+        color:var(--grey-2); transition:var(--trans); cursor:pointer;
+      }
+      .notif-bell:hover { color:var(--gold); border-color:var(--gold); }
+      .notif-bell svg { width:16px; height:16px; }
+      .notif-bell__dot {
+        position:absolute; top:4px; right:4px; width:8px; height:8px;
+        background:var(--orange); border-radius:50%; border:2px solid var(--bg-3);
+        display:none;
+      }
+      .notif-bell__dot.visible { display:block; }
+
+      /* ── Notification panel ── */
+      .notif-panel {
+        position:fixed; top:60px; right:16px; z-index:5000;
+        background:var(--bg-2); border:1px solid var(--border); border-radius:12px;
+        width:320px; max-height:420px; overflow-y:auto;
+        box-shadow:0 8px 32px rgba(0,0,0,.5);
+        display:none; flex-direction:column;
+      }
+      .notif-panel.open { display:flex; }
+      .notif-panel__header {
+        display:flex; align-items:center; justify-content:space-between;
+        padding:14px 16px; border-bottom:1px solid var(--border); flex-shrink:0;
+      }
+      .notif-panel__title { font-size:0.82rem; font-weight:600; color:var(--white); }
+      .notif-panel__clear { font-size:0.72rem; color:var(--grey-4); cursor:pointer; transition:var(--trans); }
+      .notif-panel__clear:hover { color:var(--red); }
+      .notif-item {
+        padding:12px 16px; border-bottom:1px solid var(--border);
+        font-size:0.8rem; color:var(--grey-2); line-height:1.4;
+        display:flex; gap:10px; align-items:flex-start;
+      }
+      .notif-item:last-child { border-bottom:none; }
+      .notif-item.unread { background:rgba(201,168,76,.04); }
+      .notif-item__icon { font-size:1rem; flex-shrink:0; margin-top:1px; }
+      .notif-item__title { font-size:0.78rem; font-weight:600; color:var(--white); margin-bottom:2px; }
+      .notif-item__time { font-size:0.65rem; color:var(--grey-4); margin-top:2px; }
+      .notif-panel__empty { padding:28px 16px; text-align:center; font-size:0.82rem; color:var(--grey-4); }
+
       /* ════ MOBILE BOTTOM NAV ════ */
       .mobile-bottom-nav {
         position:fixed; bottom:0; left:0; right:0; z-index:300;
         background:var(--bg-2); border-top:1px solid var(--border);
         padding:0 4px env(safe-area-inset-bottom);
-        display:flex; flex-direction:column;
+        display:none; /* shown via JS class on mobile only */
       }
-      .mobile-bottom-nav .nav-inner { display:flex; }
+      .mobile-bottom-nav .nav-inner { display:flex; flex:1; }
       .mobile-nav-item {
         flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
         gap:4px; padding:10px 4px; font-size:0.62rem; font-weight:500; letter-spacing:0.04em;
@@ -376,17 +431,186 @@
       .sch-empty svg { width:48px; height:48px; margin:0 auto 16px; display:block; opacity:.35; }
       .sch-empty h3 { font-family:var(--serif); color:var(--grey-2); margin-bottom:8px; }
 
+      /* ════ SIGN-IN PANEL ════ */
+      .signin-hero {
+        display:flex; flex-direction:column; align-items:center; justify-content:center;
+        text-align:center; padding:40px 24px 32px; gap:20px;
+      }
+      .signin-hero__icon {
+        width:72px; height:72px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+        background:var(--gold-glow); border:2px solid rgba(201,168,76,.35);
+      }
+      .signin-hero__icon svg { width:34px; height:34px; color:var(--gold); }
+      .signin-hero__title { font-family:var(--serif); font-size:1.5rem; color:var(--white); }
+      .signin-hero__sub   { font-size:0.85rem; color:var(--grey-3); margin-top:4px; }
+      .signin-hero__date  { font-size:0.75rem; color:var(--gold); font-weight:600; letter-spacing:0.08em; text-transform:uppercase; }
+
+      .btn-signin {
+        display:inline-flex; align-items:center; gap:10px;
+        background:var(--gold); color:#000; font-weight:700; font-size:1rem;
+        border-radius:12px; padding:16px 36px; transition:var(--trans);
+        border:none; cursor:pointer; font-family:var(--sans);
+      }
+      .btn-signin:hover { background:var(--gold-lt); }
+      .btn-signin:disabled { background:var(--bg-4); color:var(--grey-3); cursor:not-allowed; border:1px solid var(--border); }
+      .btn-signin svg { width:20px; height:20px; }
+
+      /* Task completion rate bar */
+      .task-rate-wrap { margin-bottom:18px; }
+      .task-rate-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; font-size:0.78rem; color:var(--grey-2); }
+      .task-rate-pct { font-weight:700; font-size:0.9rem; color:var(--gold); }
+      .task-rate-track { height:8px; background:var(--bg-3); border-radius:99px; overflow:hidden; border:1px solid var(--border); }
+      .task-rate-fill { height:100%; background:linear-gradient(90deg,var(--gold-dk),var(--gold)); border-radius:99px; transition:width 0.5s cubic-bezier(0.4,0,0.2,1); }
+
+      /* Month-end performance banner */
+      .month-end-banner {
+        background:linear-gradient(135deg,rgba(201,168,76,.12),rgba(201,168,76,.05));
+        border:1px solid rgba(201,168,76,.35); border-radius:10px;
+        padding:14px 16px; margin-bottom:16px;
+      }
+      .month-end-banner__title { font-size:0.78rem; font-weight:700; color:var(--gold); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px; }
+      .month-end-banner__body { font-size:0.82rem; color:var(--grey-2); line-height:1.5; }
+      .month-end-banner__stat { display:inline-block; font-weight:700; color:var(--white); }
+
+      /* Absent badge */
+      .absent-status {
+        display:flex; flex-direction:column; align-items:center; gap:10px;
+        background:rgba(248,113,113,.07); border:1px solid rgba(248,113,113,.25);
+        border-radius:12px; padding:20px 28px; margin-top:4px; text-align:center;
+      }
+      .absent-status__icon { width:40px; height:40px; background:rgba(248,113,113,.1); border-radius:50%; display:flex; align-items:center; justify-content:center; }
+      .absent-status__icon svg { width:22px; height:22px; color:var(--red); }
+      .absent-status__label { font-size:0.85rem; font-weight:700; color:var(--red); letter-spacing:0.04em; text-transform:uppercase; }
+      .absent-status__sub { font-size:0.75rem; color:var(--grey-3); max-width:260px; }
+      .signin-row--absent .signin-row__dot { background:var(--red) !important; }
+
+      /* Late badge */
+      .late-badge {
+        display:inline-flex; align-items:center; gap:6px;
+        background:rgba(248,113,113,.1); border:1px solid rgba(248,113,113,.3);
+        border-radius:99px; padding:5px 12px; font-size:0.72rem; font-weight:700;
+        color:#f87171; letter-spacing:0.04em; margin-top:8px;
+      }
+      .late-badge svg { width:12px; height:12px; }
+      .ontime-badge {
+        display:inline-flex; align-items:center; gap:6px;
+        background:var(--green-bg); border:1px solid rgba(62,207,142,.3);
+        border-radius:99px; padding:5px 12px; font-size:0.72rem; font-weight:700;
+        color:var(--green); letter-spacing:0.04em; margin-top:8px;
+      }
+
+      .signin-confirmed {
+        display:flex; flex-direction:column; align-items:center; gap:10px;
+        background:rgba(62,207,142,.08); border:1px solid rgba(62,207,142,.25);
+        border-radius:12px; padding:20px 28px; margin-top:4px;
+      }
+      .signin-confirmed__check { width:40px; height:40px; background:var(--green-bg); border-radius:50%; display:flex; align-items:center; justify-content:center; }
+      .signin-confirmed__check svg { width:22px; height:22px; color:var(--green); }
+      .signin-confirmed__label { font-size:0.85rem; font-weight:600; color:var(--green); }
+      .signin-confirmed__time  { font-size:0.78rem; color:var(--grey-3); }
+
+      /* Sign-out block */
+      .signout-block {
+        margin-top:16px; padding:16px 20px;
+        background:var(--bg-3); border:1px solid var(--border); border-radius:12px;
+        display:flex; flex-direction:column; gap:10px;
+      }
+      .signout-block__label { font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:var(--grey-4); }
+      .signout-summary {
+        width:100%; background:var(--bg-2); border:1px solid var(--border);
+        border-radius:8px; padding:10px 14px; color:var(--grey-1);
+        font-family:var(--sans); font-size:0.85rem; resize:vertical; min-height:72px;
+        outline:none; transition:border-color 0.2s;
+      }
+      .signout-summary:focus { border-color:var(--gold); }
+      .btn-signout {
+        display:inline-flex; align-items:center; gap:8px;
+        background:transparent; border:1px solid var(--red); color:var(--red);
+        font-weight:700; font-size:0.82rem; border-radius:8px; padding:10px 22px;
+        cursor:pointer; transition:var(--trans); font-family:var(--sans);
+      }
+      .btn-signout:hover { background:rgba(248,113,113,.1); }
+      .btn-signout svg { width:16px; height:16px; }
+      .signedout-badge {
+        display:flex; flex-direction:column; align-items:center; gap:6px;
+        background:rgba(248,113,113,.07); border:1px solid rgba(248,113,113,.25);
+        border-radius:12px; padding:14px 20px; margin-top:12px;
+      }
+      .signedout-badge__label { font-size:0.82rem; color:#f87171; font-weight:600; }
+      .signedout-badge__time  { font-size:0.75rem; color:var(--grey-3); }
+
+      .signin-history { margin-top:28px; }
+      .signin-history__title {
+        font-size:0.65rem; font-weight:600; letter-spacing:0.12em; text-transform:uppercase;
+        color:var(--grey-4); margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--border);
+      }
+      .signin-row {
+        display:flex; align-items:flex-start; gap:10px;
+        padding:10px 0; border-bottom:1px solid var(--border);
+      }
+      .signin-row:last-child { border-bottom:none; }
+      .signin-row__info { flex:1; }
+      .signin-row__date { font-size:0.82rem; color:var(--grey-1); font-weight:500; }
+      .signin-row__times { display:flex; gap:12px; flex-wrap:wrap; margin-top:3px; }
+      .signin-row__time { font-size:0.78rem; color:var(--gold); font-weight:600; }
+      .signin-row__outtime { font-size:0.78rem; color:#f87171; font-weight:600; }
+      .signin-row__summary { font-size:0.72rem; color:var(--grey-3); margin-top:4px; font-style:italic; }
+      .signin-row__dot  {
+        width:8px; height:8px; border-radius:50%; background:var(--green); flex-shrink:0; margin-top:6px;
+      }
+      .signin-row__late { font-size:0.65rem; color:#f87171; font-weight:700; background:rgba(248,113,113,.1); border-radius:4px; padding:1px 5px; margin-left:4px; }
+      .signin-empty-hist { font-size:0.82rem; color:var(--grey-4); text-align:center; padding:20px 0; }
+
+      /* ════ WALK-IN FORM ════ */
+      .wk-group { display:flex; flex-direction:column; gap:6px; }
+      .wk-label {
+        font-size:0.68rem; font-weight:700; letter-spacing:0.1em;
+        text-transform:uppercase; color:var(--grey-3);
+      }
+      .wk-input, .wk-select {
+        background:var(--bg-3); border:1px solid var(--border);
+        border-radius:8px; padding:12px 14px; color:var(--white);
+        font-size:0.88rem; font-family:var(--sans); outline:none;
+        transition:var(--trans); width:100%;
+      }
+      .wk-input::placeholder { color:var(--grey-4); }
+      .wk-input:focus, .wk-select:focus { border-color:var(--gold); box-shadow:0 0 0 3px var(--gold-glow); }
+      .wk-input.err, .wk-select.err { border-color:var(--red); }
+      .wk-select {
+        appearance:none;
+        background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23707070' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+        background-repeat:no-repeat; background-position:right 14px center;
+        padding-right:36px; cursor:pointer;
+      }
+      .wk-select option { background:var(--bg-3); }
+
       /* ════ RESPONSIVE ════ */
+
+      /* ── Desktop (≥768px): top tab nav only ── */
+      @media (min-width:768px) {
+        .t-content { padding-bottom:28px; }
+        .toast { bottom:28px; right:28px; }
+      }
+
+      /* ── Mobile (<768px): bottom nav only ── */
+      @media (max-width:767px) {
+        .t-tab-nav { display:none; }
+        .mobile-bottom-nav.nav-active { display:flex; }
+        .t-content { padding-bottom:80px; }
+      }
+
+      /* ── Small mobile tweaks (<600px) ── */
       @media (max-width:600px) {
         .t-content { padding:16px; padding-bottom:80px; }
         .t-header { padding:12px 16px; }
-        .t-tab-nav { padding:0 12px; }
         .t-tab-btn { padding:11px 14px; font-size:0.75rem; }
         .btn-home span, .btn-logout-sm span { display:none; }
         .my-tasks-grid { grid-template-columns:1fr; }
-      }
-      @media (min-width:601px) {
-        .toast { bottom:28px; right:28px; }
+        .tasks-bar-scroll {
+          grid-template-columns:1fr;
+          padding:12px 16px;
+          gap:8px;
+        }
       }
     </style>
   </head>
@@ -435,6 +659,11 @@
           </div>
         </div>
         <div class="t-header__right">
+          <!-- Notification bell -->
+          <button class="notif-bell" id="notifBell" title="Notifications" style="display:none">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+            <span class="notif-bell__dot" id="notifDot"></span>
+          </button>
           <button class="btn-home" id="homeBtn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
             <span>Home</span>
@@ -467,15 +696,24 @@
           My Tasks
           <span class="t-tab-badge hidden" id="myTasksBadge">0</span>
         </button>
+        <button class="t-tab-btn" data-tab="walkin">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+          Walk-in
+        </button>
+        <button class="t-tab-btn" data-tab="signin">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+          Sign In
+        </button>
       </div>
 
       <div class="t-content">
 
         <!-- ══ SCHEDULE PANEL ══ -->
         <div id="panel-schedule" class="t-panel active">
+          <div id="portalGreeting" class="portal-greeting" style="display:none"></div>
           <div class="sch-header">
             <div>
-              <h2>Upcoming Shots &amp; Events</h2>
+              <h2>Upcoming Shoots &amp; Events</h2>
               <p>All scheduled shoots, weddings, events and meetings</p>
             </div>
           </div>
@@ -511,20 +749,170 @@
 
         <!-- ══ MY TASKS PANEL ══ -->
         <div id="panel-my-tasks" class="t-panel">
+          <!-- Month-end performance banner (shown 3 days before month end) -->
+          <div id="monthEndBanner" style="display:none" class="month-end-banner"></div>
+
           <div class="my-tasks-header">
             <div>
               <h2>My Assigned Tasks</h2>
               <p>Tasks assigned to you — start, complete, and write progress reports</p>
             </div>
           </div>
+
+          <!-- Task completion rate bar -->
+          <div id="taskRateWrap" style="display:none" class="task-rate-wrap">
+            <div class="task-rate-top">
+              <span id="taskRateLabel">0 of 0 tasks completed</span>
+              <span id="taskRatePct" class="task-rate-pct">0%</span>
+            </div>
+            <div class="task-rate-track">
+              <div id="taskRateFill" class="task-rate-fill" style="width:0%"></div>
+            </div>
+          </div>
+
           <div class="my-tasks-grid" id="myTasksGrid"></div>
+        </div>
+
+        <!-- ══ WALK-IN BOOKING PANEL ══ -->
+        <div id="panel-walkin" class="t-panel">
+          <div class="my-tasks-header">
+            <div>
+              <h2>Walk-in Session</h2>
+              <p>Create a booking for a client who has walked in — saved instantly to all devices</p>
+            </div>
+          </div>
+
+          <!-- Success state -->
+          <div id="walkinSuccess" style="display:none;text-align:center;padding:40px 20px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius)">
+            <div style="width:60px;height:60px;background:var(--green-bg);border:1px solid rgba(62,207,142,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" style="width:28px;height:28px"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <h3 style="font-family:var(--serif);font-size:1.4rem;color:var(--white);margin-bottom:8px">Booking Created!</h3>
+            <p style="color:var(--grey-2);font-size:0.9rem;margin-bottom:4px">The booking has been saved and synced.</p>
+            <div id="walkinSuccessId" style="display:inline-block;margin:16px 0;padding:6px 18px;background:var(--bg-3);border:1px solid var(--border);border-radius:99px;font-size:0.75rem;letter-spacing:0.12em;color:var(--gold);font-weight:600"></div>
+            <br/>
+            <button id="walkinNewBtn" style="padding:10px 24px;background:var(--gold);color:#000;font-weight:700;font-size:0.78rem;letter-spacing:0.08em;text-transform:uppercase;border:none;border-radius:8px;cursor:pointer;font-family:var(--sans)">+ New Walk-in</button>
+          </div>
+
+          <!-- Form -->
+          <form id="walkinForm" novalidate style="background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:28px">
+
+            <!-- Created by (read-only) -->
+            <div style="margin-bottom:20px;padding:12px 16px;background:var(--gold-glow);border:1px solid rgba(201,168,76,.2);border-radius:8px;display:flex;align-items:center;gap:10px">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" style="width:16px;height:16px;flex-shrink:0"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span style="font-size:0.8rem;color:var(--grey-2)">Creating as <strong style="color:var(--gold)" id="walkinCreatorName">—</strong></span>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+              <div class="wk-group">
+                <label class="wk-label">First Name <span style="color:var(--gold)">*</span></label>
+                <input class="wk-input" type="text" id="wkFirstName" placeholder="e.g. Amaka" autocomplete="given-name"/>
+              </div>
+              <div class="wk-group">
+                <label class="wk-label">Middle Name</label>
+                <input class="wk-input" type="text" id="wkMiddleName" placeholder="optional" autocomplete="additional-name"/>
+              </div>
+            </div>
+
+            <div class="wk-group" style="margin-bottom:14px">
+              <label class="wk-label">Phone Number <span style="color:var(--gold)">*</span></label>
+              <input class="wk-input" type="tel" id="wkPhone" placeholder="+234 800 000 0000" autocomplete="tel"/>
+            </div>
+
+            <div class="wk-group" style="margin-bottom:14px">
+              <label class="wk-label">Email Address <span style="color:var(--gold)">*</span></label>
+              <input class="wk-input" type="email" id="wkEmail" placeholder="client@email.com" autocomplete="email"/>
+            </div>
+
+            <div class="wk-group" style="margin-bottom:14px">
+              <label class="wk-label">Session Type <span style="color:var(--gold)">*</span></label>
+              <select class="wk-select" id="wkSessionType">
+                <option value="">— Choose session —</option>
+                <option value="Half Session">Half Session — ₦45,000</option>
+                <option value="Regular Session">Regular Session — ₦70,000</option>
+                <option value="Birthday Session">Birthday Session — ₦100,000</option>
+                <option value="Outdoor Session">Outdoor Session — ₦250,000</option>
+              </select>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+              <div class="wk-group">
+                <label class="wk-label">No. of Outfits <span style="color:var(--gold)">*</span></label>
+                <select class="wk-select" id="wkNumOutfits">
+                  <option value="1">1 outfit</option>
+                </select>
+              </div>
+              <div class="wk-group">
+                <label class="wk-label">Amount Paid (₦) <span style="color:var(--gold)">*</span></label>
+                <input class="wk-input" type="number" id="wkAmount" placeholder="e.g. 45000" min="0"/>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+              <div class="wk-group">
+                <label class="wk-label">Shoot Date <span style="color:var(--gold)">*</span></label>
+                <input class="wk-input" type="date" id="wkDate" style="color-scheme:dark"/>
+              </div>
+              <div class="wk-group">
+                <label class="wk-label">Shoot Time <span style="color:var(--gold)">*</span></label>
+                <input class="wk-input" type="time" id="wkTime" style="color-scheme:dark"/>
+              </div>
+            </div>
+
+            <div class="wk-group" style="margin-bottom:20px">
+              <label class="wk-label">Instagram Handle <span style="color:var(--grey-4);font-weight:400;text-transform:none;letter-spacing:0;font-size:0.68rem">(optional)</span></label>
+              <input class="wk-input" type="text" id="wkInstagram" placeholder="@handle" autocomplete="off"/>
+            </div>
+
+            <div id="walkinErr" style="font-size:0.78rem;color:var(--red);margin-bottom:12px;display:none"></div>
+
+            <button type="submit" id="walkinSubmitBtn" style="width:100%;padding:14px;background:var(--gold);color:#000;font-weight:700;font-size:0.82rem;letter-spacing:0.1em;text-transform:uppercase;border:none;border-radius:8px;cursor:pointer;font-family:var(--sans);transition:0.25s;display:flex;align-items:center;justify-content:center;gap:10px">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+              <span id="walkinSubmitText">Save Walk-in Booking</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- ══ SIGN IN PANEL ══ -->
+        <div id="panel-signin" class="t-panel">
+          <div class="signin-hero">
+            <div class="signin-hero__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+            </div>
+            <div>
+              <div class="signin-hero__date" id="signinTodayDate"></div>
+              <div class="signin-hero__title">Daily Sign-In</div>
+              <div class="signin-hero__sub">Confirm your resumption time for today</div>
+            </div>
+            <div id="signinStatusArea">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+
+          <div class="signin-history">
+            <div class="signin-history__title">Recent Attendance</div>
+            <div id="signinHistoryList">
+              <div class="signin-empty-hist">No records yet</div>
+            </div>
+          </div>
         </div>
 
       </div><!-- /t-content -->
     </div><!-- /teamShell -->
 
+    <!-- Notification Panel -->
+    <div class="notif-panel" id="notifPanel">
+      <div class="notif-panel__header">
+        <span class="notif-panel__title">Notifications</span>
+        <button class="notif-panel__clear" id="notifClearBtn">Clear all</button>
+      </div>
+      <div id="notifList">
+        <div class="notif-panel__empty">No notifications</div>
+      </div>
+    </div>
+
     <!-- Mobile Bottom Nav -->
-    <nav class="mobile-bottom-nav" id="mobileBottomNav" style="display:none">
+    <nav class="mobile-bottom-nav" id="mobileBottomNav">
       <div class="nav-inner">
         <button class="mobile-nav-item active" data-tab="schedule">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -538,9 +926,17 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           <span>My Tasks</span>
         </button>
+        <button class="mobile-nav-item" data-tab="walkin">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+          <span>Walk-in</span>
+        </button>
+        <button class="mobile-nav-item" data-tab="signin">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+          <span>Sign In</span>
+        </button>
         <button class="mobile-nav-item" id="mobileLogout">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-          <span>Sign Out</span>
+          <span>Out</span>
         </button>
       </div>
     </nav>
@@ -605,8 +1001,15 @@
     <!-- Toast -->
     <div class="toast" id="toast"></div>
 
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({ appId: '7a5f454d-ffd0-4c33-8d87-d165a134bfe4', serviceWorkerPath: '/OneSignalSDKWorker.js' });
+      });
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/db.js?v=2.1"></script>
-    <script src="js/team.js?v=2.1"></script>
+    <script src="js/db.js?v=3.0"></script>
+    <script src="js/team.js?v=3.0"></script>
   </body>
 </html>

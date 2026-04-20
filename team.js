@@ -47,40 +47,6 @@ function setSession(obj) {
 }
 
 /* ════════════════════════════════════════════
-   BOOKING STORAGE (for walk-in bookings)
-   ════════════════════════════════════════════ */
-const STORAGE_KEY = 'nej_bookings';
-
-function getBookings() { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
-
-async function saveWalkinBooking(booking) {
-  // Fetch server first so we don't overwrite other bookings
-  let existing = [];
-  try {
-    const r = await fetch('/api/sync.php?resource=bookings', { cache: 'no-store' });
-    if (r.ok) existing = await r.json();
-  } catch { /* server unreachable */ }
-  if (!Array.isArray(existing) || existing.length === 0) existing = getBookings();
-  if (!existing.find(b => b.id === booking.id)) existing.unshift(booking);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
-  // Push to server
-  try {
-    await fetch('/api/sync.php?resource=bookings', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(existing),
-    });
-  } catch { /* saved locally */ }
-}
-
-function genBookingId() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let id = 'NEJ-';
-  for (let i = 0; i < 6; i++) id += chars[Math.floor(Math.random() * chars.length)];
-  return id;
-}
-
-/* ════════════════════════════════════════════
    PUSH NOTIFICATIONS
    ════════════════════════════════════════════ */
 function requestNotifPermission() {
@@ -117,7 +83,6 @@ const CHECKLIST_TEMPLATES = {
    ════════════════════════════════════════════ */
 let currentMember = null; // populated after login / session restore
 let activeTab     = 'schedule';
-let _walkinInited = false;
 
 /* ════════════════════════════════════════════
    LOGIN
@@ -130,69 +95,15 @@ const pinInput      = document.getElementById('pinInput');
 const loginBtn      = document.getElementById('loginBtn');
 const loginErr      = document.getElementById('loginErr');
 
-function getPortalGreeting(name, memberId) {
-  const visitKey = 'nej_greeted_' + memberId;
-  const idxKey   = visitKey + '_idx';
-  const visited  = localStorage.getItem(visitKey);
-  let msg, sub;
-  if (visited) {
-    const greetings = ['Howfar', 'Wida'];
-    const idx = parseInt(localStorage.getItem(idxKey) || '0');
-    const word = greetings[idx % 2];
-    localStorage.setItem(idxKey, String((idx + 1) % 2));
-    msg = `${word}, ${name}! 👋`;
-    sub = 'Welcome back — here\'s what\'s coming up.';
-  } else {
-    localStorage.setItem(visitKey, '1');
-    const h = new Date().getHours();
-    const timeWord = h < 12 ? 'Good Morning' : h < 17 ? 'Good Afternoon' : 'Good Evening';
-    msg = `${timeWord}, ${name}! 👋`;
-    sub = 'Here\'s what\'s coming up for you.';
-  }
-  return { msg, sub };
-}
-
-function renderPortalGreeting(member) {
-  const el = document.getElementById('portalGreeting');
-  if (!el) return;
-  const { msg, sub } = getPortalGreeting(member.name, member.id);
-  const h = new Date().getHours();
-  const icon = h < 12 ? '🌅' : h < 17 ? '☀️' : '🌙';
-  el.style.display = 'flex';
-  el.innerHTML = `
-    <div class="portal-greeting__icon">${icon}</div>
-    <div class="portal-greeting__text">
-      <div class="portal-greeting__msg">${msg}</div>
-      <div class="portal-greeting__sub">${sub}</div>
-    </div>`;
-}
-
 function showPortal(member) {
   currentMember = member;
   loginGate.classList.add('hidden');
   teamShell.style.display = 'flex';
-  mobileNav.classList.add('nav-active');
+  mobileNav.style.display = 'flex';
   document.getElementById('userBadgeName').textContent = member.name;
-  renderPortalGreeting(member);
-  // Fresh server fetch on login so tasks and schedule are always current
-  dbRefreshAll();
   switchTab('schedule');
   updateBadges();
   requestNotifPermission();
-  // Register this device with OneSignal under the member's ID
-  oneSignalLogin(member.id);
-  // Init notification bell after member is set
-  initNotifBell();
-}
-
-/* Link this browser/device to the team member's ID in OneSignal */
-function oneSignalLogin(memberId) {
-  if (!window.OneSignalDeferred) return;
-  OneSignalDeferred.push(async function(OneSignal) {
-    try {
-      await OneSignal.login(memberId);
-    } catch(e) { /* subscription may not be granted yet */ }
-  });
 }
 
 function tryLogin() {
@@ -288,8 +199,6 @@ function switchTab(name) {
   if (name === 'schedule')  renderSchedule();
   if (name === 'all-tasks') renderAllTasksBar();
   if (name === 'my-tasks')  renderMyTasks();
-  if (name === 'signin')    renderSignIn();
-  if (name === 'walkin')    { if (!_walkinInited) { initWalkinForm(); _walkinInited = true; } }
 }
 
 document.querySelectorAll('.t-tab-btn').forEach(btn => {
@@ -390,25 +299,10 @@ async function renderSchedule() {
             ${s.clientName ? `<span>👤 ${s.type === 'wedding' ? 'Event: ' : ''}${s.clientName}</span>` : ''}
             ${s.planner    ? `<span>📋 Planner: ${s.planner}</span>` : ''}
             ${s.location   ? `<span>📍 ${s.location}</span>`   : ''}
-            ${s.assignedMembers && s.assignedMembers.length ? (() => {
-              const amIAssigned = currentMember && s.assignedMembers.find(m => m.id === currentMember.id);
-              const names = s.assignedMembers.map(m => m.name).join(', ');
-              return `<span style="${amIAssigned ? 'color:var(--gold);font-weight:600' : ''}">👥 ${names}${amIAssigned ? ' <span style="background:var(--gold-glow);border:1px solid rgba(201,168,76,.3);border-radius:4px;padding:1px 6px;font-size:0.65rem;margin-left:4px">You</span>' : ''}</span>`;
-            })() : ''}
+            ${s.assignedMembers && s.assignedMembers.length ? `<span>👥 ${s.assignedMembers.map(m => m.name).join(', ')}</span>` : ''}
           </div>
           ${s.notes ? `<div class="sch-body__notes">${s.notes}</div>` : ''}
           ${s.deliverables ? `<div class="sch-body__notes" style="margin-top:6px;border-top:1px solid var(--border);padding-top:6px"><span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--gold);display:block;margin-bottom:2px">Deliverables</span>${s.deliverables}</div>` : ''}
-          ${(() => {
-            if (!s.deadline) return '';
-            const today    = new Date(); today.setHours(0,0,0,0);
-            const deadDate = new Date(s.deadline + 'T00:00:00');
-            const diffDays = Math.round((deadDate - today) / 86400000);
-            const fmtDead  = deadDate.toLocaleDateString('en-NG', { dateStyle:'medium' });
-            if (diffDays < 0)  return `<div style="margin-top:8px;padding:6px 10px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);border-radius:6px;font-size:0.75rem;color:#f87171;font-weight:700">⚠ Delivery OVERDUE · ${fmtDead}</div>`;
-            if (diffDays === 0) return `<div style="margin-top:8px;padding:6px 10px;background:rgba(251,146,60,.1);border:1px solid rgba(251,146,60,.3);border-radius:6px;font-size:0.75rem;color:var(--amber);font-weight:700">⏰ Delivery DUE TODAY</div>`;
-            if (diffDays <= 3)  return `<div style="margin-top:8px;padding:6px 10px;background:rgba(251,146,60,.07);border:1px solid rgba(251,146,60,.2);border-radius:6px;font-size:0.75rem;color:var(--amber)">Delivery in <strong>${diffDays}d</strong> · ${fmtDead}</div>`;
-            return `<div style="margin-top:8px;padding:6px 10px;background:var(--bg-3);border:1px solid var(--border);border-radius:6px;font-size:0.75rem;color:var(--grey-3)">📦 Delivery: ${fmtDead}</div>`;
-          })()}
           ${!(s.type === 'studio' && s.shootCompleted) ? `
           <button class="sch-checklist-toggle" data-toggle-id="${s.id}" style="margin-top:12px;width:100%;padding:7px 12px;background:var(--bg-3);border:1px solid var(--border);border-radius:6px;font-size:0.72rem;font-weight:600;color:var(--grey-3);display:flex;align-items:center;justify-content:space-between;transition:var(--trans)">
             <span>Checklist ${doneCount > 0 ? `(${doneCount}/${totalCount})` : ''}</span>
@@ -589,47 +483,8 @@ async function renderAllTasksBar() {
 async function renderMyTasks() {
   if (!currentMember) return;
   document.getElementById('myTasksGrid').innerHTML = `<div class="empty-state" style="grid-column:1/-1;opacity:0.5"><p style="color:var(--grey-3);font-size:0.85rem">Loading…</p></div>`;
-  const myTasks   = (await dbGetTasks()).filter(t => t.assignedTo === currentMember.id);
-  const grid      = document.getElementById('myTasksGrid');
-  const total     = myTasks.length;
-  const done      = myTasks.filter(t => t.status === 'completed').length;
-  const pct       = total > 0 ? Math.round((done / total) * 100) : 0;
-
-  // Progress rate bar
-  const rateWrap  = document.getElementById('taskRateWrap');
-  const rateLabel = document.getElementById('taskRateLabel');
-  const ratePct   = document.getElementById('taskRatePct');
-  const rateFill  = document.getElementById('taskRateFill');
-  if (rateWrap) {
-    rateWrap.style.display = total > 0 ? '' : 'none';
-    if (rateLabel) rateLabel.textContent = `${done} of ${total} task${total !== 1 ? 's' : ''} completed`;
-    if (ratePct)   ratePct.textContent   = `${pct}%`;
-    if (rateFill)  { setTimeout(() => { rateFill.style.width = pct + '%'; }, 80); }
-  }
-
-  // Month-end performance banner (show 3 days before end of month)
-  const banner = document.getElementById('monthEndBanner');
-  if (banner) {
-    const today   = new Date();
-    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-    const daysLeft = lastDay - today.getDate();
-    if (daysLeft <= 3 && total > 0) {
-      const monthName = today.toLocaleDateString('en-NG', { month: 'long' });
-      const inProg    = myTasks.filter(t => t.status === 'in-progress').length;
-      const pending   = myTasks.filter(t => t.status === 'pending').length;
-      banner.style.display = '';
-      banner.innerHTML = `
-        <div class="month-end-banner__title">📊 ${monthName} Performance — ${daysLeft === 0 ? 'Last day!' : daysLeft + ' day' + (daysLeft > 1 ? 's' : '') + ' left'}</div>
-        <div class="month-end-banner__body">
-          You completed <span class="month-end-banner__stat">${done}/${total}</span> tasks this month
-          (<span class="month-end-banner__stat" style="color:${pct >= 80 ? 'var(--green)' : pct >= 50 ? 'var(--gold)' : 'var(--red)'}">${pct}%</span>).
-          ${inProg > 0 ? `&nbsp;<span style="color:var(--orange)">${inProg} still in progress.</span>` : ''}
-          ${pending > 0 ? `&nbsp;<span style="color:var(--grey-3)">${pending} pending.</span>` : ''}
-        </div>`;
-    } else {
-      banner.style.display = 'none';
-    }
-  }
+  const myTasks = (await dbGetTasks()).filter(t => t.assignedTo === currentMember.id);
+  const grid    = document.getElementById('myTasksGrid');
 
   if (myTasks.length === 0) {
     grid.innerHTML = `
@@ -715,22 +570,6 @@ async function startTask(id) {
   showToast('Task started — good luck!');
 }
 
-async function pushNotifToMember(memberId, notif) {
-  const n = { ...notif, id: 'N-' + Date.now() + '-' + Math.random().toString(36).slice(2,5), read: false, ts: notif.ts || Date.now() };
-  try {
-    const r   = await fetch('/api/sync.php?resource=notifications', { cache: 'no-store' });
-    let all   = r.ok ? await r.json() : {};
-    if (Array.isArray(all)) all = {};
-    const pool = Array.isArray(all[memberId]) ? all[memberId] : [];
-    pool.push(n);
-    all[memberId] = pool;
-    await fetch('/api/sync.php?resource=notifications', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(all),
-    });
-  } catch {}
-}
-
 async function completeTask(id) {
   const task = await dbGetTask(id);
   if (!task || task.status !== 'in-progress') return;
@@ -738,18 +577,6 @@ async function completeTask(id) {
   renderMyTasks();
   renderAllTasksBar();
   updateBadges();
-  // Notify all other team members
-  if (currentMember) {
-    const allMembers = getTeam().filter(m => m.id !== currentMember.id);
-    allMembers.forEach(m => {
-      pushNotifToMember(m.id, {
-        type: 'task-completed',
-        title: 'Task Completed',
-        message: `${currentMember.name} completed: "${task.title}"`,
-        taskId: id, ts: Date.now(),
-      });
-    });
-  }
   showToast('Task completed!');
 }
 
@@ -881,125 +708,6 @@ function showToast(msg) {
 }
 
 /* ════════════════════════════════════════════
-   IN-APP NOTIFICATIONS  (server-synced)
-   ════════════════════════════════════════════ */
-const NOTIF_KEY_PREFIX = 'nej_notif_';
-let _cachedNotifs = null; // in-memory cache for current session
-
-async function fetchServerNotifs() {
-  try {
-    const r  = await fetch('/api/sync.php?resource=notifications', { cache: 'no-store' });
-    let all  = r.ok ? await r.json() : {};
-    // Guard: if server returned an array (legacy/empty), convert to object
-    if (Array.isArray(all)) all = {};
-    const mine = Array.isArray(all[currentMember.id]) ? all[currentMember.id] : [];
-    _cachedNotifs = mine;
-    return mine;
-  } catch {
-    // Fall back to localStorage if server unreachable
-    _cachedNotifs = JSON.parse(localStorage.getItem(NOTIF_KEY_PREFIX + currentMember.id) || '[]');
-    return _cachedNotifs;
-  }
-}
-
-async function saveServerNotifs(notifs) {
-  try {
-    const r  = await fetch('/api/sync.php?resource=notifications', { cache: 'no-store' });
-    let all  = r.ok ? await r.json() : {};
-    if (Array.isArray(all)) all = {};
-    all[currentMember.id] = notifs;
-    await fetch('/api/sync.php?resource=notifications', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(all),
-    });
-    _cachedNotifs = notifs;
-  } catch {
-    localStorage.setItem(NOTIF_KEY_PREFIX + currentMember.id, JSON.stringify(notifs));
-    _cachedNotifs = notifs;
-  }
-}
-
-function getMyNotifications() {
-  // Return cached — refreshed async by renderNotifPanel
-  return _cachedNotifs || [];
-}
-
-async function markAllNotifsRead() {
-  if (!currentMember) return;
-  const notifs = getMyNotifications().map(n => ({ ...n, read: true }));
-  await saveServerNotifs(notifs);
-  renderNotifPanel();
-}
-
-async function clearAllNotifs() {
-  if (!currentMember) return;
-  await saveServerNotifs([]);
-  renderNotifPanel();
-}
-
-async function renderNotifPanel() {
-  // Always fetch fresh from server
-  const notifs = currentMember ? await fetchServerNotifs() : [];
-  const unread = notifs.filter(n => !n.read).length;
-  const dot    = document.getElementById('notifDot');
-  const list   = document.getElementById('notifList');
-  if (dot) { dot.classList.toggle('visible', unread > 0); }
-
-  if (!list) return;
-  if (notifs.length === 0) {
-    list.innerHTML = '<div class="notif-panel__empty">No notifications</div>';
-    return;
-  }
-
-  const icons = { 'task-assigned': '📋', 'task-completed': '✅', 'booking-assigned': '📸', 'delivery-approved': '✅', 'delivery-failed': '⚠️', default: '🔔' };
-  list.innerHTML = [...notifs].reverse().map(n => `
-    <div class="notif-item${n.read ? '' : ' unread'}">
-      <div class="notif-item__icon">${icons[n.type] || icons.default}</div>
-      <div>
-        <div class="notif-item__title">${n.title || 'Notification'}</div>
-        <div>${n.message || ''}</div>
-        <div class="notif-item__time">${n.ts ? new Date(n.ts).toLocaleString('en-NG', { dateStyle:'short', timeStyle:'short' }) : ''}</div>
-      </div>
-    </div>`).join('');
-}
-
-function initNotifBell() {
-  const bell  = document.getElementById('notifBell');
-  const panel = document.getElementById('notifPanel');
-  const clear = document.getElementById('notifClearBtn');
-
-  if (!bell || !currentMember) return;
-  bell.style.display = 'flex';
-
-  bell.addEventListener('click', async (e) => {
-    e.stopPropagation();
-    const open = panel.classList.toggle('open');
-    if (open) {
-      await renderNotifPanel();
-      await markAllNotifsRead();
-    }
-  });
-  document.addEventListener('click', (e) => {
-    if (panel.classList.contains('open') && !panel.contains(e.target) && e.target !== bell) {
-      panel.classList.remove('open');
-    }
-  });
-  if (clear) clear.addEventListener('click', clearAllNotifs);
-
-  // Fetch from server then show toast for unread
-  fetchServerNotifs().then(notifs => {
-    renderNotifPanel();
-    const unread = notifs.filter(n => !n.read);
-    if (unread.length > 0) {
-      showToast(`You have ${unread.length} new notification${unread.length > 1 ? 's' : ''}`);
-      const latest = [...unread].reverse()[0];
-      if (latest) notify(latest.title || 'NEJstudios', latest.message || '');
-    }
-  });
-}
-
-/* ════════════════════════════════════════════
    REAL-TIME SYNC
    ════════════════════════════════════════════ */
 window.addEventListener('storage', e => {
@@ -1069,136 +777,6 @@ function shareSelectionLink(schedId, shots) {
 }
 
 /* ════════════════════════════════════════════
-   WALK-IN BOOKING
-   ════════════════════════════════════════════ */
-const WALKIN_OUTFIT_LIMITS = {
-  'Half Session':     [1],
-  'Regular Session':  [1, 2],
-  'Birthday Session': [1, 2, 3],
-  'Outdoor Session':  [1, 2, 3, 4, 5, 6],
-};
-
-function initWalkinForm() {
-  const form          = document.getElementById('walkinForm');
-  const successDiv    = document.getElementById('walkinSuccess');
-  const sessionSel    = document.getElementById('wkSessionType');
-  const outfitSel     = document.getElementById('wkNumOutfits');
-  const submitBtn     = document.getElementById('walkinSubmitBtn');
-  const submitText    = document.getElementById('walkinSubmitText');
-  const errDiv        = document.getElementById('walkinErr');
-  const newBtn        = document.getElementById('walkinNewBtn');
-  const creatorName   = document.getElementById('walkinCreatorName');
-
-  if (!form) return;
-
-  // Fill creator name from session
-  if (currentMember) creatorName.textContent = currentMember.name;
-
-  // Update outfit options when session type changes
-  sessionSel.addEventListener('change', () => {
-    const opts = WALKIN_OUTFIT_LIMITS[sessionSel.value];
-    if (!opts) { outfitSel.innerHTML = '<option value="1">1 outfit</option>'; return; }
-    outfitSel.innerHTML = opts.map(n => `<option value="${n}">${n} outfit${n > 1 ? 's' : ''}</option>`).join('');
-    outfitSel.value = String(opts[opts.length - 1]);
-  });
-
-  // Clear error styling on change
-  form.querySelectorAll('input, select').forEach(el => {
-    el.addEventListener('input', () => el.classList.remove('err'));
-    el.addEventListener('change', () => el.classList.remove('err'));
-  });
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    errDiv.style.display = 'none';
-
-    // Gather values
-    const firstName    = document.getElementById('wkFirstName').value.trim();
-    const middleName   = document.getElementById('wkMiddleName').value.trim();
-    const phone        = document.getElementById('wkPhone').value.trim();
-    const email        = document.getElementById('wkEmail').value.trim();
-    const sessionType  = sessionSel.value;
-    const numOutfits   = outfitSel.value;
-    const amount       = document.getElementById('wkAmount').value.trim();
-    const shootDate    = document.getElementById('wkDate').value;
-    const shootTime    = document.getElementById('wkTime').value;
-    const instagram    = document.getElementById('wkInstagram').value.trim();
-
-    // Validate required fields
-    let hasError = false;
-    const required = {
-      wkFirstName: firstName, wkPhone: phone, wkEmail: email,
-      wkAmount: amount, wkDate: shootDate, wkTime: shootTime,
-    };
-    Object.entries(required).forEach(([id, val]) => {
-      if (!val) { document.getElementById(id).classList.add('err'); hasError = true; }
-    });
-    if (!sessionType) { sessionSel.classList.add('err'); hasError = true; }
-
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      document.getElementById('wkEmail').classList.add('err');
-      hasError = true;
-    }
-
-    if (hasError) {
-      errDiv.textContent = 'Please fill in all required fields.';
-      errDiv.style.display = 'block';
-      return;
-    }
-
-    const clientName  = middleName ? `${firstName} ${middleName}` : firstName;
-    const bookingId   = genBookingId();
-    const now         = Date.now();
-
-    submitBtn.disabled  = true;
-    submitText.textContent = 'Saving…';
-
-    const booking = {
-      id:           bookingId,
-      bookingKind:  'studio',
-      bookingSource: 'walkin',
-      firstName,
-      middleName,
-      clientName,
-      phone,
-      email,
-      sessionType,
-      numOutfits,
-      amountPaid:   parseFloat(amount) || 0,
-      preferredDate: shootDate,
-      preferredTime: shootTime,
-      instagram:    instagram || '',
-      status:       'confirmed',
-      walkinBy:     currentMember ? currentMember.name : '—',
-      walkinById:   currentMember ? currentMember.id : null,
-      createdAt:    now,
-    };
-
-    await saveWalkinBooking(booking);
-
-    // Show success
-    form.style.display     = 'none';
-    successDiv.style.display = 'block';
-    document.getElementById('walkinSuccessId').textContent = bookingId;
-    showToast(`Walk-in booking saved — ${clientName}`);
-
-    submitBtn.disabled = false;
-    submitText.textContent = 'Save Walk-in Booking';
-  });
-
-  // "New Walk-in" button resets the form
-  newBtn.addEventListener('click', () => {
-    form.reset();
-    outfitSel.innerHTML = '<option value="1">1 outfit</option>';
-    form.style.display     = 'block';
-    successDiv.style.display = 'none';
-    errDiv.style.display     = 'none';
-    if (currentMember) creatorName.textContent = currentMember.name;
-    document.getElementById('wkFirstName').focus();
-  });
-}
-
-/* ════════════════════════════════════════════
    HOME BUTTON → SCHEDULE TAB
    ════════════════════════════════════════════ */
 document.getElementById('homeBtn').addEventListener('click', () => switchTab('schedule'));
@@ -1210,16 +788,11 @@ document.getElementById('refreshBtn').addEventListener('click', async () => {
   const btn = document.getElementById('refreshBtn');
   btn.style.opacity = '0.5';
   btn.style.pointerEvents = 'none';
-  // Force fresh render of current tab
-  await renderSchedule();
-  await renderAllTasksBar();
-  await renderMyTasks();
-  await updateBadges();
+  await dbRefreshAll();
   setTimeout(() => {
     btn.style.opacity = '';
     btn.style.pointerEvents = '';
-    showToast('Refreshed ✓');
-  }, 500);
+  }, 1000);
 });
 
 /* ════════════════════════════════════════════
@@ -1281,207 +854,3 @@ shootCompleteSubmit.addEventListener('click', async () => {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && shootCompleteModal.classList.contains('open')) closeShootCompleteModal();
 });
-
-/* ════════════════════════════════════════════
-   DAILY SIGN-IN / SIGN-OUT
-   Resumption time: 9:00 AM on weekdays (Mon–Fri)
-   ════════════════════════════════════════════ */
-
-// Returns how late a sign-in is on a weekday vs 9am
-// Returns null if on time or not a weekday
-function calcLate(signInTs) {
-  const d   = new Date(signInTs);
-  const dow = d.getDay(); // 0=Sun,6=Sat
-  if (dow === 0 || dow === 6) return null; // weekends: no tracking
-  const resumption = new Date(d);
-  resumption.setHours(9, 0, 0, 0);
-  const diffMs = d - resumption;
-  if (diffMs <= 0) return null; // on time or early
-  const mins  = Math.floor(diffMs / 60000);
-  const hrs   = Math.floor(mins / 60);
-  const rmins = mins % 60;
-  if (hrs > 0) return `${hrs}h ${rmins}m late`;
-  return `${mins}m late`;
-}
-
-async function renderSignIn() {
-  if (!currentMember) return;
-
-  // Set today's date label
-  const todayStr  = new Date().toISOString().slice(0, 10);
-  const todayFmt  = new Date(todayStr + 'T12:00:00').toLocaleDateString('en-NG', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
-  const dateEl    = document.getElementById('signinTodayDate');
-  const statusEl  = document.getElementById('signinStatusArea');
-  const histEl    = document.getElementById('signinHistoryList');
-  if (dateEl) dateEl.textContent = todayFmt;
-
-  // Check today's sign-in
-  const todayRecord = await dbGetTodaySignIn(currentMember.id);
-
-  if (statusEl) {
-    if (todayRecord) {
-      // Signed in — check if also signed out
-      const lateStr   = todayRecord.ts ? calcLate(todayRecord.ts) : null;
-      const signInTime = todayRecord.time || '—';
-
-      if (todayRecord.signOutTime) {
-        // Already signed out
-        statusEl.innerHTML = `
-          <div class="signin-confirmed">
-            <div class="signin-confirmed__check">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            </div>
-            <div class="signin-confirmed__label">Signed in &amp; out today</div>
-            <div class="signin-confirmed__time">
-              In: ${signInTime}${lateStr ? ` <span style="color:#f87171;font-weight:700">(${lateStr})</span>` : ''}
-              &nbsp;·&nbsp; Out: ${todayRecord.signOutTime}
-            </div>
-            ${todayRecord.daySummary ? `<div style="font-size:0.75rem;color:var(--grey-2);font-style:italic;text-align:center;margin-top:4px;max-width:280px">"${todayRecord.daySummary}"</div>` : ''}
-          </div>`;
-      } else {
-        // Signed in, not yet signed out
-        statusEl.innerHTML = `
-          <div class="signin-confirmed">
-            <div class="signin-confirmed__check">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            </div>
-            <div class="signin-confirmed__label">You have signed in</div>
-            <div class="signin-confirmed__time">
-              Checked in at ${signInTime}
-              ${lateStr ? `<span class="late-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${lateStr}</span>` : '<span class="ontime-badge">On time ✓</span>'}
-            </div>
-          </div>
-          <div class="signout-block">
-            <div class="signout-block__label">Sign Out</div>
-            <textarea class="signout-summary" id="daySummaryInput" placeholder="Write a brief summary of what you accomplished today…"></textarea>
-            <button class="btn-signout" id="btnDoSignOut">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-              Sign Out for Today
-            </button>
-          </div>`;
-
-        document.getElementById('btnDoSignOut').addEventListener('click', async () => {
-          const btn     = document.getElementById('btnDoSignOut');
-          const summary = document.getElementById('daySummaryInput').value.trim();
-          if (!summary) {
-            const ta = document.getElementById('daySummaryInput');
-            ta.style.borderColor = 'var(--red)';
-            ta.placeholder = 'Please write your day summary before signing out…';
-            ta.focus();
-            return;
-          }
-          btn.disabled    = true;
-          btn.textContent = 'Signing out…';
-          try {
-            const result = await dbSignOutToday(currentMember, summary);
-            if (result.notSignedIn) {
-              showToast('You haven\'t signed in yet today.');
-            } else if (result.alreadySignedOut) {
-              showToast('Already signed out at ' + result.record.signOutTime);
-            } else {
-              showToast('Signed out at ' + result.record.signOutTime + ' ✓');
-            }
-          } catch (e) {
-            showToast('Sign-out failed. Please try again.');
-            btn.disabled = false;
-            btn.textContent = 'Sign Out for Today';
-            return;
-          }
-          renderSignIn();
-        });
-      }
-    } else {
-      // No sign-in record for today
-      const now = new Date();
-      const dow = now.getDay(); // 0=Sun, 6=Sat
-      const isWeekday = dow >= 1 && dow <= 5;
-      const isPastNoon = now.getHours() >= 12;
-
-      if (isWeekday && isPastNoon) {
-        // Past 12pm on a workday with no sign-in → mark absent
-        await dbMarkAbsent(currentMember);
-        statusEl.innerHTML = `
-          <div class="absent-status">
-            <div class="absent-status__icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            </div>
-            <div class="absent-status__label">Marked Absent</div>
-            <div class="absent-status__sub">You did not sign in before 12:00 PM. You have been marked absent for today.</div>
-          </div>`;
-      } else {
-        // Before noon — show sign-in button
-        statusEl.innerHTML = `
-          <button class="btn-signin" id="btnDoSignIn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            Confirm Resumption
-          </button>`;
-        document.getElementById('btnDoSignIn').addEventListener('click', async () => {
-          const btn = document.getElementById('btnDoSignIn');
-          btn.disabled    = true;
-          btn.textContent = 'Signing in…';
-          try {
-            const result  = await dbSignInToday(currentMember);
-            const lateStr = result.record.ts ? calcLate(result.record.ts) : null;
-            if (result.alreadySignedIn) {
-              showToast('You have signed in');
-            } else if (lateStr) {
-              showToast(`Signed in at ${result.record.time} — ${lateStr}`);
-            } else {
-              showToast('Signed in at ' + result.record.time + ' ✓ On time!');
-            }
-          } catch (e) {
-            showToast('Sign-in failed. Please try again.');
-            btn.disabled = false;
-            btn.textContent = 'Confirm Resumption';
-            return;
-          }
-          renderSignIn();
-        });
-      }
-    }
-  }
-
-  // Render attendance history
-  if (histEl) {
-    const history = await dbGetMemberAttendance(currentMember.id, 14);
-    if (!history.length) {
-      histEl.innerHTML = '<div class="signin-empty-hist">No attendance records yet</div>';
-    } else {
-      histEl.innerHTML = history.map(r => {
-        const d       = new Date(r.date + 'T12:00:00');
-        const fmt     = d.toLocaleDateString('en-NG', { weekday:'short', month:'short', day:'numeric' });
-        const isToday = r.date === todayStr;
-        const lateStr = r.ts ? calcLate(r.ts) : null;
-        const signInTime = r.time || '—';
-        if (r.absent) {
-          return `
-            <div class="signin-row signin-row--absent">
-              <div class="signin-row__dot" style="background:var(--red)"></div>
-              <div class="signin-row__info">
-                <div class="signin-row__date">
-                  ${fmt}${isToday ? ' <span style="font-size:0.68rem;color:var(--gold);font-weight:700">TODAY</span>' : ''}
-                  <span style="font-size:0.68rem;font-weight:700;color:var(--red);margin-left:6px;text-transform:uppercase">ABSENT</span>
-                </div>
-                <div class="signin-row__times" style="color:var(--red);opacity:0.7">Did not sign in before 12:00 PM</div>
-              </div>
-            </div>`;
-        }
-        return `
-          <div class="signin-row">
-            <div class="signin-row__dot" style="${isToday ? 'background:var(--gold)' : ''}"></div>
-            <div class="signin-row__info">
-              <div class="signin-row__date">
-                ${fmt}${isToday ? ' <span style="font-size:0.68rem;color:var(--gold);font-weight:700">TODAY</span>' : ''}
-                ${lateStr ? `<span class="signin-row__late">${lateStr}</span>` : ''}
-              </div>
-              <div class="signin-row__times">
-                <span class="signin-row__time">In: ${signInTime}</span>
-                ${r.signOutTime ? `<span class="signin-row__outtime">Out: ${r.signOutTime}</span>` : ''}
-              </div>
-              ${r.daySummary ? `<div class="signin-row__summary">"${r.daySummary}"</div>` : ''}
-            </div>
-          </div>`;
-      }).join('');
-    }
-  }
-}

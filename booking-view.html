@@ -3,7 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Booking Confirmation — NEJstudios</title>
+  <title>Event Confirmation — NEJstudios</title>
+  <meta name="description" content="Your booking confirmation with NEJstudios — Lagos photography & film production." />
+
+  <!-- ── Open Graph / Social preview ── -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="NEJstudios" />
+  <meta property="og:title" content="Your NEJstudios Booking" />
+  <meta property="og:description" content="View your event details, package, and dates with NEJstudios." />
+  <meta property="og:image" content="https://www.nejstudios.com/images/og-cover.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="NEJstudios booking confirmation" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Your NEJstudios Booking" />
+  <meta name="twitter:description" content="View your event details, package, and dates with NEJstudios." />
+  <meta name="twitter:image" content="https://www.nejstudios.com/images/og-cover.jpg" />
+  <meta name="theme-color" content="#c9a84c" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
@@ -12,7 +28,7 @@
       --bg:#080808;--bg-2:#0f0f0f;--bg-3:#141414;--border:#2a2a2a;
       --gold:#c9a84c;--gold-lt:#e0c06a;--gold-glow:rgba(201,168,76,.12);
       --white:#fff;--grey-1:#e8e8e8;--grey-2:#b0b0b0;--grey-3:#707070;--grey-4:#404040;
-      --green:#3ecf8e;--green-bg:rgba(62,207,142,.1);
+      --green:#3ecf8e;--green-bg:rgba(62,207,142,.1);--green-border:rgba(62,207,142,.3);
       --blue:#60a5fa;--orange:#fb923c;--purple:#a78bfa;
       --serif:'Playfair Display',Georgia,serif;
       --sans:'Outfit',system-ui,sans-serif;
@@ -20,55 +36,88 @@
     }
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     html{scroll-behavior:smooth}
-    body{background:var(--bg);color:var(--grey-1);font-family:var(--sans);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+    body{background:var(--bg);color:var(--grey-1);font-family:var(--sans);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:32px 16px 48px}
     a{color:inherit;text-decoration:none}
-    button{cursor:pointer;border:none;font-family:inherit}
+    button{cursor:pointer;border:none;font-family:inherit;background:none}
     ::-webkit-scrollbar{width:4px}
     ::-webkit-scrollbar-thumb{background:var(--gold);border-radius:99px}
 
-    /* ── HEADER ── */
-    .page-logo{font-size:1.3rem;font-weight:700;margin-bottom:32px;text-align:center}
+    /* ── LOGO ── */
+    .page-logo{font-size:1.3rem;font-weight:700;margin-bottom:32px;text-align:center;letter-spacing:0.02em}
     .ln{color:var(--gold);font-family:var(--serif)}
     .ls{color:var(--white);font-family:var(--sans);font-weight:300;font-size:.85rem}
 
     /* ── CARD ── */
-    .view-card{background:var(--bg-2);border:1px solid var(--border);border-radius:20px;padding:36px 40px;width:100%;max-width:520px;position:relative;overflow:hidden}
+    .view-card{background:var(--bg-2);border:1px solid var(--border);border-radius:20px;padding:36px 40px;width:100%;max-width:540px;position:relative;overflow:hidden}
     .view-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold),var(--gold-lt),var(--gold))}
 
-    /* ── SUCCESS ICON ── */
+    /* ── CONFIRM ICON ── */
     .check-wrap{width:60px;height:60px;border-radius:50%;background:var(--green-bg);border:2px solid var(--green);display:flex;align-items:center;justify-content:center;margin:0 auto 20px}
     .check-wrap svg{width:28px;height:28px;color:var(--green)}
 
     /* ── HEADING ── */
-    .view-title{font-family:var(--serif);font-size:1.7rem;font-weight:600;color:var(--white);text-align:center;margin-bottom:6px}
-    .view-sub{font-size:.82rem;color:var(--grey-3);text-align:center;margin-bottom:24px}
+    .view-title{font-family:var(--serif);font-size:1.75rem;font-weight:600;color:var(--white);text-align:center;margin-bottom:6px;line-height:1.2}
+    .view-sub{font-size:.82rem;color:var(--grey-3);text-align:center;margin-bottom:24px;line-height:1.5}
 
-    /* ── BOOKING ID ── */
-    .booking-id-box{background:var(--bg-3);border:1px solid var(--border);border-radius:var(--r);padding:14px 20px;text-align:center;margin-bottom:24px}
+    /* ── ID BOX ── */
+    .booking-id-box{background:var(--bg-3);border:1px solid var(--border);border-radius:var(--r);padding:14px 20px;text-align:center;margin-bottom:20px}
     .booking-id-label{font-size:.6rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--grey-4);margin-bottom:6px}
     .booking-id-val{font-size:1.4rem;font-weight:700;color:var(--gold);letter-spacing:.08em;font-family:var(--sans)}
 
-    /* ── STATUS BADGE ── */
-    .status-row{display:flex;justify-content:center;margin-bottom:24px}
+    /* ── STATUS ROW ── */
+    .status-row{display:flex;justify-content:center;align-items:center;gap:8px;margin-bottom:24px;flex-wrap:wrap}
+    .kind-chip{display:inline-block;padding:4px 12px;border-radius:99px;font-size:.62rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+    .kind-chip--event{background:rgba(96,165,250,.12);color:var(--blue);border:1px solid rgba(96,165,250,.3)}
+    .kind-chip--studio{background:rgba(167,139,250,.12);color:var(--purple);border:1px solid rgba(167,139,250,.3)}
     .status-pill{padding:5px 16px;border-radius:99px;font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
-    .status-pill--pending   {background:rgba(251,146,60,.12);color:var(--orange);border:1px solid rgba(251,146,60,.3)}
-    .status-pill--confirmed {background:rgba(96,165,250,.12);color:var(--blue);border:1px solid rgba(96,165,250,.3)}
-    .status-pill--completed {background:rgba(62,207,142,.12);color:var(--green);border:1px solid rgba(62,207,142,.3)}
-    .status-pill--cancelled {background:rgba(248,113,113,.12);color:#f87171;border:1px solid rgba(248,113,113,.3)}
+    .status-pill--confirmed{background:rgba(62,207,142,.12);color:var(--green);border:1px solid var(--green-border)}
+    .status-pill--pending  {background:rgba(251,146,60,.12);color:var(--orange);border:1px solid rgba(251,146,60,.3)}
+    .status-pill--completed{background:rgba(62,207,142,.12);color:var(--green);border:1px solid var(--green-border)}
+    .status-pill--cancelled{background:rgba(248,113,113,.12);color:#f87171;border:1px solid rgba(248,113,113,.3)}
 
-    /* ── DETAIL ROWS ── */
-    .detail-list{display:flex;flex-direction:column;gap:0;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:24px}
-    .detail-row{display:flex;padding:12px 16px;border-bottom:1px solid var(--border);gap:12px}
+    /* ── SECTION LABEL ── */
+    .section-label{font-size:.6rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--grey-4);margin-bottom:10px;margin-top:20px;display:flex;align-items:center;gap:8px}
+    .section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+    /* ── DETAIL LIST ── */
+    .detail-list{display:flex;flex-direction:column;gap:0;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:4px}
+    .detail-row{display:flex;padding:12px 16px;border-bottom:1px solid var(--border);gap:12px;align-items:flex-start}
     .detail-row:last-child{border-bottom:none}
-    .detail-row__key{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--grey-4);min-width:110px;flex-shrink:0;padding-top:2px}
-    .detail-row__val{font-size:.875rem;color:var(--grey-1);flex:1;word-break:break-word}
+    .detail-row__key{font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--grey-4);min-width:110px;flex-shrink:0;padding-top:2px}
+    .detail-row__val{font-size:.875rem;color:var(--grey-1);flex:1;word-break:break-word;line-height:1.5}
 
-    /* ── FOOTER ACTIONS ── */
-    .view-actions{display:flex;flex-direction:column;gap:10px}
-    .btn-gold{width:100%;padding:13px;background:var(--gold);color:#000;font-weight:700;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;border-radius:var(--r);transition:.25s;display:block;text-align:center}
+    /* ── DELIVERABLES ── */
+    .deliverables-box{background:var(--bg-3);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:4px}
+    .deliverables-box__label{font-size:.6rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--grey-4);margin-bottom:8px}
+    .deliverables-box__text{font-size:.875rem;color:var(--grey-2);line-height:1.7;white-space:pre-wrap}
+
+    /* ── CONFIRMATION NOTICE ── */
+    .confirmed-notice{background:var(--green-bg);border:1px solid var(--green-border);border-radius:var(--r);padding:14px 16px;margin-bottom:20px;display:flex;gap:12px;align-items:flex-start}
+    .confirmed-notice svg{width:18px;height:18px;color:var(--green);flex-shrink:0;margin-top:1px}
+    .confirmed-notice__text{font-size:.82rem;color:var(--grey-2);line-height:1.6}
+    .confirmed-notice__text strong{color:var(--green)}
+
+    /* ── PENDING NOTICE ── */
+    .pending-notice{background:rgba(251,146,60,.06);border:1px solid rgba(251,146,60,.25);border-radius:var(--r);padding:14px 16px;margin-bottom:20px;display:flex;gap:12px;align-items:flex-start}
+    .pending-notice svg{width:18px;height:18px;color:var(--orange);flex-shrink:0;margin-top:1px}
+    .pending-notice__text{font-size:.82rem;color:var(--grey-2);line-height:1.6}
+    .pending-notice__text strong{color:var(--orange)}
+
+    /* ── CONTACT BLOCK ── */
+    .contact-block{background:var(--bg-3);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:4px}
+    .contact-block__title{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--grey-4);margin-bottom:10px}
+    .contact-row{display:flex;align-items:center;gap:10px;font-size:.82rem;color:var(--grey-2);margin-bottom:6px}
+    .contact-row:last-child{margin-bottom:0}
+    .contact-row svg{width:15px;height:15px;color:var(--gold);flex-shrink:0}
+    .contact-row a{color:var(--gold)}
+
+    /* ── ACTIONS ── */
+    .view-actions{display:flex;flex-direction:column;gap:10px;margin-top:24px}
+    .btn-gold{width:100%;padding:13px;background:var(--gold);color:#000;font-weight:700;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;border-radius:var(--r);transition:.25s;display:block;text-align:center;border:none;cursor:pointer;font-family:var(--sans)}
     .btn-gold:hover{background:var(--gold-lt)}
-    .btn-ghost{width:100%;padding:12px;background:transparent;border:1px solid var(--border);color:var(--grey-2);font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;border-radius:var(--r);transition:.25s}
+    .btn-ghost{width:100%;padding:12px;background:transparent;border:1px solid var(--border);color:var(--grey-2);font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;border-radius:var(--r);transition:.25s;cursor:pointer;font-family:var(--sans)}
     .btn-ghost:hover{border-color:var(--gold);color:var(--gold)}
+    .btn-copy-feedback{font-size:.72rem;color:var(--green);text-align:center;margin-top:4px;min-height:18px;transition:opacity .3s}
 
     /* ── ERROR STATE ── */
     .error-state{text-align:center;padding:32px}
@@ -76,18 +125,10 @@
     .error-state h2{font-family:var(--serif);color:var(--white);margin-bottom:8px}
     .error-state p{font-size:.85rem;color:var(--grey-3)}
 
-    /* ── KIND CHIP ── */
-    .kind-chip{display:inline-block;padding:3px 10px;border-radius:99px;font-size:.62rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
-    .kind-chip--studio{background:rgba(167,139,250,.12);color:var(--purple);border:1px solid rgba(167,139,250,.3)}
-    .kind-chip--event {background:rgba(96,165,250,.12);color:var(--blue);border:1px solid rgba(96,165,250,.3)}
-
-    /* ── NOTICE ── */
-    .notice{background:var(--gold-glow);border:1px solid rgba(201,168,76,.2);border-radius:var(--r);padding:12px 16px;font-size:.78rem;color:var(--grey-2);margin-bottom:20px;line-height:1.6}
-    .notice strong{color:var(--gold)}
-
     @media(max-width:540px){
-      .view-card{padding:28px 20px}
-      .detail-row__key{min-width:90px}
+      .view-card{padding:28px 20px;border-radius:16px}
+      .detail-row__key{min-width:90px;font-size:.62rem}
+      .view-title{font-size:1.45rem}
     }
   </style>
 </head>
@@ -108,11 +149,23 @@
     'corporate-event':'Corporate Event','other-production':'Production',
     'traditional-wedding':'Traditional Wedding','white-wedding':'White Wedding',
     'full-wedding':'Full Wedding','engagement':'Engagement Shoot',
+    'funeral':'Funeral / Memorial','birthday':'Birthday','other-event':'Event',
     'Birthday':'Birthday Session','Family':'Family Session',
     'Creative':'Creative Session','Fashion':'Fashion Session','Product':'Product Session',
   };
 
-  const STATUS_LABELS = { pending:'Pending Review', confirmed:'Confirmed', completed:'Completed', cancelled:'Cancelled' };
+  const PACKAGE_LABELS = {
+    'essential': 'Essential Package',
+    'premium':   'Premium Package',
+    'luxury':    'Luxury Package',
+  };
+
+  const STATUS_LABELS = {
+    pending:   'Pending Review',
+    confirmed: 'Confirmed',
+    completed: 'Completed',
+    cancelled: 'Cancelled',
+  };
 
   function fmtDate(dateStr) {
     if (!dateStr) return '—';
@@ -123,6 +176,10 @@
     try { return new Date(ts).toLocaleDateString('en-NG', { dateStyle: 'long' }); } catch { return '—'; }
   }
 
+  function esc(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
   const card = document.getElementById('viewCard');
 
   /* ── Parse URL param ── */
@@ -131,46 +188,156 @@
 
   if (!raw) { renderError('No booking data found in this link.'); return; }
 
-  let data;
-  try {
-    data = JSON.parse(decodeURIComponent(atob(raw)));
-  } catch (e) {
-    renderError('This booking link appears to be invalid or expired.');
-    return;
+  /* Map a full booking record to the client-safe shape used by renderBooking.
+     Sensitive fields (budget, assignedTeam) are intentionally omitted. */
+  function bookingToShareShape(b) {
+    const kind = b.bookingKind || (b.eventType ? 'event' : 'studio');
+    // For events: show "Event Cost" from budget (numeric). For studio: show "Session Cost" from cost.
+    let costVal = null;
+    if (kind === 'event') {
+      if (typeof b.budget === 'number' && !isNaN(b.budget)) costVal = b.budget;
+      else if (typeof b.budget === 'string' && /^\d+(\.\d+)?$/.test(b.budget)) costVal = Number(b.budget);
+    } else {
+      if (b.cost != null && b.cost !== '') costVal = b.cost;
+    }
+    return {
+      id:           b.id,
+      name:         kind === 'event' ? (b.eventName || b.clientName || '') : (b.clientName || b.firstName || ''),
+      kind:         kind,
+      type:         b.eventType || b.sessionType || '',
+      date:         kind === 'event' ? (b.eventDate || '') : (b.shootDate || b.preferredDate || ''),
+      dateIsRequested: kind === 'studio' && !b.shootDate && !!b.preferredDate,
+      location:     b.location || '',
+      package:      b.package || '',
+      deliverables: b.deliverables || '',
+      cost:         costVal,
+      phone:        b.phone || '',
+      email:        b.email || '',
+      status:       b.status || 'pending',
+      ts:           b.createdAt,
+    };
   }
 
-  /* ── Try to enrich from localStorage (same device) ── */
-  try {
-    const stored = JSON.parse(localStorage.getItem('nej_bookings') || '[]');
-    const match = stored.find(b => b.id === data.id);
-    if (match) {
-      data.name     = match.clientName || data.name;
-      data.email    = match.email    || '';
-      data.phone    = match.phone    || '';
-      data.date     = match.eventDate || data.date;
-      data.location = match.location || data.location;
-      data.status   = match.status   || data.status;
-      data.type     = match.eventType || match.sessionType || data.type;
-    }
-  } catch {}
+  /* Short links look like "NEJ-ABC123"; older base64 links encode the full payload. */
+  const isShortId = /^NEJ-[A-Z0-9]{4,12}$/.test(raw);
 
-  renderBooking(data);
+  (async () => {
+    let data = null;
+
+    if (isShortId) {
+      // Try server first (authoritative across devices)
+      try {
+        const r = await fetch('/api/sync.php?resource=bookings', { cache: 'no-store' });
+        if (r.ok) {
+          const arr = await r.json();
+          if (Array.isArray(arr)) {
+            const match = arr.find(b => b.id === raw && !b.deletedAt);
+            if (match) data = bookingToShareShape(match);
+          }
+        }
+      } catch { /* offline — fall back to local */ }
+      // Fallback to localStorage (e.g. admin previewing their own link)
+      if (!data) {
+        try {
+          const stored = JSON.parse(localStorage.getItem('nej_bookings') || '[]');
+          const match = stored.find(b => b.id === raw && !b.deletedAt);
+          if (match) data = bookingToShareShape(match);
+        } catch {}
+      }
+      if (!data) {
+        renderError('We could not find this booking. It may have been removed, or the link is incorrect.');
+        return;
+      }
+    } else {
+      // Legacy base64 payload — keep working for any old links already sent out
+      try {
+        data = JSON.parse(decodeURIComponent(atob(raw)));
+      } catch {
+        renderError('This booking link appears to be invalid or expired.');
+        return;
+      }
+      // Enrich from localStorage if available
+      try {
+        const stored = JSON.parse(localStorage.getItem('nej_bookings') || '[]');
+        const match = stored.find(b => b.id === data.id);
+        if (match) {
+          const mKind = match.bookingKind || (match.eventType ? 'event' : 'studio');
+          data.name         = (mKind === 'event' ? (match.eventName || match.clientName) : match.clientName) || data.name;
+          data.email        = match.email         || data.email        || '';
+          data.phone        = match.phone         || data.phone        || '';
+          data.date         = (mKind === 'event' ? match.eventDate : (match.shootDate || match.preferredDate)) || data.date;
+          data.dateIsRequested = mKind === 'studio' && !match.shootDate && !!match.preferredDate;
+          data.location     = match.location      || data.location;
+          data.status       = match.status        || data.status;
+          data.type         = match.eventType     || match.sessionType || data.type;
+          data.package      = match.package       || data.package      || '';
+          data.deliverables = match.deliverables  || data.deliverables || '';
+          if (mKind === 'event') {
+            if (typeof match.budget === 'number' && !isNaN(match.budget)) data.cost = match.budget;
+            else if (typeof match.budget === 'string' && /^\d+(\.\d+)?$/.test(match.budget)) data.cost = Number(match.budget);
+          } else if (match.cost != null && match.cost !== '') data.cost = match.cost;
+        }
+      } catch {}
+    }
+
+    renderBooking(data);
+  })();
+  return;
 
   function renderBooking(d) {
-    const isEvent  = d.kind === 'event';
-    const typeLabel = EVENT_TYPE_LABELS[d.type] || d.type || (isEvent ? 'Event' : 'Studio Session');
-    const statusKey = d.status || 'pending';
+    const isEvent     = d.kind === 'event';
+    const typeLabel   = EVENT_TYPE_LABELS[d.type] || d.type || (isEvent ? 'Event / Wedding' : 'Studio Session');
+    const pkgLabel    = PACKAGE_LABELS[d.package] || (d.package ? d.package.charAt(0).toUpperCase() + d.package.slice(1) + ' Package' : '');
+    const statusKey   = d.status || 'pending';
     const statusLabel = STATUS_LABELS[statusKey] || statusKey;
+    const isConfirmed = statusKey === 'confirmed';
+    const isCompleted = statusKey === 'completed';
 
-    const rows = [
-      ['Name',         d.name  || '—'],
-      ['Session Type', typeLabel],
-      ...(d.date     ? [['Event Date', fmtDate(d.date)]]         : []),
-      ...(d.location ? [['Location',   d.location]]              : []),
-      ...(d.email    ? [['Email',      d.email]]                 : []),
-      ...(d.phone    ? [['Phone',      d.phone]]                 : []),
-      ['Submitted',    fmtTs(d.ts)],
+    /* ── Contact rows ── */
+    const contactRows = [
+      ...(d.email ? [`<div class="contact-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><span>${esc(d.email)}</span></div>`] : []),
+      ...(d.phone ? [`<div class="contact-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-8-8 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0122 16.92z"/></svg><span>${esc(d.phone)}</span></div>`] : []),
+    ].join('');
+
+    /* ── Detail rows (event-specific) ── */
+    const dateLabel = isEvent ? 'Event Date' : 'Shoot Date';
+    const dateVal   = d.date
+      ? fmtDate(d.date) + (d.dateIsRequested ? ' (requested — pending confirmation)' : '')
+      : '';
+    const costVal   = (d.cost != null && d.cost !== '')
+      ? '₦' + Number(d.cost).toLocaleString('en-NG')
+      : '';
+    const detailRows = [
+      [isEvent ? 'Event Name' : 'Name', d.name || '—'],
+      [isEvent ? 'Event Type' : 'Session Type', typeLabel],
+      ...(pkgLabel                     ? [['Package',    pkgLabel]]              : []),
+      ...(dateVal                      ? [[dateLabel,    dateVal]]               : []),
+      ...(d.location                   ? [['Location',   d.location]]            : []),
+      ...(costVal                      ? [[isEvent ? 'Event Cost' : 'Session Cost', costVal]] : []),
+      ['Submitted',   fmtTs(d.ts)],
     ];
+
+    /* ── Notice block ── */
+    const noticeHtml = isConfirmed
+      ? `<div class="confirmed-notice">
+           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+           <div class="confirmed-notice__text">
+             <strong>Your booking is confirmed.</strong> Our team will reach out to finalise all remaining details. Please keep this reference number safe.
+           </div>
+         </div>`
+      : isCompleted
+      ? `<div class="confirmed-notice">
+           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+           <div class="confirmed-notice__text">
+             <strong>This booking has been completed.</strong> Thank you for choosing NEJstudios — we hope you loved your experience!
+           </div>
+         </div>`
+      : `<div class="pending-notice">
+           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+           <div class="pending-notice__text">
+             <strong>Booking received.</strong> We will review your request and reach out within <strong>24 hours</strong> to confirm your date and discuss details.
+           </div>
+         </div>`;
 
     card.innerHTML = `
       <div class="check-wrap">
@@ -179,8 +346,8 @@
         </svg>
       </div>
 
-      <h1 class="view-title">Booking ${statusKey === 'confirmed' ? 'Confirmed' : statusKey === 'completed' ? 'Completed' : 'Received'}</h1>
-      <p class="view-sub">NEJstudios has received this booking request.</p>
+      <h1 class="view-title">${isConfirmed ? 'Booking Confirmed' : isCompleted ? 'Booking Completed' : 'Booking Received'}</h1>
+      <p class="view-sub">NEJstudios — Premium Photography &amp; Film Production</p>
 
       <div class="booking-id-box">
         <div class="booking-id-label">Booking Reference</div>
@@ -189,25 +356,52 @@
 
       <div class="status-row">
         <span class="kind-chip kind-chip--${isEvent ? 'event' : 'studio'}">${isEvent ? 'Event / Wedding' : 'Studio Session'}</span>
-        &nbsp;
         <span class="status-pill status-pill--${statusKey}">${statusLabel}</span>
       </div>
 
-      <div class="notice">
-        <strong>What happens next?</strong> Our team will reach out within <strong>24 hours</strong> to confirm your booking date, discuss details, and answer any questions.
-      </div>
+      ${noticeHtml}
 
+      <div class="section-label">Booking Details</div>
       <div class="detail-list">
-        ${rows.map(([k, v]) => `
+        ${detailRows.map(([k, v]) => `
           <div class="detail-row">
             <span class="detail-row__key">${k}</span>
             <span class="detail-row__val">${esc(String(v))}</span>
           </div>`).join('')}
       </div>
 
+      ${d.deliverables ? `
+        <div class="section-label" style="margin-top:16px">Agreed Deliverables</div>
+        <div class="deliverables-box">
+          <div class="deliverables-box__text">${esc(d.deliverables)}</div>
+        </div>` : ''}
+
+      ${contactRows ? `
+        <div class="section-label" style="margin-top:16px">Your Contact Info on File</div>
+        <div class="contact-block">
+          ${contactRows}
+        </div>` : ''}
+
+      <div class="section-label" style="margin-top:16px">Contact NEJstudios</div>
+      <div class="contact-block">
+        <div class="contact-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-8-8 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0122 16.92z"/></svg>
+          <span><a href="tel:+2348031234567">+234 803 123 4567</a></span>
+        </div>
+        <div class="contact-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          <span><a href="mailto:hello@nejstudios.com">hello@nejstudios.com</a></span>
+        </div>
+        <div class="contact-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <span>Lagos, Nigeria</span>
+        </div>
+      </div>
+
       <div class="view-actions">
-        <a href="/" class="btn-gold">Back to NEJstudios</a>
-        <button class="btn-ghost" onclick="copyThisLink()">Copy This Link</button>
+        <button class="btn-gold" onclick="copyThisLink()">Copy &amp; Share This Confirmation</button>
+        <a href="/" class="btn-ghost">Back to NEJstudios</a>
+        <div class="btn-copy-feedback" id="copyFeedback"></div>
       </div>
     `;
   }
@@ -223,15 +417,14 @@
       </div>`;
   }
 
-  window.copyThisLink = function() {
+  window.copyThisLink = function () {
     navigator.clipboard.writeText(location.href)
-      .then(() => alert('Link copied to clipboard!'))
+      .then(() => {
+        const el = document.getElementById('copyFeedback');
+        if (el) { el.textContent = '✓ Link copied to clipboard'; setTimeout(() => { el.textContent = ''; }, 3000); }
+      })
       .catch(() => prompt('Copy this link:', location.href));
   };
-
-  function esc(s) {
-    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
 })();
 </script>
 </body>

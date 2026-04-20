@@ -276,6 +276,10 @@
       input.error {
         border-color: #e05555;
       }
+      input[type="date"],
+      input[type="time"] {
+        color-scheme: dark;
+      }
 
       select {
         appearance: none;
@@ -636,7 +640,7 @@
               <option value="Half Session">Half Session — ₦45,000</option>
               <option value="Regular Session">Regular Session — ₦70,000</option>
               <option value="Birthday Session">Birthday Session — ₦100,000</option>
-              <option value="Outdoor Session">Outdoor Session — ₦200,000</option>
+              <option value="Outdoor Session">Outdoor Session — ₦250,000</option>
             </select>
             <div class="sp-error" id="spError">Please select a session type.</div>
           </div>
@@ -651,6 +655,38 @@
               <option value="5">5 outfits</option>
               <option value="6">6 outfits</option>
             </select>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="preferredDate">Preferred Date <span class="req">*</span></label>
+              <input
+                type="date"
+                id="preferredDate"
+                name="preferredDate"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label for="preferredTime">Preferred Time <span class="req">*</span></label>
+              <input
+                type="time"
+                id="preferredTime"
+                name="preferredTime"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="instagram">Instagram Handle <span style="color:var(--grey-4);font-size:0.68rem;font-weight:400;text-transform:none;letter-spacing:0">(optional — for tagging)</span></label>
+            <input
+              type="text"
+              id="instagram"
+              name="instagram"
+              placeholder="@yourhandle"
+              autocomplete="off"
+            />
           </div>
 
           <!-- Rate Card Modal -->
@@ -684,7 +720,7 @@
                 <div style="background:var(--bg-3);border:1px solid var(--border);border-radius:10px;padding:16px">
                   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
                     <strong style="color:var(--white);font-size:0.95rem">Outdoor Session</strong>
-                    <strong style="color:var(--gold);font-size:1rem">₦200,000</strong>
+                    <strong style="color:var(--gold);font-size:1rem">₦250,000</strong>
                   </div>
                   <div style="font-size:0.78rem;color:var(--grey-3);line-height:1.8">15 pictures &nbsp;·&nbsp; 1 hr shoot time &nbsp;·&nbsp; Extra hour = ₦15,000</div>
                 </div>
@@ -798,6 +834,6 @@
   ╚══════════════════════════════════════════════════════╝
   -->
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-    <script src="js/booking.js?v=2.1"></script>
+    <script src="js/booking.js?v=3.0"></script>
   </body>
 </html>

@@ -4,34 +4,50 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Gallery — NEJstudios</title>
+    <meta name="description" content="Explore our portfolio of weddings, portraits, brand films, and event coverage." />
+
+    <!-- ── Open Graph / Social preview ── -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="NEJstudios" />
+    <meta property="og:title" content="NEJstudios — Gallery" />
+    <meta property="og:description" content="Weddings, portraits, brand films, and event coverage by NEJstudios, Lagos." />
+    <meta property="og:url" content="https://www.nejstudios.com/gallery" />
+    <meta property="og:image" content="https://www.nejstudios.com/images/og-cover.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="NEJstudios gallery" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="NEJstudios — Gallery" />
+    <meta name="twitter:description" content="Weddings, portraits, brand films, and event coverage." />
+    <meta name="twitter:image" content="https://www.nejstudios.com/images/og-cover.jpg" />
+    <meta name="theme-color" content="#c9a84c" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
     <style>
       :root {
-        --bg:      #080808;
-        --bg-2:    #0f0f0f;
-        --bg-3:    #141414;
-        --bg-4:    #1a1a1a;
+        --bg:      #0d0d0d;
+        --bg-2:    #111111;
+        --bg-3:    #161616;
+        --bg-4:    #1c1c1c;
         --surface: #1e1e1e;
-        --border:  #2a2a2a;
-        --border-l:#333;
+        --border:  #282828;
+        --border-l:#363636;
         --gold:    #c9a84c;
         --gold-lt: #e0c06a;
         --gold-dk: #a0832a;
-        --gold-glow: rgba(201,168,76,.14);
+        --gold-glow: rgba(201,168,76,.13);
         --white:   #ffffff;
         --grey-1:  #e8e8e8;
         --grey-2:  #b0b0b0;
         --grey-3:  #707070;
         --grey-4:  #404040;
         --green:   #3ecf8e;
-        --green-bg: rgba(62,207,142,.1);
         --red:     #f87171;
-        --red-bg:  rgba(248,113,113,.1);
+        --amber:   #fb923c;
         --serif:   "Playfair Display", Georgia, serif;
         --sans:    "Outfit", system-ui, sans-serif;
-        --trans:   0.25s cubic-bezier(0.4,0,0.2,1);
+        --trans:   0.22s cubic-bezier(0.4,0,0.2,1);
         --radius:  10px;
       }
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -39,7 +55,7 @@
       body {
         background: var(--bg); color: var(--grey-1);
         font-family: var(--sans); min-height: 100vh;
-        display: flex; flex-direction: column; align-items: center;
+        display: flex; flex-direction: column;
       }
       a { color: inherit; text-decoration: none; }
       button { cursor: pointer; border: none; background: none; font-family: inherit; }
@@ -52,9 +68,10 @@
       .page-header {
         width: 100%; background: var(--bg-2);
         border-bottom: 1px solid var(--border);
-        padding: 20px 32px;
+        padding: 18px 32px;
         display: flex; align-items: center; justify-content: space-between;
-        gap: 16px;
+        gap: 16px; flex-shrink: 0;
+        position: sticky; top: 0; z-index: 200;
       }
       .logo {
         font-size: 1.4rem; font-weight: 700; line-height: 1;
@@ -62,80 +79,161 @@
       }
       .logo-nej { color: var(--gold); font-family: var(--serif); }
       .logo-studios { color: var(--white); font-family: var(--sans); font-weight: 300; font-size: 0.9rem; }
-      .logo-tagline { font-size: 0.7rem; color: var(--grey-3); margin-top: 4px; letter-spacing: 0.06em; }
+      .logo-tagline { font-size: 0.7rem; color: var(--grey-3); margin-top: 3px; letter-spacing: 0.06em; }
 
-      /* ── Container ── */
+      /* ── Main container ── */
       .container {
-        width: 100%; max-width: 680px;
-        padding: 40px 24px 60px;
+        width: 100%; max-width: 1100px;
+        margin: 0 auto;
+        padding: 40px 28px 80px;
         flex: 1;
       }
 
+      /* ── Loading / Error states ── */
+      .state-center {
+        text-align: center; padding: 100px 24px; color: var(--grey-3);
+      }
+      .spinner {
+        width: 38px; height: 38px; border: 3px solid var(--border);
+        border-top-color: var(--gold); border-radius: 50%;
+        animation: spin 0.8s linear infinite; margin: 0 auto 18px;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .state-icon {
+        width: 52px; height: 52px; margin: 0 auto 18px; opacity: 0.4;
+      }
+      .state-icon--red { color: var(--red); }
+      .state-title { font-family: var(--serif); font-size: 1.4rem; color: var(--grey-2); margin-bottom: 8px; }
+      .state-msg   { font-size: 0.88rem; line-height: 1.7; max-width: 400px; margin: 0 auto; }
+
       /* ── Password gate ── */
-      #passwordGate {
+      .pw-gate {
+        max-width: 440px; margin: 60px auto 0;
         background: var(--bg-2); border: 1px solid var(--border);
-        border-radius: 16px; padding: 40px 36px;
-        text-align: center; max-width: 420px; margin: 0 auto;
+        border-top: 3px solid var(--gold);
+        border-radius: 16px; padding: 44px 40px;
+        text-align: center;
       }
-      #passwordGate h2 {
-        font-family: var(--serif); font-size: 1.4rem; color: var(--white);
-        margin-bottom: 8px;
+      .pw-gate__logo {
+        font-family: var(--serif); font-size: 1.8rem; color: var(--white);
+        margin-bottom: 4px;
       }
-      #passwordGate p { font-size: 0.85rem; color: var(--grey-3); margin-bottom: 24px; }
-      .pw-input-wrap { position: relative; margin-bottom: 12px; }
-      .pw-input-wrap input {
+      .pw-gate__logo span { color: var(--gold); }
+      .pw-gate__tag { font-size: 0.72rem; color: var(--grey-3); letter-spacing: 0.08em; margin-bottom: 28px; }
+      .pw-gate__title { font-family: var(--serif); font-size: 1.2rem; color: var(--white); margin-bottom: 6px; }
+      .pw-gate__sub   { font-size: 0.82rem; color: var(--grey-3); margin-bottom: 24px; line-height: 1.6; }
+      .pw-input {
         width: 100%; background: var(--bg-3); border: 1px solid var(--border);
-        border-radius: 8px; padding: 14px 16px; color: var(--white);
+        border-radius: 8px; padding: 14px 18px; color: var(--white);
         font-size: 0.95rem; font-family: var(--sans); outline: none;
         transition: var(--trans); text-align: center; letter-spacing: 0.1em;
+        margin-bottom: 10px;
       }
-      .pw-input-wrap input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-glow); }
-      .pw-err { font-size: 0.8rem; color: var(--red); margin-bottom: 12px; min-height: 18px; }
+      .pw-input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-glow); }
+      .pw-err { font-size: 0.8rem; color: var(--red); min-height: 20px; margin-bottom: 10px; }
       .btn-unlock {
         width: 100%; padding: 14px; background: var(--gold); color: #000;
         font-weight: 700; font-size: 0.85rem; letter-spacing: 0.08em;
         text-transform: uppercase; border-radius: 8px; transition: var(--trans);
       }
       .btn-unlock:hover { background: var(--gold-lt); }
+      .btn-unlock:disabled { opacity: 0.6; cursor: not-allowed; }
 
       /* ── Gallery content ── */
       #galleryContent { display: none; }
-      .gallery-brand {
+
+      /* Greeting */
+      .gallery-hero {
         text-align: center; margin-bottom: 36px;
-        padding-bottom: 28px; border-bottom: 1px solid var(--border);
+        padding-bottom: 30px; border-bottom: 1px solid var(--border);
       }
-      .gallery-brand__logo {
-        font-size: 2rem; font-weight: 700; font-family: var(--serif);
-        margin-bottom: 4px;
-      }
-      .gallery-brand__logo span { color: var(--gold); }
-      .gallery-brand__tagline { font-size: 0.8rem; color: var(--grey-3); letter-spacing: 0.08em; }
-      .gallery-greeting {
-        background: var(--bg-2); border: 1px solid var(--border);
-        border-left: 3px solid var(--gold);
-        border-radius: var(--radius); padding: 20px 24px;
-        margin-bottom: 28px;
-      }
-      .gallery-greeting h2 {
-        font-family: var(--serif); font-size: 1.3rem; color: var(--white);
+      .gallery-hero__logo {
+        font-family: var(--serif); font-size: 2.2rem; color: var(--white);
         margin-bottom: 6px;
       }
-      .gallery-greeting p { font-size: 0.85rem; color: var(--grey-2); line-height: 1.6; }
-      .gallery-expiry {
-        background: rgba(251,146,60,.08); border: 1px solid rgba(251,146,60,.2);
-        border-radius: 8px; padding: 10px 16px; margin-bottom: 24px;
-        font-size: 0.8rem; color: #fb923c; display: flex; align-items: center; gap: 8px;
+      .gallery-hero__logo span { color: var(--gold); }
+      .gallery-hero__tag { font-size: 0.72rem; color: var(--grey-3); letter-spacing: 0.1em; margin-bottom: 20px; }
+      .gallery-hero__greeting {
+        font-family: var(--serif); font-size: 1.5rem; color: var(--white);
+        font-style: italic; margin-bottom: 8px;
       }
-      .gallery-expiry svg { width: 16px; height: 16px; flex-shrink: 0; }
+      .gallery-hero__sub { font-size: 0.88rem; color: var(--grey-2); line-height: 1.7; }
 
-      /* ── Files list ── */
-      .files-header {
-        font-size: 0.62rem; font-weight: 700; letter-spacing: 0.18em;
-        text-transform: uppercase; color: var(--grey-4);
-        margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+      /* Expiry badge */
+      .expiry-badge {
+        display: inline-flex; align-items: center; gap: 7px;
+        background: rgba(251,146,60,.09); border: 1px solid rgba(251,146,60,.22);
+        border-radius: 20px; padding: 7px 14px; margin-bottom: 28px;
+        font-size: 0.78rem; color: var(--amber);
       }
-      .files-header::after { content: ""; flex: 1; height: 1px; background: var(--border); }
-      .files-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 36px; }
+      .expiry-badge svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+      /* Toolbar */
+      .gallery-toolbar {
+        display: flex; align-items: center; justify-content: space-between;
+        flex-wrap: wrap; gap: 10px; margin-bottom: 20px;
+      }
+      .gallery-toolbar__label {
+        font-size: 0.62rem; font-weight: 700; letter-spacing: 0.16em;
+        text-transform: uppercase; color: var(--grey-4);
+        display: flex; align-items: center; gap: 8px;
+      }
+      .gallery-toolbar__label::after { content: ""; display: block; width: 48px; height: 1px; background: var(--border); }
+      .btn-dl-all {
+        display: flex; align-items: center; gap: 7px;
+        padding: 10px 22px; background: var(--gold); color: #000;
+        font-weight: 700; font-size: 0.8rem; letter-spacing: 0.07em;
+        text-transform: uppercase; border-radius: 8px; transition: var(--trans);
+      }
+      .btn-dl-all:hover { background: var(--gold-lt); }
+      .btn-dl-all svg { width: 15px; height: 15px; }
+
+      /* Photo grid */
+      .photo-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-bottom: 48px;
+      }
+      @media (max-width: 760px) { .photo-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; } }
+      @media (max-width: 480px) { .photo-grid { grid-template-columns: 1fr; gap: 8px; } }
+
+      .photo-card {
+        position: relative; border-radius: var(--radius); overflow: hidden;
+        background: var(--bg-3); border: 1px solid var(--border);
+        cursor: pointer; transition: border-color var(--trans);
+        aspect-ratio: 1;
+      }
+      .photo-card:hover { border-color: var(--gold); }
+      .photo-card img {
+        width: 100%; height: 100%; object-fit: cover; display: block;
+        transition: transform 0.35s ease;
+      }
+      .photo-card:hover img { transform: scale(1.03); }
+      .photo-card__overlay {
+        position: absolute; inset: 0;
+        background: linear-gradient(to top, rgba(0,0,0,.65) 0%, transparent 55%);
+        opacity: 0; transition: opacity var(--trans);
+        display: flex; flex-direction: column; justify-content: flex-end;
+        padding: 10px;
+      }
+      .photo-card:hover .photo-card__overlay { opacity: 1; }
+      .photo-card__name {
+        font-size: 0.72rem; color: #fff; white-space: nowrap; overflow: hidden;
+        text-overflow: ellipsis; margin-bottom: 6px;
+      }
+      .photo-card__dl {
+        display: flex; align-items: center; gap: 5px;
+        padding: 6px 12px; background: var(--gold); color: #000;
+        font-weight: 700; font-size: 0.65rem; letter-spacing: 0.06em;
+        text-transform: uppercase; border-radius: 5px; border: none;
+        transition: var(--trans); align-self: flex-start;
+      }
+      .photo-card__dl:hover { background: var(--gold-lt); }
+      .photo-card__dl svg { width: 11px; height: 11px; }
+
+      /* Non-image file card (list style) */
+      .file-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 36px; }
       .file-card {
         background: var(--bg-2); border: 1px solid var(--border);
         border-radius: var(--radius); padding: 16px 20px;
@@ -146,52 +244,115 @@
       .file-card__icon {
         width: 40px; height: 40px; border-radius: 10px;
         background: var(--gold-glow); border: 1px solid rgba(201,168,76,.25);
-        display: flex; align-items: center; justify-content: center;
-        flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center; flex-shrink: 0;
       }
       .file-card__icon svg { width: 20px; height: 20px; color: var(--gold); }
       .file-card__info { flex: 1; min-width: 0; }
       .file-card__label { font-size: 0.92rem; font-weight: 600; color: var(--white); }
-      .file-card__url { font-size: 0.72rem; color: var(--grey-4); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .btn-download {
+      .file-card__url   { font-size: 0.72rem; color: var(--grey-4); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .btn-file-dl {
         padding: 9px 18px; background: var(--gold); color: #000;
         font-weight: 700; font-size: 0.72rem; letter-spacing: 0.06em;
         text-transform: uppercase; border-radius: 6px;
         display: flex; align-items: center; gap: 6px;
         transition: var(--trans); flex-shrink: 0;
       }
-      .btn-download:hover { background: var(--gold-lt); }
-      .btn-download svg { width: 14px; height: 14px; }
+      .btn-file-dl:hover { background: var(--gold-lt); }
+      .btn-file-dl svg { width: 14px; height: 14px; }
+
       .no-files {
-        text-align: center; padding: 40px 24px; color: var(--grey-3); font-size: 0.85rem;
+        grid-column: 1 / -1; text-align: center;
+        padding: 60px 24px; color: var(--grey-3); font-size: 0.88rem;
       }
+
+      /* ── Lightbox ── */
+      .lightbox {
+        position: fixed; inset: 0; z-index: 9000;
+        background: rgba(0,0,0,0.97);
+        display: flex; flex-direction: column;
+        opacity: 0; pointer-events: none;
+        transition: opacity 0.2s;
+      }
+      .lightbox.open { opacity: 1; pointer-events: all; }
+      .lightbox__topbar {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 14px 22px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+      }
+      .lightbox__filename {
+        font-size: 0.85rem; color: var(--grey-1);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 55%;
+      }
+      .lightbox__counter { font-size: 0.78rem; color: var(--grey-3); flex-shrink: 0; }
+      .lightbox__close {
+        width: 34px; height: 34px; border-radius: 50%;
+        background: var(--bg-3); border: 1px solid var(--border);
+        display: flex; align-items: center; justify-content: center;
+        color: var(--grey-2); transition: var(--trans); flex-shrink: 0;
+      }
+      .lightbox__close:hover { background: var(--gold); color: #000; border-color: var(--gold); }
+      .lightbox__close svg { width: 14px; height: 14px; }
+      .lightbox__body {
+        flex: 1; display: flex; align-items: center; justify-content: center;
+        position: relative; overflow: hidden; min-height: 0;
+      }
+      .lightbox__img {
+        max-width: 100%; max-height: 100%; object-fit: contain;
+        border-radius: 4px; display: block;
+      }
+      .lightbox__arrow {
+        position: absolute; top: 50%; transform: translateY(-50%);
+        width: 46px; height: 46px; border-radius: 50%;
+        background: rgba(0,0,0,0.7); border: 1px solid var(--border);
+        display: flex; align-items: center; justify-content: center;
+        color: var(--white); transition: var(--trans); z-index: 2;
+      }
+      .lightbox__arrow:hover { background: var(--gold); color: #000; border-color: var(--gold); }
+      .lightbox__arrow--prev { left: 16px; }
+      .lightbox__arrow--next { right: 16px; }
+      .lightbox__arrow svg { width: 22px; height: 22px; }
+      .lightbox__footer {
+        display: flex; align-items: center; justify-content: flex-end;
+        padding: 12px 22px; border-top: 1px solid var(--border); flex-shrink: 0;
+      }
+      .lightbox__dl {
+        padding: 9px 20px; background: var(--gold); color: #000; font-weight: 700;
+        font-size: 0.78rem; letter-spacing: 0.07em; text-transform: uppercase;
+        border-radius: 7px; transition: var(--trans); display: flex; align-items: center; gap: 6px;
+      }
+      .lightbox__dl:hover { background: var(--gold-lt); }
+      .lightbox__dl svg { width: 14px; height: 14px; }
+
+      /* ── Toast ── */
+      .toast {
+        position: fixed; bottom: 28px; right: 28px; z-index: 99999;
+        background: var(--bg-2); border: 1px solid var(--border);
+        border-left: 3px solid var(--gold); border-radius: 8px;
+        padding: 14px 20px; font-size: 0.85rem; color: var(--grey-1);
+        transform: translateY(16px); opacity: 0;
+        transition: transform 0.3s ease, opacity 0.3s ease;
+        pointer-events: none; max-width: 320px; line-height: 1.5;
+      }
+      .toast.show { transform: translateY(0); opacity: 1; }
 
       /* ── Footer ── */
       .gallery-footer {
-        text-align: center; padding: 24px 0;
+        text-align: center; padding: 28px 0;
         border-top: 1px solid var(--border);
         font-size: 0.75rem; color: var(--grey-4);
-        line-height: 1.7;
+        line-height: 1.8;
       }
       .gallery-footer strong { color: var(--gold); }
 
-      /* ── States ── */
-      #loadingState {
-        text-align: center; padding: 80px 24px; color: var(--grey-3);
+      /* ── Responsive ── */
+      @media (max-width: 600px) {
+        .container { padding: 28px 16px 60px; }
+        .page-header { padding: 14px 18px; }
+        .pw-gate { padding: 32px 24px; margin-top: 40px; }
+        .gallery-toolbar { flex-direction: column; align-items: flex-start; }
+        .btn-dl-all { width: 100%; justify-content: center; }
+        .lightbox__arrow--prev { left: 6px; }
+        .lightbox__arrow--next { right: 6px; }
       }
-      .spinner {
-        width: 36px; height: 36px; border: 3px solid var(--border);
-        border-top-color: var(--gold); border-radius: 50%;
-        animation: spin 0.8s linear infinite; margin: 0 auto 16px;
-      }
-      @keyframes spin { to { transform: rotate(360deg); } }
-      #errorState {
-        display: none; text-align: center; padding: 80px 24px;
-        color: var(--grey-3);
-      }
-      #errorState svg { width: 48px; height: 48px; margin: 0 auto 16px; opacity: 0.4; color: var(--red); }
-      #errorState h3 { font-family: var(--serif); font-size: 1.3rem; color: var(--grey-2); margin-bottom: 8px; }
-      #errorState p { font-size: 0.85rem; line-height: 1.6; }
     </style>
   </head>
   <body>
@@ -208,55 +369,71 @@
     <div class="container">
 
       <!-- Loading -->
-      <div id="loadingState">
+      <div id="loadingState" class="state-center">
         <div class="spinner"></div>
         <p>Loading your gallery…</p>
       </div>
 
       <!-- Error -->
-      <div id="errorState">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <div id="errorState" style="display:none" class="state-center">
+        <svg class="state-icon state-icon--red" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <circle cx="12" cy="12" r="10"/>
           <line x1="12" y1="8" x2="12" y2="12"/>
           <line x1="12" y1="16" x2="12.01" y2="16"/>
         </svg>
-        <h3 id="errorTitle">Link Not Found</h3>
-        <p id="errorMsg">This gallery link is invalid or has been removed.</p>
+        <div class="state-title" id="errorTitle">Link Not Found</div>
+        <p class="state-msg" id="errorMsg">This gallery link is invalid or has been removed.</p>
       </div>
 
       <!-- Password gate -->
       <div id="passwordGate" style="display:none">
-        <h2>Password Required</h2>
-        <p>This gallery is protected. Enter the password to access your files.</p>
-        <div class="pw-input-wrap">
-          <input type="password" id="pwInput" placeholder="Enter password" autocomplete="off" />
+        <div class="pw-gate">
+          <div class="pw-gate__logo"><span>NEJ</span>studios</div>
+          <div class="pw-gate__tag">Client Gallery Portal</div>
+          <div class="pw-gate__title">Password Required</div>
+          <p class="pw-gate__sub">This gallery is protected. Enter the password provided by NEJstudios to access your files.</p>
+          <input type="password" id="pwInput" class="pw-input" placeholder="Enter password" autocomplete="off" />
+          <div class="pw-err" id="pwErr"></div>
+          <button class="btn-unlock" id="btnUnlock">Unlock Gallery</button>
         </div>
-        <div class="pw-err" id="pwErr"></div>
-        <button class="btn-unlock" id="btnUnlock">Unlock Gallery</button>
       </div>
 
-      <!-- Gallery -->
+      <!-- Gallery content -->
       <div id="galleryContent">
-        <div class="gallery-brand">
-          <div class="gallery-brand__logo"><span>NEJ</span>studios</div>
-          <div class="gallery-brand__tagline">Your photos are ready</div>
+
+        <div class="gallery-hero">
+          <div class="gallery-hero__logo"><span>NEJ</span>studios</div>
+          <div class="gallery-hero__tag">Your Photos are Ready</div>
+          <div class="gallery-hero__greeting" id="greetingName">Hello!</div>
+          <p class="gallery-hero__sub" id="greetingMsg">Your gallery is ready.</p>
         </div>
 
-        <div class="gallery-greeting">
-          <h2 id="greetingName">Hello!</h2>
-          <p id="greetingMsg">Your gallery is ready. Click the download button next to each file to save it to your device.</p>
+        <!-- Expiry badge -->
+        <div style="text-align:center">
+          <div id="expiryNotice" style="display:none" class="expiry-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span id="expiryText">Gallery expires soon</span>
+          </div>
         </div>
 
-        <div id="expiryNotice" style="display:none" class="gallery-expiry">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <polyline points="12 6 12 12 16 14"/>
-          </svg>
-          <span id="expiryText">This gallery link expires on —</span>
+        <!-- Toolbar -->
+        <div class="gallery-toolbar">
+          <div class="gallery-toolbar__label" id="filesLabel">Your Files</div>
+          <button class="btn-dl-all" id="btnDlAll" style="display:none">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Download All
+          </button>
         </div>
 
-        <div class="files-header">Your Files</div>
-        <div class="files-list" id="filesList"></div>
+        <!-- Photo grid (images) / file list (other) -->
+        <div id="photoGrid" class="photo-grid"></div>
+        <div id="fileListEl" class="file-list" style="display:none"></div>
 
         <div class="gallery-footer">
           Delivered by <strong>NEJstudios</strong> — Premium Photography &amp; Film Production<br/>
@@ -266,103 +443,294 @@
 
     </div><!-- /container -->
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/db.js?v=2.5"></script>
+    <!-- Lightbox -->
+    <div class="lightbox" id="lightbox">
+      <div class="lightbox__topbar">
+        <div class="lightbox__filename" id="lbFilename"></div>
+        <div class="lightbox__counter"  id="lbCounter"></div>
+        <button class="lightbox__close" id="lbClose">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="lightbox__body">
+        <button class="lightbox__arrow lightbox__arrow--prev" id="lbPrev">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
+        <img class="lightbox__img" id="lbImg" src="" alt="" />
+        <button class="lightbox__arrow lightbox__arrow--next" id="lbNext">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="9 6 15 12 9 18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="lightbox__footer">
+        <button class="lightbox__dl" id="lbDownload">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Download
+        </button>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="galleryToast"></div>
+
     <script>
-      (async function () {
-        const params = new URLSearchParams(location.search);
-        const token  = params.get('t');
+    (async function () {
+      'use strict';
 
-        const loadingEl  = document.getElementById('loadingState');
-        const errorEl    = document.getElementById('errorState');
-        const pwGateEl   = document.getElementById('passwordGate');
-        const galleryEl  = document.getElementById('galleryContent');
+      /* ── DOM ── */
+      const loadingEl  = document.getElementById('loadingState');
+      const errorEl    = document.getElementById('errorState');
+      const pwGateEl   = document.getElementById('passwordGate');
+      const galleryEl  = document.getElementById('galleryContent');
+      const toastEl    = document.getElementById('galleryToast');
+      const lightboxEl = document.getElementById('lightbox');
+      const lbImg      = document.getElementById('lbImg');
+      const lbFilename = document.getElementById('lbFilename');
+      const lbCounter  = document.getElementById('lbCounter');
+      const lbClose    = document.getElementById('lbClose');
+      const lbPrev     = document.getElementById('lbPrev');
+      const lbNext     = document.getElementById('lbNext');
+      const lbDownload = document.getElementById('lbDownload');
 
-        function showError(title, msg) {
-          loadingEl.style.display = 'none';
-          document.getElementById('errorTitle').textContent = title;
-          document.getElementById('errorMsg').textContent   = msg;
-          errorEl.style.display = 'block';
-        }
+      let _toastTimer  = null;
+      let _lbImages    = [];
+      let _lbIdx       = 0;
+      let _deliveryToken = null;
 
-        if (!token) {
-          showError('No Gallery Token', 'No gallery token was provided in the URL. Please use the link sent to you by NEJstudios.');
-          return;
-        }
+      /* ── Toast ── */
+      function showToast(msg, ms = 2800) {
+        if (_toastTimer) clearTimeout(_toastTimer);
+        toastEl.textContent = msg;
+        toastEl.classList.add('show');
+        _toastTimer = setTimeout(() => toastEl.classList.remove('show'), ms);
+      }
 
-        // Load delivery record
-        let delivery;
-        try {
-          delivery = await dbGetGalleryDelivery(token);
-        } catch (err) {
-          showError('Failed to Load', 'Could not connect to the gallery server. Please try again later.');
-          return;
-        }
-
-        if (!delivery) {
-          showError('Link Not Found', 'This gallery link is invalid or has been removed. Please contact NEJstudios for assistance.');
-          return;
-        }
-
-        // Check expiry
-        const today = new Date().toISOString().slice(0, 10);
-        if (delivery.expires_at && delivery.expires_at < today) {
-          showError('Gallery Expired', `This gallery link expired on ${delivery.expires_at}. Please contact NEJstudios to request a new link.`);
-          return;
-        }
-
+      /* ── Error ── */
+      function showError(title, msg) {
         loadingEl.style.display = 'none';
+        document.getElementById('errorTitle').textContent = title;
+        document.getElementById('errorMsg').textContent   = msg;
+        errorEl.style.display = 'block';
+      }
 
-        // Password protection
-        if (delivery.password) {
-          pwGateEl.style.display = 'block';
+      /* ── Helpers ── */
+      function isImageUrl(url) {
+        return /\.(jpe?g|png|webp|gif|heic|heif|avif|svg)(\?|$)/i.test(url);
+      }
 
-          function tryUnlock() {
-            const entered = document.getElementById('pwInput').value;
-            if (entered === delivery.password) {
-              document.getElementById('pwErr').textContent = '';
-              pwGateEl.style.display = 'none';
-              showGallery(delivery);
-            } else {
-              document.getElementById('pwErr').textContent = 'Incorrect password. Try again.';
-              document.getElementById('pwInput').value = '';
-              document.getElementById('pwInput').focus();
-            }
-          }
+      function daysUntil(dateStr) {
+        const target = new Date(dateStr + 'T12:00:00');
+        const today  = new Date();
+        today.setHours(12, 0, 0, 0);
+        return Math.round((target - today) / (1000 * 60 * 60 * 24));
+      }
 
-          document.getElementById('btnUnlock').addEventListener('click', tryUnlock);
-          document.getElementById('pwInput').addEventListener('keydown', e => {
-            if (e.key === 'Enter') tryUnlock();
+      /* ── Download logging ── */
+      async function logDownload(token, fileId, fileName) {
+        try {
+          await fetch('/api/gallery-auth.php?action=log-download', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, fileId, fileName }),
           });
-        } else {
-          showGallery(delivery);
+        } catch { /* non-critical */ }
+      }
+
+      /* ── Trigger download ── */
+      function triggerDownload(url, label) {
+        const a    = document.createElement('a');
+        a.href     = url;
+        a.download = label || 'file';
+        a.target   = '_blank';
+        a.rel      = 'noopener';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+
+      /* ── Lightbox ── */
+      function openLightbox(idx) {
+        _lbIdx = idx;
+        renderLightbox();
+        lightboxEl.classList.add('open');
+        document.body.style.overflow = 'hidden';
+      }
+
+      function closeLightbox() {
+        lightboxEl.classList.remove('open');
+        document.body.style.overflow = '';
+      }
+
+      function renderLightbox() {
+        const f = _lbImages[_lbIdx];
+        if (!f) return;
+        lbImg.src           = f.url;
+        lbImg.alt           = f.label || ('Photo ' + (_lbIdx + 1));
+        lbFilename.textContent = f.label || ('Photo ' + (_lbIdx + 1));
+        lbCounter.textContent  = `${_lbIdx + 1} / ${_lbImages.length}`;
+        lbPrev.style.display   = _lbIdx > 0 ? '' : 'none';
+        lbNext.style.display   = _lbIdx < _lbImages.length - 1 ? '' : 'none';
+      }
+
+      lbClose.addEventListener('click', closeLightbox);
+      lightboxEl.addEventListener('click', e => { if (e.target === lightboxEl) closeLightbox(); });
+      lbPrev.addEventListener('click',    () => { if (_lbIdx > 0)                          { _lbIdx--; renderLightbox(); } });
+      lbNext.addEventListener('click',    () => { if (_lbIdx < _lbImages.length - 1) { _lbIdx++; renderLightbox(); } });
+      lbDownload.addEventListener('click', () => {
+        const f = _lbImages[_lbIdx];
+        if (!f) return;
+        triggerDownload(f.url, f.label);
+        logDownload(_deliveryToken, f.id || f.label || ('file-' + _lbIdx), f.label || ('file-' + _lbIdx));
+        showToast('Download started!');
+      });
+      document.addEventListener('keydown', e => {
+        if (!lightboxEl.classList.contains('open')) return;
+        if (e.key === 'Escape')      closeLightbox();
+        if (e.key === 'ArrowLeft')   { if (_lbIdx > 0)                          { _lbIdx--; renderLightbox(); } }
+        if (e.key === 'ArrowRight')  { if (_lbIdx < _lbImages.length - 1) { _lbIdx++; renderLightbox(); } }
+      });
+
+      /* ── Download All (ZIP) ── */
+      async function downloadAll(d) {
+        const files = d.files || [];
+        if (!files.length) return;
+        showToast('Preparing download…', 6000);
+
+        if (typeof JSZip !== 'undefined') {
+          try {
+            const zip    = new JSZip();
+            const folder = zip.folder(d.client_name || 'NEJstudios Gallery');
+            await Promise.all(files.map(async (f, i) => {
+              try {
+                const res  = await fetch(f.url);
+                const blob = await res.blob();
+                const ext  = (f.url.split('.').pop().split('?')[0] || 'jpg').toLowerCase();
+                folder.file((f.label || 'photo_' + (i + 1)) + '.' + ext, blob);
+              } catch { /* skip unreachable */ }
+            }));
+            const blob = await zip.generateAsync({ type: 'blob' });
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            a.href     = url; a.download = (d.client_name || 'gallery') + '.zip';
+            document.body.appendChild(a); a.click();
+            document.body.removeChild(a); URL.revokeObjectURL(url);
+            showToast('Download started!');
+            // Log all files
+            files.forEach(f => logDownload(_deliveryToken, f.id || f.label, f.label));
+            return;
+          } catch { /* fall through */ }
         }
 
-        function showGallery(d) {
-          galleryEl.style.display = 'block';
+        // Fallback: individual downloads
+        for (const f of files) {
+          triggerDownload(f.url, f.label);
+          logDownload(_deliveryToken, f.id || f.label, f.label);
+          await new Promise(r => setTimeout(r, 320));
+        }
+        showToast('Files downloading…');
+      }
 
-          // Greeting
-          document.getElementById('greetingName').textContent = `Hello, ${d.client_name}!`;
-          const fileCount = (d.files || []).length;
-          document.getElementById('greetingMsg').textContent =
-            `Your gallery is ready with ${fileCount} file${fileCount !== 1 ? 's' : ''}. Click the download button next to each file.`;
+      /* ── Render gallery ── */
+      function showGallery(d) {
+        if (!d || typeof d !== 'object') throw new Error('showGallery: delivery is ' + d);
+        _deliveryToken = d.token || '';
+        galleryEl.style.display = 'block';
 
-          // Expiry notice
-          if (d.expires_at) {
-            const expDate = new Date(d.expires_at + 'T12:00:00').toLocaleDateString('en-NG', { dateStyle: 'long' });
-            document.getElementById('expiryNotice').style.display = 'flex';
-            document.getElementById('expiryText').textContent = `This gallery link expires on ${expDate}. Download your files before then.`;
-          }
+        // Greeting
+        document.getElementById('greetingName').textContent =
+          `Hello, ${d.client_name || 'there'} — your gallery is ready`;
+        const fileCount = (d.files || []).length;
+        document.getElementById('greetingMsg').textContent =
+          `${fileCount} file${fileCount !== 1 ? 's' : ''} are ready for download. Click any image to view full size.`;
+        document.getElementById('filesLabel').textContent  =
+          `Your Files · ${fileCount}`;
 
-          // Files
-          const list = document.getElementById('filesList');
-          const files = d.files || [];
+        // Expiry
+        if (d.expires_at) {
+          const days    = daysUntil(d.expires_at);
+          const expDate = new Date(d.expires_at + 'T12:00:00').toLocaleDateString('en-NG', { dateStyle: 'long' });
+          document.getElementById('expiryNotice').style.display = 'inline-flex';
+          let expiryMsg = `Gallery expires ${expDate}`;
+          if (days === 0) expiryMsg = 'Gallery expires today — download your files now!';
+          else if (days === 1) expiryMsg = 'Gallery expires tomorrow — download your files soon!';
+          else if (days > 0) expiryMsg = `Gallery expires in ${days} day${days !== 1 ? 's' : ''} (${expDate})`;
+          document.getElementById('expiryText').textContent = expiryMsg;
+        }
 
-          if (files.length === 0) {
-            list.innerHTML = `<div class="no-files">No files have been added to this gallery yet. Check back soon or contact NEJstudios.</div>`;
-          } else {
-            list.innerHTML = files.map((f, idx) => `
-              <div class="file-card" data-file-idx="${idx}">
+        // Split files into images and others
+        const files  = d.files || [];
+        const images = files.filter(f => isImageUrl(f.url));
+        const others = files.filter(f => !isImageUrl(f.url));
+
+        _lbImages = images;
+
+        const photoGrid = document.getElementById('photoGrid');
+        const fileListE = document.getElementById('fileListEl');
+
+        // Show Download All button if there are files
+        if (files.length) {
+          document.getElementById('btnDlAll').style.display = '';
+          document.getElementById('btnDlAll').addEventListener('click', () => downloadAll(d));
+        }
+
+        // Photo grid
+        if (images.length === 0) {
+          photoGrid.innerHTML = '<div class="no-files">No image files in this gallery.</div>';
+        } else {
+          photoGrid.innerHTML = images.map((f, idx) => `
+            <div class="photo-card" data-idx="${idx}" title="${f.label || 'Photo ' + (idx + 1)}">
+              <img src="${f.url}" alt="${f.label || 'Photo ' + (idx + 1)}" loading="lazy" />
+              <div class="photo-card__overlay">
+                <div class="photo-card__name">${f.label || 'Photo ' + (idx + 1)}</div>
+                <button class="photo-card__dl" data-dl-idx="${idx}">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                  Download
+                </button>
+              </div>
+            </div>`).join('');
+
+          // Wire click events
+          photoGrid.querySelectorAll('.photo-card').forEach(card => {
+            const idx = parseInt(card.dataset.idx, 10);
+            card.addEventListener('click', e => {
+              if (e.target.closest('[data-dl-idx]')) return;
+              openLightbox(idx);
+            });
+          });
+          photoGrid.querySelectorAll('[data-dl-idx]').forEach(btn => {
+            btn.addEventListener('click', e => {
+              e.stopPropagation();
+              const i = parseInt(btn.dataset.dlIdx, 10);
+              const f = images[i];
+              if (!f) return;
+              triggerDownload(f.url, f.label);
+              logDownload(d.token, f.id || f.label, f.label);
+              showToast('Download started!');
+            });
+          });
+        }
+
+        // Non-image file list
+        if (others.length > 0) {
+          fileListE.style.display = '';
+          fileListE.innerHTML = others.map((f, idx) => {
+            const isReal  = f.url.startsWith('/') || f.url.startsWith('http');
+            const dlAttrs = isReal ? `download="${(f.label || 'file').replace(/"/g, '&quot;')}"` : `target="_blank" rel="noopener"`;
+            return `
+              <div class="file-card" data-fidx="${idx}">
                 <div class="file-card__icon">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/>
@@ -371,9 +739,9 @@
                 </div>
                 <div class="file-card__info">
                   <div class="file-card__label">${f.label || 'File ' + (idx + 1)}</div>
-                  <div class="file-card__url">${f.url || ''}</div>
+                  <div class="file-card__url">${isReal ? f.url : '(embedded)'}</div>
                 </div>
-                <a class="btn-download" href="${f.url || '#'}" target="_blank" rel="noopener" data-dl-idx="${idx}">
+                <a class="btn-file-dl" href="${f.url}" ${dlAttrs} data-file-id="${f.id || ''}" data-file-name="${f.label || ''}">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
                     <polyline points="7 10 12 15 17 10"/>
@@ -381,18 +749,256 @@
                   </svg>
                   Download
                 </a>
-              </div>`).join('');
+              </div>`;
+          }).join('');
 
-            // Track downloads
-            list.querySelectorAll('.btn-download').forEach(btn => {
-              btn.addEventListener('click', () => {
-                dbIncrementDownload(d.id);
-              });
+          fileListE.querySelectorAll('.btn-file-dl').forEach(btn => {
+            btn.addEventListener('click', () => {
+              logDownload(d.token, btn.dataset.fileId, btn.dataset.fileName);
+              showToast('Download started!');
             });
+          });
+        }
+      }
+
+      /* ── Boot ── */
+      // Global safety net — any uncaught error shows a message instead of eternal spinner
+      window.addEventListener('unhandledrejection', ev => {
+        console.error('[gallery] Unhandled promise rejection:', ev.reason);
+        showError('Something Went Wrong', 'An unexpected error occurred. Please refresh or contact NEJstudios.');
+      });
+
+      let _bootToken = '';
+
+      async function boot() {
+        const params = new URLSearchParams(location.search);
+        const token  = params.get('t');
+        _bootToken   = token || '';
+
+        if (!token) {
+          showError('No Gallery Token', 'No gallery token was provided in the URL. Please use the link sent to you by NEJstudios.');
+          return;
+        }
+
+        console.log('[gallery] booting, token:', token);
+
+        // ── Step 1: Probe gallery-auth.php (no password submitted — just checks existence + expiry)
+        let probeData    = null;
+        let usedFallback = false;
+        try {
+          const probeRes = await fetch('/api/gallery-auth.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token }),
+          });
+          if (probeRes.ok) {
+            probeData = await probeRes.json();
+            console.log('[gallery] probe response:', probeData);
+          } else {
+            console.warn('[gallery] probe HTTP error:', probeRes.status);
+          }
+        } catch (err) {
+          console.warn('[gallery] probe fetch failed:', err);
+        }
+
+        // ── Step 2: If probe failed, fall back to sync.php + localStorage
+        if (!probeData) {
+          console.log('[gallery] falling back to sync.php');
+          usedFallback = true;
+          probeData = await loadDeliveryFallback(token);
+          if (!probeData) {
+            showError('Failed to Load', 'Could not connect to the gallery server. Please try again later.');
+            return;
           }
         }
 
-      })();
+        // ── Step 3: Handle probe result
+        if (probeData.expired) {
+          showError('Gallery Expired', probeData.error || 'This gallery has expired.');
+          return;
+        }
+
+        if (!probeData.ok && !probeData.password_required) {
+          // Only try fallback if we haven't already used it
+          if (!usedFallback) {
+            console.log('[gallery] probe not ok, trying fallback. error:', probeData.error);
+            const fallback = await loadDeliveryFallback(token);
+            if (fallback && (fallback.ok || fallback.password_required)) {
+              usedFallback = true;
+              probeData = fallback;
+            } else {
+              showError('Link Not Found', probeData.error || 'This gallery link is invalid or has been removed. Please contact NEJstudios for assistance.');
+              return;
+            }
+          } else {
+            showError('Link Not Found', probeData.error || 'This gallery link is invalid or has been removed. Please contact NEJstudios for assistance.');
+            return;
+          }
+        }
+
+        // ── Step 4a: No password needed — show gallery
+        if (probeData.ok && probeData.delivery) {
+          loadingEl.style.display = 'none';
+          try {
+            showGallery(probeData.delivery);
+          } catch (err) {
+            console.error('[gallery] showGallery threw:', err);
+            showError('Display Error', 'Your gallery loaded but could not be displayed. Please contact NEJstudios. (' + err.message + ')');
+          }
+          return;
+        }
+
+        // ── Step 4b: Password required
+        loadingEl.style.display = 'none';
+        pwGateEl.style.display  = 'block';
+
+        // Keep reference to fallback delivery for offline password check
+        const fallbackDelivery = probeData._fallbackDelivery || null;
+
+        let attemptLocked = false;
+
+        async function tryUnlock() {
+          if (attemptLocked) return;
+          const btn   = document.getElementById('btnUnlock');
+          const errEl = document.getElementById('pwErr');
+          const input = document.getElementById('pwInput');
+          const pw    = input.value.trim();
+          if (!pw) { errEl.textContent = 'Please enter the password.'; return; }
+
+          btn.disabled    = true;
+          btn.textContent = 'Checking…';
+          errEl.textContent = '';
+
+          // If we loaded via fallback and have the delivery, check password client-side
+          if (fallbackDelivery) {
+            const storedPw = (fallbackDelivery.password || '').trim();
+            if (storedPw && storedPw === pw) {
+              pwGateEl.style.display = 'none';
+              try {
+                showGallery(fallbackDelivery);
+              } catch (err) {
+                console.error('[gallery] showGallery threw after fallback unlock:', err);
+                showError('Display Error', 'Your gallery loaded but could not be displayed. Please contact NEJstudios. (' + err.message + ')');
+              }
+            } else {
+              errEl.textContent = 'Incorrect password. Try again.';
+              input.value = '';
+              input.focus();
+              btn.disabled    = false;
+              btn.textContent = 'Unlock Gallery';
+            }
+            return;
+          }
+
+          try {
+            const r    = await fetch('/api/gallery-auth.php', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ token, password: pw }),
+            });
+            const data = await r.json();
+            console.log('[gallery] unlock response:', data);
+
+            if (data.locked) {
+              attemptLocked = true;
+              errEl.textContent = data.error || 'Too many attempts. Try again in 15 minutes.';
+              btn.disabled    = true;
+              btn.textContent = 'Locked';
+              return;
+            }
+            if (data.expired) {
+              pwGateEl.style.display = 'none';
+              showError('Gallery Expired', data.error || 'This gallery has expired.');
+              return;
+            }
+            if (data.ok && data.delivery) {
+              errEl.textContent = '';
+              pwGateEl.style.display = 'none';
+              try {
+                showGallery(data.delivery);
+              } catch (err) {
+                console.error('[gallery] showGallery threw after unlock:', err);
+                showError('Display Error', 'Your gallery loaded but could not be displayed. Please contact NEJstudios. (' + err.message + ')');
+              }
+            } else {
+              errEl.textContent = data.error || 'Incorrect password. Try again.';
+              input.value = '';
+              input.focus();
+              btn.disabled    = false;
+              btn.textContent = 'Unlock Gallery';
+            }
+          } catch (err) {
+            console.error('[gallery] unlock fetch failed:', err);
+            // Last resort: try fallback delivery with sync.php
+            try {
+              const fbData = await loadDeliveryFallback(token);
+              if (fbData && fbData._fallbackDelivery) {
+                const storedPw = (fbData._fallbackDelivery.password || '').trim();
+                if (storedPw && storedPw === pw) {
+                  pwGateEl.style.display = 'none';
+                  showGallery(fbData._fallbackDelivery);
+                  return;
+                }
+              }
+            } catch { /* ignore */ }
+            errEl.textContent = 'Connection error. Please try again.';
+            btn.disabled    = false;
+            btn.textContent = 'Unlock Gallery';
+          }
+        }
+
+        document.getElementById('btnUnlock').addEventListener('click', tryUnlock);
+        document.getElementById('pwInput').addEventListener('keydown', e => { if (e.key === 'Enter') tryUnlock(); });
+        document.getElementById('pwInput').focus();
+      }
+
+      // Fallback: load delivery from sync.php + localStorage when gallery-auth.php is unavailable
+      async function loadDeliveryFallback(token) {
+        try {
+          let all = [];
+          try {
+            const r = await fetch('/api/sync.php?resource=gallery_links', { cache: 'no-store' });
+            if (r.ok) { try { all = await r.json(); } catch {} }
+          } catch {}
+          if (!Array.isArray(all)) all = [];
+
+          // Merge localStorage (covers admin's device where data was saved locally)
+          try {
+            const local = JSON.parse(localStorage.getItem('nej_gallery_links') || '[]');
+            if (Array.isArray(local)) {
+              const serverTokens = new Set(all.map(x => x.token));
+              local.forEach(x => { if (!serverTokens.has(x.token)) all.push(x); });
+            }
+          } catch {}
+
+          const d = all.find(x => x.token === token);
+          if (!d) return null;
+
+          const today = new Date().toISOString().slice(0, 10);
+          if (d.expires_at && d.expires_at < today) {
+            return { ok: false, expired: true, error: `This gallery link expired on ${d.expires_at}.` };
+          }
+
+          // Plaintext password galleries via fallback (no bcrypt support client-side)
+          if (d.password) {
+            return { ok: false, password_required: true, _fallbackDelivery: d };
+          }
+
+          return { ok: true, delivery: d };
+        } catch (err) {
+          console.error('[gallery] fallback error:', err);
+          return null;
+        }
+      }
+
+      // Kick off boot with top-level catch
+      boot().catch(err => {
+        console.error('[gallery] boot() crashed:', err);
+        showError('Something Went Wrong', 'An unexpected error occurred loading your gallery. Please refresh or contact NEJstudios. (' + (err && err.message || err) + ')');
+      });
+
+    })();
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   </body>
 </html>

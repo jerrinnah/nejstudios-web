@@ -68,42 +68,17 @@ const successId = document.getElementById("successId");
 const picker = document.getElementById("sessionPicker");
 const spError = document.getElementById("spError");
 const sessionInput = document.getElementById("sessionTypeInput");
-const numOutfitsEl = document.getElementById("numOutfits");
 
-// ── Outfit limits per session type ──
-const OUTFIT_LIMITS = {
-  "Half Session":     [1],
-  "Regular Session":  [1, 2],
-  "Birthday Session": [1, 2, 3],
-  "Outdoor Session":  [1, 2, 3, 4, 5, 6],
-};
-
-function updateOutfitOptions(sessionType) {
-  const options = OUTFIT_LIMITS[sessionType];
-  if (!options || !numOutfitsEl) return;
-  numOutfitsEl.innerHTML = options
-    .map(n => `<option value="${n}">${n} outfit${n > 1 ? "s" : ""}</option>`)
-    .join("");
-  numOutfitsEl.value = String(options[options.length - 1]);
-}
-
-// ── Session type dropdown ──
-picker.addEventListener("change", () => {
-  sessionInput.value = picker.value;
-  if (picker.value) spError.classList.remove("show");
-  updateOutfitOptions(picker.value);
-});
-
-// ── Rate card modal ──
-const rateCardModal = document.getElementById("rateCardModal");
-document.getElementById("rateCardBtn").addEventListener("click", () => {
-  rateCardModal.style.display = "flex";
-});
-document.getElementById("rateCardClose").addEventListener("click", () => {
-  rateCardModal.style.display = "none";
-});
-rateCardModal.addEventListener("click", (e) => {
-  if (e.target === rateCardModal) rateCardModal.style.display = "none";
+// ── Session type picker ──
+picker.querySelectorAll(".sp-card").forEach((card) => {
+  card.addEventListener("click", () => {
+    picker
+      .querySelectorAll(".sp-card")
+      .forEach((c) => c.classList.remove("selected"));
+    card.classList.add("selected");
+    sessionInput.value = card.dataset.type;
+    spError.classList.remove("show");
+  });
 });
 
 // ── Generate a short readable booking ID ──
@@ -115,9 +90,22 @@ function genBookingId() {
   return id;
 }
 
-// ── Build shareable link (short — fetches booking from server by ID) ──
+// ── Build shareable link ──
 function makeShareUrl(booking) {
-  return `${location.origin}/booking-view?b=${booking.id}`;
+  const share = {
+    id: booking.id,
+    name: booking.clientName || booking.firstName,
+    kind: "studio",
+    type: booking.sessionType || "",
+    status: booking.status,
+    ts: booking.createdAt,
+  };
+  try {
+    const encoded = btoa(encodeURIComponent(JSON.stringify(share)));
+    return `${location.origin}/booking-view?b=${encoded}`;
+  } catch {
+    return "";
+  }
 }
 
 // ── Format date ──
@@ -132,7 +120,7 @@ function fmtDate(ts) {
 function validate() {
   let ok = true;
 
-  ["firstName", "phone", "email", "preferredDate", "preferredTime"].forEach((id) => {
+  ["firstName", "phone", "email"].forEach((id) => {
     const el = document.getElementById(id);
     el.classList.remove("error");
     if (!el.value.trim()) {
@@ -156,9 +144,8 @@ function validate() {
 }
 
 // ── Remove error on input ──
-form.querySelectorAll("input, select").forEach((inp) => {
+form.querySelectorAll("input").forEach((inp) => {
   inp.addEventListener("input", () => inp.classList.remove("error"));
-  inp.addEventListener("change", () => inp.classList.remove("error"));
 });
 
 // ── Save booking to localStorage + server ──
@@ -196,10 +183,6 @@ form.addEventListener("submit", async (e) => {
   const phone = document.getElementById("phone").value.trim();
   const email = document.getElementById("email").value.trim();
   const sessionType = sessionInput.value;
-  const numOutfits = document.getElementById("numOutfits").value;
-  const preferredDate = document.getElementById("preferredDate").value;
-  const preferredTime = document.getElementById("preferredTime").value;
-  const instagram = document.getElementById("instagram").value.trim();
   const clientName = middleName ? `${firstName} ${middleName}` : firstName;
   const bookingId = genBookingId();
   const now = Date.now();
@@ -216,10 +199,6 @@ form.addEventListener("submit", async (e) => {
     phone,
     email,
     sessionType,
-    numOutfits,
-    preferredDate,
-    preferredTime,
-    instagram: instagram || "",
     status: "pending",
     createdAt: now,
   };
@@ -231,10 +210,6 @@ form.addEventListener("submit", async (e) => {
     client_email: email,
     phone,
     session_type: sessionType,
-    num_outfits: numOutfits,
-    preferred_date: preferredDate,
-    preferred_time: preferredTime,
-    instagram: instagram || "—",
     submitted_at: fmtDate(now),
   };
 

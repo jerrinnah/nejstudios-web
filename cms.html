@@ -260,11 +260,11 @@
       </button>
       <div class="sb-section" style="margin-top:4px">Pricing</div>
       <button class="sb-item" data-tab="packages-production">
-        <span style="font-size:1rem;line-height:1">₦</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
         Production Packages
       </button>
       <button class="sb-item" data-tab="packages-wedding">
-        <span style="font-size:1rem;line-height:1">₦</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
         Wedding Packages
       </button>
       <div class="sb-section" style="margin-top:4px">Social</div>
@@ -279,6 +279,11 @@
       <button class="sb-item" data-tab="settings">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
         Site Settings
+      </button>
+      <div class="sb-section" style="margin-top:4px">Stream</div>
+      <button class="sb-item" data-tab="live">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+        Live Stream
       </button>
     </nav>
     <div class="sb-footer">
@@ -393,7 +398,17 @@
       <!-- ══ ABOUT TAB ══ -->
       <div class="tab-panel" id="tab-about">
         <div class="cms-card">
-          <div class="cms-card__title">About Text</div>
+          <div class="cms-card__title">Our Story Image</div>
+          <div class="fg">
+            <label class="lbl">Upload Image</label>
+            <input type="file" id="about-image-file" accept="image/*" style="background:var(--bg-3);border:1px dashed var(--border);border-radius:6px;padding:10px;color:var(--grey-2);width:100%;cursor:pointer" />
+            <label class="lbl" style="margin-top:8px">— or paste Image URL —</label>
+            <input type="url" id="about-image" placeholder="https://…" />
+          </div>
+          <img id="about-img-preview" class="img-preview" style="max-height:220px;border-radius:8px;margin-top:10px" src="" alt="About section image preview" />
+        </div>
+        <div class="cms-card">
+          <div class="cms-card__title">Our Story Text</div>
           <div class="form-row">
             <div class="fg">
               <label class="lbl">Title Line 1</label>
@@ -411,6 +426,10 @@
           <div class="fg">
             <label class="lbl">Paragraph 2</label>
             <textarea id="about-para2" rows="3"></textarea>
+          </div>
+          <div class="fg">
+            <label class="lbl">Paragraph 3 (optional extra text)</label>
+            <textarea id="about-para3" rows="2" placeholder="Additional story, quote, or closing thought…"></textarea>
           </div>
         </div>
         <div class="cms-card">
@@ -734,12 +753,134 @@
         </div>
       </div>
 
+      <!-- ══ LIVE STREAM TAB ══ -->
+      <div class="tab-panel" id="tab-live">
+        <div class="cms-card">
+          <div class="cms-card__title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+            Live Stream Settings
+          </div>
+          <p style="font-size:.8rem;color:var(--grey-3);margin-bottom:16px">
+            Control what viewers see on the public <strong style="color:var(--gold)">/live</strong> page.
+            Viewers can watch &amp; chat, but cannot change these settings.
+          </p>
+          <div class="fg">
+            <label class="lbl">Event Title</label>
+            <input type="text" id="live-title" placeholder="Live Event" />
+          </div>
+          <div class="fg">
+            <label class="lbl">YouTube Stream URL or Video ID</label>
+            <input type="text" id="live-url" placeholder="https://youtube.com/watch?v=… or youtube.com/live/… or a video ID" />
+            <p style="font-size:.72rem;color:var(--grey-4);margin-top:6px">
+              Accepts watch URLs, <code>/live/</code> URLs, <code>youtu.be</code>, or an 11-character video ID.
+              Leave blank to show “no stream configured”.
+            </p>
+          </div>
+          <div class="fg" style="display:flex;align-items:center;gap:10px;margin-top:8px">
+            <input type="checkbox" id="live-show-chat" style="width:auto;margin:0" />
+            <label for="live-show-chat" class="lbl" style="margin:0;cursor:pointer">
+              Show YouTube live chat on the page (viewers can react &amp; comment)
+            </label>
+          </div>
+        </div>
+
+        <!-- LOGO OVERLAY -->
+        <div class="cms-card">
+          <div class="cms-card__title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            Logo Overlay
+          </div>
+          <p style="font-size:.8rem;color:var(--grey-3);margin-bottom:16px">
+            Watermark your stream with a logo on top of the video player. Use a <strong>PNG with transparency</strong> for best results.
+          </p>
+          <div class="fg">
+            <label class="lbl">Upload Logo</label>
+            <input type="file" id="live-logo-file" accept="image/*" style="background:var(--bg-3);border:1px dashed var(--border);border-radius:6px;padding:10px;color:var(--grey-2);width:100%;cursor:pointer" />
+            <label class="lbl" style="margin-top:10px">Or paste a logo image URL</label>
+            <input type="url" id="live-logo-url" placeholder="https://… (PNG preferred)" />
+            <img class="img-preview" id="live-logo-preview" alt="Logo preview" style="margin-top:10px;max-width:160px;max-height:80px;object-fit:contain;background:var(--bg-3);padding:8px;border-radius:6px;display:none" />
+          </div>
+          <div class="form-row form-row--3" style="margin-top:12px">
+            <div class="fg">
+              <label class="lbl">Position</label>
+              <select id="live-logo-pos">
+                <option value="top-left">Top Left</option>
+                <option value="top-right" selected>Top Right</option>
+                <option value="bottom-left">Bottom Left</option>
+                <option value="bottom-right">Bottom Right</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label class="lbl">Size</label>
+              <select id="live-logo-size">
+                <option value="small">Small (10%)</option>
+                <option value="medium" selected>Medium (15%)</option>
+                <option value="large">Large (22%)</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label class="lbl">Opacity</label>
+              <select id="live-logo-opacity">
+                <option value="1">100%</option>
+                <option value="0.9" selected>90%</option>
+                <option value="0.75">75%</option>
+                <option value="0.5">50%</option>
+                <option value="0.35">35%</option>
+              </select>
+            </div>
+          </div>
+          <p style="font-size:.72rem;color:var(--grey-4);margin-top:8px">
+            Leave the URL empty (and don't upload anything) to hide the overlay.
+          </p>
+        </div>
+        <div class="cms-card">
+          <div class="cms-card__title">How to get the URL</div>
+          <ol style="font-size:.82rem;color:var(--grey-2);padding-left:20px;line-height:1.8">
+            <li>In YouTube Studio, click <strong>Go Live</strong> (or open your scheduled stream).</li>
+            <li>Copy the <strong>watch URL</strong> from the browser (e.g. <code>https://youtube.com/live/abc123XYZ</code>).</li>
+            <li>Paste it above and press <strong>Save Live</strong>.</li>
+          </ol>
+          <p style="font-size:.75rem;color:var(--grey-4);margin-top:12px">
+            Note: <code>rtmp://a.rtmp.youtube.com/live2</code> is the OBS <em>ingest</em> URL — that's not what viewers watch, so don't paste it here.
+          </p>
+        </div>
+        <!-- ANNOUNCEMENT TICKER -->
+        <div class="cms-card">
+          <div class="cms-card__title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 010 7.07"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg>
+            Announcement Ticker
+          </div>
+          <p style="font-size:.8rem;color:var(--grey-3);margin-bottom:16px">
+            A scrolling banner below the stream player — perfect for programme flow,
+            donation details, prayer requests, sponsor credits, or event reminders.
+          </p>
+          <div class="fg">
+            <label class="lbl">Announcement Text</label>
+            <textarea id="live-announcement" rows="2" placeholder="e.g. Welcome to the 2026 Annual Conference — Session 1 starts at 10am · Donate via 0123456789 (Access Bank)"></textarea>
+          </div>
+          <div class="fg" style="display:flex;align-items:center;gap:10px;margin-top:8px">
+            <input type="checkbox" id="live-announcement-on" style="width:auto;margin:0" />
+            <label for="live-announcement-on" class="lbl" style="margin:0;cursor:pointer">
+              Show ticker to viewers (toggle off to hide without clearing the text)
+            </label>
+          </div>
+        </div>
+
+        <div class="section-save-row">
+          <button class="btn-save" data-save="live">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+            Save Live
+          </button>
+          <span class="reset-link" data-reset="live">Reset to default</span>
+        </div>
+      </div>
+
     </div><!-- /content -->
   </div><!-- /main -->
 </div><!-- /shell -->
 
 <div class="toast" id="toast"></div>
 
-<script src="js/cms.js?v=2.1"></script>
+<script src="js/cms.js?v=3.0"></script>
 </body>
 </html>

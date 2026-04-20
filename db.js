@@ -1,132 +1,157 @@
-/* ══════════════════════════════════════════════════════════════════════
-   db.js — Supabase client + shared data helpers
-   Shared by dashboard.js and team.js
+/* ══════════════════════════════════════════════
+   NEJstudios — db.js
+   Server-backed database layer.
+   Reads/writes to /api/sync.php (PHP + JSON files on server)
+   so all devices share the same data.
+   Falls back to localStorage if the server is unreachable.
+   ══════════════════════════════════════════════ */
 
-   ── Setup: run this SQL in your Supabase project → SQL Editor ────────
-
-   CREATE TABLE schedule (
-     id          TEXT PRIMARY KEY,
-     title       TEXT NOT NULL,
-     date        DATE NOT NULL,
-     time        TEXT,
-     type        TEXT NOT NULL DEFAULT 'studio',
-     client_name TEXT,
-     location    TEXT,
-     notes       TEXT,
-     created_at  BIGINT
-   );
-   ALTER TABLE schedule ENABLE ROW LEVEL SECURITY;
-   CREATE POLICY "public_all" ON schedule FOR ALL USING (true) WITH CHECK (true);
-
-   CREATE TABLE tasks (
-     id            TEXT PRIMARY KEY,
-     title         TEXT NOT NULL,
-     description   TEXT,
-     assigned_to   TEXT,
-     assigned_name TEXT,
-     priority      TEXT NOT NULL DEFAULT 'medium',
-     status        TEXT NOT NULL DEFAULT 'pending',
-     created_at    BIGINT,
-     started_at    BIGINT,
-     completed_at  BIGINT,
-     reports       JSONB NOT NULL DEFAULT '[]'::JSONB
-   );
-   ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
-   CREATE POLICY "public_all" ON tasks FOR ALL USING (true) WITH CHECK (true);
-
-   ─────────────────────────────────────────────────────────────────────── */
-
-const SUPABASE_URL = "https://jqteodgwyxmpudqaoqsu.supabase.co"; // ← paste from Supabase → Settings → API
-const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxdGVvZGd3eXhtcHVkcWFvcXN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NTY3NTQsImV4cCI6MjA5MTMzMjc1NH0.iulXNENNNMDGeeLa2qOMbhI4d6WpM6HNWr81GgylKwE"; // ← paste anon/public key
-
-const _db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const DB_SCHEDULE_KEY = 'nej_schedule';
+const DB_TASKS_KEY    = 'nej_tasks';
+const API             = '/api/sync.php';
 
 /* ════════════════════════════════════════════
-   ROW ↔ JS OBJECT MAPPERS
+   SERVER HELPERS
    ════════════════════════════════════════════ */
 
-function _schedFromRow(r) {
-  return {
-    id: r.id,
-    title: r.title,
-    date: r.date,
-    time: r.time || null,
-    type: r.type || "studio",
-    clientName: r.client_name || null,
-    location: r.location || null,
-    notes: r.notes || null,
-    createdAt: r.created_at || null,
-  };
+async function _serverGet(resource) {
+  try {
+    const r = await fetch(API + '?resource=' + resource, { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.json();
+  } catch {
+    // Fallback to localStorage
+    const lsKey = resource === 'schedule' ? DB_SCHEDULE_KEY : DB_TASKS_KEY;
+    return JSON.parse(localStorage.getItem(lsKey) || '[]');
+  }
 }
 
-function _schedToRow(s) {
-  return {
-    id: s.id,
-    title: s.title,
-    date: s.date,
-    time: s.time || null,
-    type: s.type || "studio",
-    client_name: s.clientName || null,
-    location: s.location || null,
-    notes: s.notes || null,
-    created_at: s.createdAt || null,
-  };
+async function _serverSave(resource, data) {
+  const lsKey = resource === 'schedule' ? DB_SCHEDULE_KEY : DB_TASKS_KEY;
+  // Always save locally first so UI is never blocked
+  localStorage.setItem(lsKey, JSON.stringify(data));
+  try {
+    await fetch(API + '?resource=' + resource, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(data),
+    });
+  } catch {
+    // Server unreachable — localStorage copy will sync next time server is up
+  }
 }
 
-function _taskFromRow(r) {
-  return {
-    id: r.id,
-    title: r.title,
-    desc: r.description || null,
-    assignedTo: r.assigned_to || null,
-    assignedName: r.assigned_name || null,
-    priority: r.priority || "medium",
-    status: r.status || "pending",
-    createdAt: r.created_at || null,
-    startedAt: r.started_at || null,
-    completedAt: r.completed_at || null,
-    reports: r.reports || [],
-  };
-}
+/* ════════════════════════════════════════════
+   BOOKING TYPE MAPS  (used when auto-syncing confirmed bookings)
+   ════════════════════════════════════════════ */
 
-function _taskToRow(t) {
-  return {
-    id: t.id,
-    title: t.title,
-    description: t.desc || null,
-    assigned_to: t.assignedTo || null,
-    assigned_name: t.assignedName || null,
-    priority: t.priority || "medium",
-    status: t.status || "pending",
-    created_at: t.createdAt || null,
-    started_at: t.startedAt || null,
-    completed_at: t.completedAt || null,
-    reports: t.reports || [],
-  };
-}
+const _EVENT_TYPE_MAP = {
+  'white-wedding':       'wedding',
+  'traditional-wedding': 'wedding',
+  'brand-film':          'production',
+  'music-video':         'production',
+  'documentary':         'production',
+  'corporate-event':     'event',
+  'birthday':            'event',
+  'other-event':         'event',
+};
+const _EVENT_LABELS = {
+  'white-wedding':       'White Wedding',
+  'traditional-wedding': 'Traditional Wedding',
+  'brand-film':          'Brand Film',
+  'music-video':         'Music Video',
+  'documentary':         'Documentary',
+  'corporate-event':     'Corporate Event',
+  'birthday':            'Birthday Event',
+  'other-event':         'Other Event',
+};
 
 /* ════════════════════════════════════════════
    SCHEDULE
    ════════════════════════════════════════════ */
 
 async function dbGetSchedule() {
-  const { data, error } = await _db.from("schedule").select("*").order("date");
-  if (error) {
-    console.error("dbGetSchedule:", error.message);
-    return [];
-  }
-  return (data || []).map(_schedFromRow);
+  let sched    = await _serverGet('schedule');
+  const schedIds = new Set(sched.map(s => s.id));
+  let changed    = false;
+
+  // Auto-sync all confirmed/completed bookings not yet in the schedule.
+  // Bookings are fetched from the server so cross-device bookings appear too.
+  let bookings = [];
+  try {
+    const r = await fetch(API + '?resource=bookings', { cache: 'no-store' });
+    if (r.ok) bookings = await r.json();
+  } catch { /* ignore */ }
+
+  // Also merge any bookings in local storage (e.g. submitted on this device)
+  const localBookings = JSON.parse(localStorage.getItem('nej_bookings') || '[]');
+  const allIds        = new Set(bookings.map(b => b.id));
+  localBookings.forEach(b => { if (!allIds.has(b.id)) bookings.push(b); });
+
+  bookings.forEach(b => {
+    if (b.status !== 'confirmed' && b.status !== 'completed') return;
+    const schedId = 'BK-' + b.id;
+    if (schedIds.has(schedId)) return;
+
+    const schedType = b.bookingKind === 'event'
+      ? (_EVENT_TYPE_MAP[b.eventType] || 'event')
+      : 'studio';
+    const typeLabel = b.bookingKind === 'event'
+      ? (_EVENT_LABELS[b.eventType] || b.eventType || '')
+      : (b.sessionType || '');
+
+    sched.push({
+      id:         schedId,
+      title:      b.clientName + (typeLabel ? ' \u2014 ' + typeLabel : ''),
+      date:       b.eventDate || new Date(b.createdAt).toISOString().slice(0, 10),
+      time:       b.sessionTime || null,
+      type:       schedType,
+      clientName: b.clientName,
+      location:   b.location    || null,
+      notes:      b.deliverables || null,
+      createdAt:  b.createdAt,
+    });
+    schedIds.add(schedId);
+    changed = true;
+  });
+
+  if (changed) await _serverSave('schedule', sched);
+  return sched;
 }
 
 async function dbAddScheduleEntry(entry) {
-  const { error } = await _db.from("schedule").insert(_schedToRow(entry));
-  if (error) console.error("dbAddScheduleEntry:", error.message);
+  const sched = await _serverGet('schedule');
+  if (!sched.find(s => s.id === entry.id)) {
+    sched.push(entry);
+    await _serverSave('schedule', sched);
+    _fireSchedule();
+  }
 }
 
 async function dbDeleteScheduleEntry(id) {
-  const { error } = await _db.from("schedule").delete().eq("id", id);
-  if (error) console.error("dbDeleteScheduleEntry:", error.message);
+  const sched = (await _serverGet('schedule')).filter(s => s.id !== id);
+  await _serverSave('schedule', sched);
+  _fireSchedule();
+}
+
+async function dbUpdateScheduleChecklist(id, checklist) {
+  const sched = await _serverGet('schedule');
+  const item  = sched.find(s => s.id === id);
+  if (item) {
+    item.checklist = checklist;
+    await _serverSave('schedule', sched);
+    _fireSchedule();
+  }
+}
+
+async function dbUpdateScheduleEntry(id, updates) {
+  const sched = await _serverGet('schedule');
+  const item  = sched.find(s => s.id === id);
+  if (item) {
+    Object.assign(item, updates);
+    await _serverSave('schedule', sched);
+    _fireSchedule();
+  }
 }
 
 /* ════════════════════════════════════════════
@@ -134,79 +159,61 @@ async function dbDeleteScheduleEntry(id) {
    ════════════════════════════════════════════ */
 
 async function dbGetTasks() {
-  const { data, error } = await _db
-    .from("tasks")
-    .select("*")
-    .order("created_at", { ascending: false });
-  if (error) {
-    console.error("dbGetTasks:", error.message);
-    return [];
-  }
-  return (data || []).map(_taskFromRow);
+  return _serverGet('tasks');
 }
 
 async function dbGetTask(id) {
-  const { data, error } = await _db
-    .from("tasks")
-    .select("*")
-    .eq("id", id)
-    .single();
-  if (error) {
-    console.error("dbGetTask:", error.message);
-    return null;
-  }
-  return data ? _taskFromRow(data) : null;
+  const tasks = await _serverGet('tasks');
+  return tasks.find(t => t.id === id) || null;
 }
 
 async function dbAddTask(task) {
-  const { error } = await _db.from("tasks").insert(_taskToRow(task));
-  if (error) console.error("dbAddTask:", error.message);
+  const tasks = await _serverGet('tasks');
+  tasks.push(task);
+  await _serverSave('tasks', tasks);
+  _fireTasks(null);
 }
 
 async function dbUpdateTask(id, updates) {
-  // updates should be in DB column format (snake_case)
-  const { error } = await _db.from("tasks").update(updates).eq("id", id);
-  if (error) console.error("dbUpdateTask:", error.message);
+  const tasks = await _serverGet('tasks');
+  const idx   = tasks.findIndex(t => t.id === id);
+  if (idx === -1) return;
+  const old = { ...tasks[idx] };
+  Object.assign(tasks[idx], updates);
+  await _serverSave('tasks', tasks);
+  _fireTasks({ new: { ...tasks[idx] }, old });
 }
 
 async function dbDeleteTask(id) {
-  const { error } = await _db.from("tasks").delete().eq("id", id);
-  if (error) console.error("dbDeleteTask:", error.message);
-}
-
-async function dbUnassignMemberTasks(memberId) {
-  const { error } = await _db
-    .from("tasks")
-    .update({ assigned_to: null, assigned_name: null })
-    .eq("assigned_to", memberId);
-  if (error) console.error("dbUnassignMemberTasks:", error.message);
+  const tasks = (await _serverGet('tasks')).filter(t => t.id !== id);
+  await _serverSave('tasks', tasks);
+  _fireTasks(null);
 }
 
 /* ════════════════════════════════════════════
-   REAL-TIME SUBSCRIPTIONS
+   SUBSCRIPTIONS
+   Callbacks fire after same-tab mutations and
+   on storage events from other tabs.
+   Poll every 30 s for cross-device updates.
    ════════════════════════════════════════════ */
 
-// Call this to react to schedule or task changes from any device.
-// onScheduleChange and onTaskChange are callbacks that receive no arguments
-// (caller should re-fetch the data themselves).
-function dbSubscribeSchedule(onChange) {
-  return _db
-    .channel("schedule-changes")
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "schedule" },
-      onChange
-    )
-    .subscribe();
-}
+const _taskCbs     = [];
+const _scheduleCbs = [];
 
-function dbSubscribeTasks(onChange) {
-  return _db
-    .channel("tasks-changes")
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "tasks" },
-      onChange
-    )
-    .subscribe();
+function dbSubscribeTasks(cb)     { _taskCbs.push(cb); }
+function dbSubscribeSchedule(cb)  { _scheduleCbs.push(cb); }
+
+function _fireTasks(payload)  { _taskCbs.forEach(cb => cb(payload)); }
+function _fireSchedule()      { _scheduleCbs.forEach(cb => cb()); }
+
+// Same-tab cross-key sync
+window.addEventListener('storage', e => {
+  if (e.key === DB_TASKS_KEY)    _fireTasks(null);
+  if (e.key === DB_SCHEDULE_KEY) _fireSchedule();
+});
+
+// Manual refresh — call this explicitly (e.g. from a refresh button or on login)
+function dbRefreshAll() {
+  if (_scheduleCbs.length > 0) _fireSchedule();
+  if (_taskCbs.length > 0)     _fireTasks(null);
 }
