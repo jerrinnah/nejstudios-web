@@ -2,4 +2,4 @@
 deployment:
   tasks:
     - export DEPLOYPATH=/home/nejstudi/public_html
-    - /bin/cp -r $TRAVIS_BUILD_DIR/. $DEPLOYPATH
+    - /bin/rsync -av --exclude='.git' --exclude='.cpanel.yml' --exclude='.github' . $DEPLOYPATH/
