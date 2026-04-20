@@ -320,6 +320,21 @@
   }
 
   /* ══════════════════════════════
+     PRODUCTION GALLERY (PHOTOS)
+  ══════════════════════════════ */
+  function applyProductionGallery() {
+    if (!cms.productionPhotos) return;
+    const grid = q('#productionPhotoGrid');
+    if (!grid) return;
+    grid.innerHTML = cms.productionPhotos.map(item => `
+      <div class="masonry-item${item.tall ? ' masonry-item--tall' : ''}" data-category="${esc(item.cat || 'brand')}">
+        <img src="${esc(item.url)}" alt="${esc(item.label || '')}" loading="lazy" />
+        <div class="masonry-item__overlay"><span>${esc(item.label || '')}</span></div>
+      </div>
+    `).join('');
+  }
+
+  /* ══════════════════════════════
      PRODUCTION VIDEOS
   ══════════════════════════════ */
   const CAT_LABELS = { brand: 'Brand Film', music: 'Music Video', doc: 'Documentary', event: 'Event Film' };
@@ -472,6 +487,7 @@
     applyAbout();
     applyStudioGallery();
     applyWeddingGallery();
+    applyProductionGallery();
     applyProductionVideos();
     applyPackages();
     applyTestimonials();

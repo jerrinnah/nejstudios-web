@@ -44,6 +44,9 @@ const DEFAULTS = {
   weddingVideos: [
     { id: 'dQw4w9WgXcQ', label: 'Chioma & Emeka — Highlight', cat: 'film white' },
   ],
+  productionPhotos: [
+    { url: 'https://images.unsplash.com/photo-1574717024453-354056aafa98?w=600&q=80', label: 'Lighting Setup', cat: 'bts', tall: false },
+  ],
   productionVideos: [
     { id: 'dQw4w9WgXcQ', title: 'The Vision Campaign', desc: 'A cinematic brand story', cat: 'brand', featured: true },
   ],
@@ -228,6 +231,7 @@ function populateAll() {
   populateAbout();
   populateStudioGallery();
   populateWeddingGallery();
+  populateProductionGallery();
   populateProductionVideos();
   populatePackages('packagesProduction', 'prodPkgGrid');
   populatePackages('packagesWedding', 'weddingPkgGrid');
@@ -398,6 +402,25 @@ function populateWeddingGallery() {
     renderVideoList('weddingVideos', 'weddingVideoList');
     clearForm(['wv-id','wv-label']);
     toast('Film added');
+  });
+}
+
+/* ── PRODUCTION GALLERY ── */
+function populateProductionGallery() {
+  renderImageList('productionPhotos', 'productionGalleryList');
+  setupAddForm('addProductionImg', 'addProductionForm', 'pg-add-btn', 'pg-cancel-btn', async () => {
+    const url = await resolveImageUrl('pg-file', 'pg-url');
+    if (!url) return toast('Please upload an image or paste a URL', 'err');
+    const item = { url, label: val('pg-label'), cat: val('pg-cat'), tall: checked('pg-tall') };
+    const arr = getArr('productionPhotos');
+    arr.push(item);
+    cmsData.productionPhotos = arr;
+    save();
+    renderImageList('productionPhotos', 'productionGalleryList');
+    clearForm(['pg-url','pg-label']);
+    const fi = document.getElementById('pg-file'); if (fi) fi.value = '';
+    setChecked('pg-tall', false);
+    toast('Photo added');
   });
 }
 
@@ -751,9 +774,10 @@ async function saveSection(key) {
       break;
     }
     case 'studioGallery':
-      // Already saved incrementally on add/delete; just confirm
       break;
     case 'weddingGallery':
+      break;
+    case 'productionGallery':
       break;
     case 'productionVideos':
       break;
@@ -835,7 +859,7 @@ function resetSection(key) {
   const map = {
     hero: 'hero', services: 'services', about: 'about',
     studioGallery: 'studioGallery', weddingGallery: ['weddingPhotos','weddingVideos'],
-    productionVideos: 'productionVideos',
+    productionGallery: 'productionPhotos', productionVideos: 'productionVideos',
     packagesProduction: 'packagesProduction', packagesWedding: 'packagesWedding',
     testimonials: 'testimonials', contact: 'contact', settings: 'settings', live: 'live',
   };
