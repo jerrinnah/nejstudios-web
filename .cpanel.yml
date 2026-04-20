@@ -1,5 +1,4 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/nejstudi/public_html
-    - /bin/rsync -av --exclude='.git' --exclude='.cpanel.yml' --exclude='.github' . $DEPLOYPATH/
+    - /bin/rsync -av --exclude='.git' --exclude='.cpanel.yml' --exclude='.github' . $HOME/public_html/
