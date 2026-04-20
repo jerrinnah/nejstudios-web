@@ -2253,7 +2253,7 @@ async function renderAdminSchedule() {
       let newId = 'NEJ-';
       for (let i = 0; i < 6; i++) newId += chars[Math.floor(Math.random() * chars.length)];
 
-      const typeMap = { wedding:'full-wedding', event:'corporate-event', production:'other-production', studio:'', meeting:'' };
+      const typeMap = { wedding:'full-wedding', event:'corporate-event', production:'other-production', funeral:'funeral', studio:'', meeting:'' };
       const booking = {
         id:          newId,
         bookingKind: entry.type === 'studio' ? 'studio' : 'event',
@@ -2262,7 +2262,7 @@ async function renderAdminSchedule() {
         lastName:    (entry.clientName || entry.title || '').split(' ').slice(1).join(' '),
         phone:       '',
         email:       '',
-        eventType:   typeMap[entry.type] || 'corporate-event',
+        eventType:   typeMap[entry.type] ?? 'corporate-event',
         sessionType: entry.type === 'studio' ? (entry.title || 'Studio') : '',
         eventDate:   entry.date || '',
         location:    entry.location || '',
