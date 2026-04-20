@@ -852,47 +852,37 @@ function resetSection(key) {
  * Compresses and converts a selected image to a base64 data URL.
  * Uses canvas to resize + compress so it fits in localStorage.
  */
-function readFileAsDataURL(fileInputId) {
-  return new Promise((resolve) => {
-    const input = document.getElementById(fileInputId);
-    if (!input || !input.files || !input.files[0]) { resolve(null); return; }
-    const file = input.files[0];
-    if (!file.type.startsWith('image/')) {
-      toast('Please select an image file (JPG, PNG, WEBP)', 'err');
-      resolve(null); return;
-    }
-    const reader = new FileReader();
-    reader.onerror = () => { toast('Could not read file.', 'err'); resolve(null); };
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onerror = () => { toast('Could not load image.', 'err'); resolve(null); };
-      img.onload = () => {
-        // Resize to max 1600px on longest side
-        const MAX = 1600;
-        let { width, height } = img;
-        if (width > MAX || height > MAX) {
-          if (width > height) { height = Math.round(height * MAX / width); width = MAX; }
-          else { width = Math.round(width * MAX / height); height = MAX; }
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = width; canvas.height = height;
-        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-        // Compress to JPEG at 75% quality
-        resolve(canvas.toDataURL('image/jpeg', 0.75));
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
+async function uploadFileToServer(fileInputId) {
+  const input = document.getElementById(fileInputId);
+  if (!input || !input.files || !input.files[0]) return null;
+  const file = input.files[0];
+  if (!file.type.startsWith('image/')) {
+    toast('Please select an image file (JPG, PNG, WEBP)', 'err');
+    return null;
+  }
+  const form = new FormData();
+  form.append('file', file);
+  try {
+    const r = await fetch('/api/upload.php', { method: 'POST', body: form });
+    const data = await r.json();
+    if (data.ok && data.url) return data.url;
+    toast(data.error || 'Upload failed', 'err');
+    return null;
+  } catch {
+    toast('Upload failed — check connection', 'err');
+    return null;
+  }
 }
 
 /**
  * resolveImageUrl(fileInputId, urlInputId) → Promise<string>
- * Prefers an uploaded file; falls back to the typed URL.
+ * Uploads file to server and returns the /uploads/ URL; falls back to typed URL.
  */
 async function resolveImageUrl(fileInputId, urlInputId) {
-  const fromFile = await readFileAsDataURL(fileInputId);
-  if (fromFile) return fromFile;
+  const input = document.getElementById(fileInputId);
+  if (input && input.files && input.files[0]) {
+    return await uploadFileToServer(fileInputId);
+  }
   return val(urlInputId);
 }
 
@@ -904,34 +894,11 @@ async function resolveImageUrl(fileInputId, urlInputId) {
 async function resolveLogoUrl(fileInputId, urlInputId) {
   const input = document.getElementById(fileInputId);
   if (input && input.files && input.files[0]) {
-    const file = input.files[0];
-    if (!file.type.startsWith('image/')) {
+    if (!input.files[0].type.startsWith('image/')) {
       toast('Logo must be an image (PNG recommended for transparency).', 'err');
       return val(urlInputId);
     }
-    const dataUrl = await new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onerror = () => resolve(null);
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onerror = () => resolve(null);
-        img.onload = () => {
-          const MAX = 600;
-          let { width, height } = img;
-          if (width > MAX || height > MAX) {
-            if (width > height) { height = Math.round(height * MAX / width); width = MAX; }
-            else { width = Math.round(width * MAX / height); height = MAX; }
-          }
-          const canvas = document.createElement('canvas');
-          canvas.width = width; canvas.height = height;
-          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL('image/png')); // preserve alpha
-        };
-        img.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
-    });
-    if (dataUrl) return dataUrl;
+    return await uploadFileToServer(fileInputId) || val(urlInputId);
   }
   return val(urlInputId);
 }
