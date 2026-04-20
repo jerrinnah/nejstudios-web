@@ -1374,6 +1374,7 @@ function openInvoice(id) {
       <div>
         <div class="inv-logo-name"><span>NEJ</span>studios</div>
         <div class="inv-tagline">Premium Photography &amp; Film Production</div>
+        <div style="font-size:0.75rem;color:#888;margin-top:4px">Lagos, Nigeria · nejstudios.com</div>
       </div>
       <div class="inv-title-block">
         <h1>Invoice</h1>
@@ -1418,7 +1419,7 @@ function openInvoice(id) {
     <table class="inv-table">
       <thead>
         <tr>
-          <th style="width:50%">Description</th>
+          <th style="width:55%">Description</th>
           <th>Qty</th>
           <th>Package / Rate</th>
           <th>Total</th>
@@ -1471,7 +1472,8 @@ function openInvoice(id) {
 
     <div class="inv-footer">
       <strong>Thank you for choosing NEJstudios!</strong><br/>
-      We appreciate your trust and look forward to delivering exceptional work.
+      We appreciate your trust and look forward to delivering exceptional work.<br/>
+      <span style="font-size:0.75rem;color:#aaa">NEJstudios · Lagos, Nigeria · nejstudios.com</span>
     </div>
   `;
 
@@ -1629,8 +1631,47 @@ document.getElementById('invoiceClose').addEventListener('click', () => {
   // Reset invoiceBody styles in case POS receipt was shown
   document.getElementById('invoiceBody').style.cssText = '';
 });
-document.getElementById('invoicePrint').addEventListener('click', () => {
-  window.print();
+document.getElementById('invoicePrint').addEventListener('click', () => window.print());
+
+// Apply deposit/balance to open invoice
+document.getElementById('invApply').addEventListener('click', () => {
+  const total   = parseFloat(document.getElementById('invAmount').value)  || 0;
+  const deposit = parseFloat(document.getElementById('invDeposit').value) || 0;
+  const balance = total - deposit;
+  const fmt = n => '₦' + n.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  // Update tfoot rows
+  const tfoot = document.querySelector('#invoiceBody .inv-table tfoot');
+  if (!tfoot) return;
+  tfoot.innerHTML = `
+    <tr>
+      <td colspan="3" style="text-align:right;font-size:0.82rem;color:#555;letter-spacing:0.08em;text-transform:uppercase">Total</td>
+      <td style="text-align:right">${total ? fmt(total) : '—'}</td>
+    </tr>
+    <tr>
+      <td colspan="3" style="text-align:right;font-size:0.82rem;color:#555;letter-spacing:0.08em;text-transform:uppercase">Deposit Paid</td>
+      <td style="text-align:right;color:#3ecf8e;font-weight:700">${deposit ? '− ' + fmt(deposit) : '—'}</td>
+    </tr>
+    <tr style="border-top:2px solid #c9a84c">
+      <td colspan="3" style="text-align:right;font-size:0.9rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase">Balance Due</td>
+      <td style="text-align:right;color:#c9a84c;font-size:1.05rem;font-weight:700">${total ? fmt(balance) : '—'}</td>
+    </tr>`;
+
+  // Update payment section note
+  const paySection = [...document.querySelectorAll('#invoiceBody .inv-section')].find(s => s.querySelector('h4')?.textContent === 'Payment Details');
+  if (paySection) {
+    const balLine = paySection.querySelector('.inv-balance-line');
+    if (balLine) balLine.remove();
+    if (total) {
+      const p = paySection.querySelector('p');
+      const line = document.createElement('p');
+      line.className = 'inv-balance-line';
+      line.style.cssText = 'margin-top:10px;font-weight:700;color:#c9a84c;font-size:0.95rem';
+      line.textContent = `Balance Due: ${fmt(balance)}`;
+      p.after(line);
+    }
+  }
+  showToast('Invoice updated ✓');
 });
 
 /* ════════════════════════════════════════════
@@ -1828,6 +1869,11 @@ function initGalleryForm() {
   // Render existing panel images on load
   renderGalleryPanelGrid();
 
+  // Add file row button
+  document.getElementById('btnAddFile').addEventListener('click', () => {
+    document.getElementById('galleryFilesList').appendChild(_makeFileRow());
+  });
+
   // Create gallery link
   document.getElementById('btnCreateGallery').addEventListener('click', createGalleryLink);
 }
@@ -1921,11 +1967,21 @@ async function renderGalleryPanel() {
             </div>
           </div>
         </div>
+        ${d.files && d.files.length > 0 ? `
+        <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">
+          ${d.files.map(f => `
+            <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg-3);border:1px solid var(--border);border-radius:6px;">
+              <span style="font-size:1rem;flex-shrink:0">📄</span>
+              <span style="font-size:0.78rem;color:var(--grey-1);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${f.label}">${f.label}</span>
+              <a href="${f.url}" target="_blank" rel="noopener" style="font-size:0.68rem;font-weight:700;color:var(--gold);padding:3px 8px;border:1px solid rgba(201,168,76,.3);border-radius:4px;white-space:nowrap;flex-shrink:0">↓ Open</a>
+            </div>`).join('')}
+        </div>` : ''}
         <div class="gallery-link-card__url">
           <a href="${galleryUrl}" target="_blank">${galleryUrl}</a>
           <button class="btn-copy-link" data-copy="${galleryUrl}">Copy</button>
         </div>
         <div class="gallery-link-card__actions">
+          ${d.files && d.files.length > 1 ? `<button class="btn-del-gallery" style="border-color:var(--border-l);color:var(--grey-2)" data-dl-all="${d.id}">↓ Download All</button>` : ''}
           <button class="btn-del-gallery" data-gal-id="${d.id}" data-gal-name="${d.client_name}">Delete</button>
         </div>
       </div>`;
@@ -1939,7 +1995,21 @@ async function renderGalleryPanel() {
     });
   });
 
+  // Download All — opens each file URL in a new tab sequentially
+  grid.querySelectorAll('[data-dl-all]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const galId = btn.dataset.dlAll;
+      const del = deliveries.find(d => d.id === galId);
+      if (!del || !del.files) return;
+      del.files.forEach((f, i) => {
+        setTimeout(() => window.open(f.url, '_blank'), i * 400);
+      });
+      showToast(`Opening ${del.files.length} files for download…`);
+    });
+  });
+
   grid.querySelectorAll('.btn-del-gallery').forEach(btn => {
+    if (!btn.dataset.galId) return;
     btn.addEventListener('click', async () => {
       if (!confirm(`Delete gallery link for ${btn.dataset.galName}?`)) return;
       await dbDeleteGalleryDelivery(btn.dataset.galId);

@@ -366,8 +366,8 @@
       .priority-badge--medium { background:var(--orange-bg); color:var(--orange); }
       .priority-badge--low { background:var(--green-bg); color:var(--green); }
 
-      .task-card__title { font-size:0.95rem; font-weight:600; color:var(--white); margin-bottom:6px; line-height:1.4; }
-      .task-card__desc { font-size:0.78rem; color:var(--grey-3); line-height:1.5; margin-bottom:14px; }
+      .task-card__title { font-size:0.95rem; font-weight:600; color:var(--white); margin-bottom:6px; line-height:1.4; word-break:break-word; overflow-wrap:anywhere; }
+      .task-card__desc { font-size:0.78rem; color:var(--grey-3); line-height:1.5; margin-bottom:14px; word-break:break-word; overflow-wrap:anywhere; }
       .task-card__info { padding:12px 0; border-top:1px solid var(--border); border-bottom:1px solid var(--border); margin-bottom:12px; display:flex; flex-direction:column; gap:6px; }
       .task-info-row { display:flex; align-items:center; gap:8px; font-size:0.76rem; color:var(--grey-3); }
       .task-info-row strong { color:var(--grey-1); }
@@ -875,7 +875,7 @@
       .gallery-file-row .form-input { font-size:0.8rem; padding:8px 10px; }
       .btn-remove-file { width:28px; height:28px; display:flex; align-items:center; justify-content:center; border-radius:6px; border:1px solid var(--border); color:var(--grey-3); font-size:1rem; line-height:1; transition:var(--trans); flex-shrink:0; }
       .btn-remove-file:hover { border-color:var(--red); color:var(--red); }
-      .btn-add-file { padding:8px 14px; border:1px dashed var(--border-l); border-radius:6px; font-size:0.75rem; color:var(--grey-3); transition:var(--trans); text-align:center; }
+      .btn-add-file { padding:8px 14px; border:1px dashed var(--border-l); border-radius:6px; font-size:0.75rem; color:var(--grey-3); transition:var(--trans); text-align:center; width:100%; }
       .btn-add-file:hover { border-color:var(--gold); color:var(--gold); }
       /* Gallery panel upload */
       .gallery-upload-area { border:2px dashed var(--border-l); border-radius:10px; padding:18px 14px; margin-top:14px; }
@@ -1906,7 +1906,20 @@
     <div id="invoiceModal">
       <div class="invoice-chrome">
         <button class="btn-invoice-close" id="invoiceClose">✕ Close</button>
-        <h2>Invoice Preview</h2>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:6px">
+            <label style="font-size:0.72rem;font-weight:600;color:#666;white-space:nowrap">Total (₦)</label>
+            <input id="invAmount" type="number" min="0" placeholder="e.g. 500000"
+              style="width:130px;padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:0.82rem;font-family:inherit" />
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <label style="font-size:0.72rem;font-weight:600;color:#666;white-space:nowrap">Deposit Paid (₦)</label>
+            <input id="invDeposit" type="number" min="0" placeholder="e.g. 250000"
+              style="width:130px;padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:0.82rem;font-family:inherit" />
+          </div>
+          <button id="invApply" style="padding:6px 14px;background:#c9a84c;border:none;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer">Apply</button>
+        </div>
+        <h2 style="margin-left:auto">Invoice Preview</h2>
         <button class="btn-invoice-print" id="invoicePrint">🖨 Print / Save PDF</button>
       </div>
       <div id="invoiceBody">
