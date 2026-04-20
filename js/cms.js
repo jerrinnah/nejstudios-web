@@ -103,6 +103,7 @@ function load() {
   try { cmsData = JSON.parse(localStorage.getItem(CMS_KEY)) || {}; } catch { cmsData = {}; }
 }
 function save() {
+  cmsData.updatedAt = Date.now();
   localStorage.setItem(CMS_KEY, JSON.stringify(cmsData));
   // Push to server so all devices and browsers see the updated content
   fetch('/api/sync.php?resource=site_content', {

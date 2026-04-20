@@ -16,9 +16,9 @@ jobs:
             "https://nejstudios.com:2083/execute/VersionControl/update?repository_root=%2Fhome3%2Fnejstudi%2Frepositories%2Fnejstudios-web")
           HTTP_STATUS=$(echo "$RESPONSE" | tail -1)
           BODY=$(echo "$RESPONSE" | head -1)
-          echo "Response: $BODY"
+          echo "Pull response: $BODY"
           echo "HTTP status: $HTTP_STATUS"
-          if [ "$HTTP_STATUS" != "200" ]; then exit 1; fi
+          if [ "$HTTP_STATUS" != "200" ]; then echo "Pull failed"; exit 1; fi
 
       - name: Deploy HEAD commit
         run: |
@@ -27,5 +27,6 @@ jobs:
             "https://nejstudios.com:2083/execute/VersionControlDeployment/create?repository_root=%2Fhome3%2Fnejstudi%2Frepositories%2Fnejstudios-web")
           HTTP_STATUS=$(echo "$RESPONSE" | tail -1)
           BODY=$(echo "$RESPONSE" | head -1)
-          echo "Response: $BODY"
+          echo "Deploy response: $BODY"
           echo "HTTP status: $HTTP_STATUS"
+          if [ "$HTTP_STATUS" != "200" ]; then echo "Deploy failed"; exit 1; fi

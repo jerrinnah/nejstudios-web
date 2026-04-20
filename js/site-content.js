@@ -54,18 +54,22 @@
   let cms = {};
   try { cms = JSON.parse(localStorage.getItem(CMS_KEY)) || {}; } catch { cms = {}; }
 
-  // Server sync: runs after DOMContentLoaded paint; updates page if server has newer data
+  // Server sync: only overwrite local data if server has a newer updatedAt timestamp
   (async () => {
     try {
       const r = await fetch('/api/sync.php?resource=site_content', { cache: 'no-store' });
       if (!r.ok) return;
       const serverCms = await r.json();
       if (!serverCms || typeof serverCms !== 'object' || !Object.keys(serverCms).length) return;
-      const serverStr = JSON.stringify(serverCms);
-      if ((localStorage.getItem(CMS_KEY) || '{}') !== serverStr) {
-        localStorage.setItem(CMS_KEY, serverStr);
-        cms = serverCms;
-        applyAll(); // re-paint with authoritative server data
+      const localUpdatedAt  = cms.updatedAt || 0;
+      const serverUpdatedAt = serverCms.updatedAt || 0;
+      if (serverUpdatedAt >= localUpdatedAt) {
+        const serverStr = JSON.stringify(serverCms);
+        if ((localStorage.getItem(CMS_KEY) || '{}') !== serverStr) {
+          localStorage.setItem(CMS_KEY, serverStr);
+          cms = serverCms;
+          applyAll();
+        }
       }
     } catch { /* server unreachable — localStorage version stays */ }
   })();
