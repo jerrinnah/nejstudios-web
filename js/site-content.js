@@ -322,11 +322,15 @@
   /* ══════════════════════════════
      PRODUCTION GALLERY (PHOTOS)
   ══════════════════════════════ */
+  const PRODUCTION_PHOTO_DEFAULTS = [
+    { url: 'https://images.unsplash.com/photo-1574717024453-354056aafa98?w=600&q=80', label: 'Lighting Setup', cat: 'bts', tall: false },
+  ];
+
   function applyProductionGallery() {
-    if (!cms.productionPhotos) return;
+    const photos = cms.productionPhotos || PRODUCTION_PHOTO_DEFAULTS;
     const grid = q('#productionPhotoGrid');
     if (!grid) return;
-    grid.innerHTML = cms.productionPhotos.map(item => `
+    grid.innerHTML = photos.map(item => `
       <div class="masonry-item${item.tall ? ' masonry-item--tall' : ''}" data-category="${esc(item.cat || 'brand')}">
         <img src="${esc(item.url)}" alt="${esc(item.label || '')}" loading="lazy" />
         <div class="masonry-item__overlay"><span>${esc(item.label || '')}</span></div>
