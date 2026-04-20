@@ -90,9 +90,16 @@ async function syncBookingsFromServer() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(serverBookings));
   } catch { /* server unreachable — local data used */ }
 }
-function saveTeam(arr)     { localStorage.setItem(TEAM_KEY, JSON.stringify(arr)); }
+function saveTeam(arr) {
+  // Only store non-hardcoded members locally and on server
+  const extras = arr.filter(m => !TEAM_CONFIG.find(c => c.id === m.id));
+  localStorage.setItem(TEAM_KEY, JSON.stringify(extras));
+  fetch('/api/sync.php?resource=team_members', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(extras),
+  }).catch(() => {});
+}
 
-// Merges hardcoded TEAM_CONFIG with members added via the UI (localStorage).
+// Merges hardcoded TEAM_CONFIG with members added via the UI (server + localStorage).
 // TEAM_CONFIG entries take precedence so credentials always work cross-device.
 function getTeam() {
   const stored = JSON.parse(localStorage.getItem(TEAM_KEY) || '[]');
@@ -103,6 +110,21 @@ function getTeam() {
     }
   });
   return merged;
+}
+
+async function syncTeamFromServer() {
+  try {
+    const r = await fetch('/api/sync.php?resource=team_members', { cache: 'no-store' });
+    if (!r.ok) return;
+    const serverExtras = await r.json();
+    if (!Array.isArray(serverExtras) || serverExtras.length === 0) return;
+    const local = JSON.parse(localStorage.getItem(TEAM_KEY) || '[]');
+    const merged = [...local];
+    serverExtras.forEach(m => {
+      if (!merged.find(c => c.id === m.id)) merged.push(m);
+    });
+    localStorage.setItem(TEAM_KEY, JSON.stringify(merged));
+  } catch { /* server unreachable — local data used */ }
 }
 
 function getApprovals() { return JSON.parse(localStorage.getItem(APPROVALS_KEY) || '{}'); }
@@ -362,6 +384,7 @@ function showDash() {
   renderAdminGreeting();
   // Sync bookings and gallery from server then render (server data takes precedence)
   syncGalleryFromServer().catch(() => {});
+  syncTeamFromServer().catch(() => {});
   syncBookingsFromServer().then(() => {
     renderBookings();
     renderTasksBadge();

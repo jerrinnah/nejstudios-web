@@ -24,7 +24,7 @@ const TEAM_CONFIG = [
    STORAGE HELPERS
    ════════════════════════════════════════════ */
 
-// Merges hardcoded TEAM_CONFIG with any members added via the admin UI (localStorage).
+// Merges hardcoded TEAM_CONFIG with any members added via the admin UI (server + localStorage).
 // TEAM_CONFIG entries take precedence so credentials always work cross-device.
 function getTeam() {
   const stored = JSON.parse(localStorage.getItem(TEAM_KEY) || '[]');
@@ -35,6 +35,21 @@ function getTeam() {
     }
   });
   return merged;
+}
+
+async function syncTeamFromServer() {
+  try {
+    const r = await fetch('/api/sync.php?resource=team_members', { cache: 'no-store' });
+    if (!r.ok) return;
+    const serverExtras = await r.json();
+    if (!Array.isArray(serverExtras) || serverExtras.length === 0) return;
+    const local = JSON.parse(localStorage.getItem(TEAM_KEY) || '[]');
+    const merged = [...local];
+    serverExtras.forEach(m => {
+      if (!merged.find(c => c.id === m.id)) merged.push(m);
+    });
+    localStorage.setItem(TEAM_KEY, JSON.stringify(merged));
+  } catch { /* server unreachable — local data used */ }
 }
 
 function getSession() {
@@ -257,6 +272,9 @@ document.getElementById('mobileLogout').addEventListener('click', doLogout);
     history.replaceState(null, '', location.pathname);
   } catch { /* malformed payload — ignore */ }
 })();
+
+// Sync server team members to localStorage so admin-created accounts work on any device
+syncTeamFromServer().catch(() => {});
 
 // On page load: check existing session
 const sess = getSession();
