@@ -1,0 +1,5 @@
+Options -Indexes
+Deny from all
+<FilesMatch "\.(jpg|jpeg|png|webp|gif|heic|heif)$">
+  Allow from all
+</FilesMatch>
