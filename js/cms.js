@@ -99,8 +99,25 @@ const DEFAULTS = {
 let cmsData = {};
 
 /* ── UTILS ── */
-function load() {
+async function load() {
+  // Read localStorage immediately for fast first paint
   try { cmsData = JSON.parse(localStorage.getItem(CMS_KEY)) || {}; } catch { cmsData = {}; }
+
+  // Fetch server data and use whichever is newer
+  try {
+    const r = await fetch('/api/sync.php?resource=site_content', { cache: 'no-store' });
+    if (r.ok) {
+      const serverData = await r.json();
+      if (serverData && typeof serverData === 'object' && Object.keys(serverData).length) {
+        const localTs  = cmsData.updatedAt  || 0;
+        const serverTs = serverData.updatedAt || 0;
+        if (serverTs >= localTs) {
+          cmsData = serverData;
+          localStorage.setItem(CMS_KEY, JSON.stringify(cmsData));
+        }
+      }
+    }
+  } catch { /* server unreachable — use localStorage */ }
 }
 function save() {
   cmsData.updatedAt = Date.now();
@@ -153,10 +170,10 @@ function showSaved() {
 function isAuthed() {
   return sessionStorage.getItem('cms_auth') === '1';
 }
-function showCMS() {
+async function showCMS() {
   document.getElementById('loginGate').classList.add('hidden');
   document.getElementById('cmsShell').style.display = 'flex';
-  load();
+  await load();
   initCMS();
 }
 

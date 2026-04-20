@@ -39,14 +39,6 @@
     },
   };
 
-  /* ── VERSION CACHE BUST — bump SITE_VER to wipe stale localStorage on every device ── */
-  const SITE_VER = 'v3';
-  if (localStorage.getItem('nej_site_ver') !== SITE_VER) {
-    localStorage.removeItem(CMS_KEY);
-    localStorage.removeItem('nej_gallery');
-    localStorage.setItem('nej_site_ver', SITE_VER);
-  }
-
   /* ── LOAD DATA ──
      1. Read localStorage immediately → first paint uses cached data (no flash)
      2. Always fetch from server → server is authoritative; update & re-apply if different
