@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Team Portal — NEJstudios</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg: #080808; --bg-2: #0f0f0f; --bg-3: #141414; --bg-4: #1a1a1a;
+        --surface: #1e1e1e; --border: #2a2a2a; --border-l: #333;
+        --gold: #c9a84c; --gold-lt: #e0c06a; --gold-dk: #a0832a;
+        --gold-glow: rgba(201,168,76,.14);
+        --white: #ffffff; --grey-1: #e8e8e8; --grey-2: #b0b0b0;
+        --grey-3: #707070; --grey-4: #404040;
+        --green: #3ecf8e; --green-bg: rgba(62,207,142,.1);
+        --blue: #60a5fa; --blue-bg: rgba(96,165,250,.1);
+        --orange: #fb923c; --orange-bg: rgba(251,146,60,.1);
+        --red: #f87171; --red-bg: rgba(248,113,113,.1);
+        --purple: #a78bfa; --purple-bg: rgba(167,139,250,.1);
+        --serif: "Playfair Display", Georgia, serif;
+        --sans: "Outfit", system-ui, sans-serif;
+        --trans: 0.25s cubic-bezier(0.4,0,0.2,1);
+        --radius: 10px;
+      }
+      *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+      html { scroll-behavior:smooth; }
+      body { background:var(--bg); color:var(--grey-1); font-family:var(--sans); min-height:100vh; }
+      a { color:inherit; text-decoration:none; }
+      button { cursor:pointer; border:none; background:none; font-family:inherit; }
+      ::-webkit-scrollbar { width:5px; height:5px; }
+      ::-webkit-scrollbar-track { background:var(--bg); }
+      ::-webkit-scrollbar-thumb { background:var(--gold); border-radius:99px; }
+      ::selection { background:var(--gold); color:#000; }
+
+      /* ════ LOGIN GATE ════ */
+      #loginGate {
+        position:fixed; inset:0; background:var(--bg); z-index:9999;
+        display:flex; align-items:center; justify-content:center;
+        flex-direction:column; padding:24px;
+      }
+      #loginGate.hidden { display:none; }
+      .login-box {
+        background:var(--bg-2); border:1px solid var(--border);
+        border-radius:20px; padding:44px 40px; width:100%; max-width:420px; text-align:center;
+      }
+      .login-logo { font-size:1.5rem; font-weight:700; margin-bottom:6px; }
+      .login-logo-nej { color:var(--gold); font-family:var(--serif); }
+      .login-logo-studios { color:var(--white); font-family:var(--sans); font-weight:300; font-size:1rem; }
+      .login-role-badge {
+        display:inline-block; margin-bottom:24px; font-size:0.62rem; font-weight:700;
+        letter-spacing:0.14em; text-transform:uppercase; color:var(--gold);
+        background:var(--gold-glow); border:1px solid rgba(201,168,76,.2);
+        padding:4px 12px; border-radius:99px;
+      }
+      .login-box h2 { font-family:var(--serif); font-size:1.4rem; color:var(--white); margin-bottom:8px; }
+      .login-box > p { font-size:0.85rem; color:var(--grey-3); margin-bottom:28px; }
+      .login-input-wrap { position:relative; margin-bottom:12px; }
+      .login-input-wrap input {
+        width:100%; background:var(--bg-3); border:1px solid var(--border);
+        border-radius:8px; padding:14px 16px 14px 44px; color:var(--white);
+        font-size:0.95rem; font-family:var(--sans); outline:none; transition:var(--trans);
+      }
+      .login-input-wrap input:focus { border-color:var(--gold); box-shadow:0 0 0 3px var(--gold-glow); }
+      .login-input-wrap svg { position:absolute; left:14px; top:50%; transform:translateY(-50%); width:18px; height:18px; color:var(--grey-4); }
+      .login-err { font-size:0.8rem; color:#f87171; margin-bottom:12px; min-height:20px; }
+      .btn-login {
+        width:100%; padding:14px; background:var(--gold); color:#000;
+        font-weight:700; font-size:0.85rem; letter-spacing:0.08em;
+        text-transform:uppercase; border-radius:8px; transition:var(--trans);
+      }
+      .btn-login:hover { background:var(--gold-lt); }
+      .login-back { display:block; margin-top:14px; font-size:0.78rem; color:var(--grey-3); }
+      .login-back a { color:var(--gold); }
+
+      /* ════ TEAM SHELL ════ */
+      #teamShell { display:flex; flex-direction:column; min-height:100vh; }
+
+      /* ── Header ── */
+      .t-header {
+        background:var(--bg-2); border-bottom:1px solid var(--border);
+        padding:14px 28px; display:flex; align-items:center; justify-content:space-between;
+        gap:16px; position:sticky; top:0; z-index:100;
+      }
+      .t-header__left { display:flex; align-items:center; gap:12px; }
+      .t-logo { font-size:1.1rem; font-weight:700; }
+      .t-logo-nej { color:var(--gold); font-family:var(--serif); }
+      .t-logo-studios { color:var(--white); font-family:var(--sans); font-weight:300; font-size:0.85rem; }
+      .t-user-badge {
+        display:flex; align-items:center; gap:8px; padding:6px 12px;
+        background:var(--gold-glow); border:1px solid rgba(201,168,76,.2);
+        border-radius:99px; font-size:0.75rem; color:var(--gold);
+      }
+      .t-user-badge svg { width:14px; height:14px; }
+      .t-header__right { display:flex; align-items:center; gap:10px; flex-shrink:0; }
+      .btn-home {
+        padding:8px 14px; border:1px solid var(--border); border-radius:6px;
+        font-size:0.72rem; font-weight:500; color:var(--grey-2);
+        display:flex; align-items:center; gap:6px; transition:var(--trans);
+      }
+      .btn-home:hover { color:var(--gold); border-color:var(--gold); }
+      .btn-home svg { width:13px; height:13px; }
+      .btn-logout-sm {
+        padding:8px 14px; border:1px solid var(--border); border-radius:6px;
+        font-size:0.72rem; color:var(--grey-3); display:flex; align-items:center;
+        gap:6px; transition:var(--trans);
+      }
+      .btn-logout-sm svg { width:13px; height:13px; }
+      .btn-logout-sm:hover { color:var(--red); border-color:var(--red); }
+
+      /* ── Tab Nav ── */
+      .t-tab-nav {
+        background:var(--bg-2); border-bottom:1px solid var(--border);
+        padding:0 28px; display:flex; flex-wrap:wrap; justify-content:center;
+      }
+      .t-tab-btn {
+        padding:13px 20px; font-size:0.8rem; font-weight:600; color:var(--grey-3);
+        border-bottom:2px solid transparent; white-space:nowrap; transition:var(--trans);
+        display:flex; align-items:center; gap:8px;
+      }
+      .t-tab-btn:hover { color:var(--grey-1); }
+      .t-tab-btn.active { color:var(--gold); border-bottom-color:var(--gold); }
+      .t-tab-badge {
+        background:var(--orange); color:#000; font-size:0.6rem; font-weight:700;
+        padding:1px 5px; border-radius:99px; min-width:16px; text-align:center;
+      }
+      .t-tab-badge.hidden { display:none; }
+
+      /* ── Portal Greeting ── */
+      .portal-greeting {
+        display:flex; align-items:center; gap:12px;
+        background:linear-gradient(135deg,rgba(201,168,76,.08),rgba(201,168,76,.03));
+        border:1px solid rgba(201,168,76,.18); border-radius:12px;
+        padding:14px 20px; margin-bottom:22px;
+      }
+      .portal-greeting__icon { font-size:1.5rem; line-height:1; }
+      .portal-greeting__text { flex:1; }
+      .portal-greeting__msg  { font-size:1rem; font-weight:600; color:var(--white); }
+      .portal-greeting__sub  { font-size:0.78rem; color:var(--grey-3); margin-top:2px; }
+
+      /* ── Panels ── */
+      .t-panel { display:none; }
+      .t-panel.active { display:block; }
+
+      /* ── Main content ── */
+      .t-content { padding:28px; flex:1; padding-bottom:80px; }
+
+      /* ════ ALL TASKS BAR ════ */
+      .tasks-overview {
+        background:var(--bg-2); border:1px solid var(--border);
+        border-radius:var(--radius); margin-bottom:28px; overflow:hidden;
+      }
+      .tasks-overview__header {
+        padding:16px 20px; display:flex; align-items:center; justify-content:space-between;
+        flex-wrap:wrap; gap:12px; border-bottom:1px solid var(--border);
+      }
+      .tasks-overview__title {
+        font-size:0.9rem; font-weight:600; color:var(--white);
+        display:flex; align-items:center; gap:10px;
+      }
+      .tasks-overview__count {
+        background:var(--bg-3); border:1px solid var(--border);
+        font-size:0.65rem; font-weight:700; color:var(--grey-3);
+        padding:2px 8px; border-radius:99px; letter-spacing:0.08em;
+      }
+      .tasks-bar-filters { display:flex; gap:4px; flex-wrap:wrap; }
+      .tasks-bar-filter {
+        padding:5px 12px; border-radius:99px; font-size:0.68rem; font-weight:500;
+        letter-spacing:0.04em; text-transform:uppercase; border:1px solid var(--border);
+        color:var(--grey-2); transition:var(--trans); cursor:pointer;
+      }
+      .tasks-bar-filter:hover { border-color:var(--border-l); color:var(--white); }
+      .tasks-bar-filter.active { background:var(--gold); color:#000; border-color:var(--gold); font-weight:600; }
+
+      .tasks-bar-scroll { padding:16px 20px; display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+      .tasks-bar-scroll::-webkit-scrollbar { display:none; }
+
+      .task-pill {
+        flex-shrink:0; background:var(--bg-3); border:1px solid var(--border);
+        border-radius:8px; padding:12px 16px; min-width:200px; max-width:260px;
+        cursor:default; transition:var(--trans);
+      }
+      .task-pill:hover { border-color:var(--border-l); }
+      .task-pill--pending  { border-left:2px solid var(--orange); }
+      .task-pill--in-progress { border-left:2px solid var(--purple); }
+      .task-pill--completed   { border-left:2px solid var(--green); opacity:.65; }
+      .task-pill__top { display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:6px; }
+      .task-pill__title { font-size:0.82rem; font-weight:600; color:var(--white); line-height:1.3; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+      .task-pill__status { flex-shrink:0; font-size:0.58rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; padding:2px 7px; border-radius:99px; }
+      .task-pill__status--pending   { background:var(--orange-bg); color:var(--orange); }
+      .task-pill__status--in-progress { background:var(--purple-bg); color:var(--purple); }
+      .task-pill__status--completed { background:var(--green-bg); color:var(--green); }
+      .task-pill__meta { font-size:0.68rem; color:var(--grey-4); }
+
+      .tasks-bar-empty { padding:32px 20px; text-align:center; color:var(--grey-3); font-size:0.85rem; }
+
+      /* ════ MY TASKS ════ */
+      .my-tasks-header {
+        display:flex; align-items:center; justify-content:space-between; gap:12px;
+        margin-bottom:20px; flex-wrap:wrap;
+      }
+      .my-tasks-header h2 { font-family:var(--serif); font-size:1.3rem; color:var(--white); }
+      .my-tasks-header p { font-size:0.8rem; color:var(--grey-3); margin-top:2px; }
+
+      .my-tasks-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
+
+      .my-task-card {
+        background:var(--bg-2); border:1px solid var(--border);
+        border-radius:var(--radius); padding:20px; transition:var(--trans);
+        display:flex; flex-direction:column;
+      }
+      .my-task-card:hover { border-color:var(--border-l); }
+      .my-task-card--pending    { border-left:3px solid var(--orange); }
+      .my-task-card--in-progress { border-left:3px solid var(--purple); }
+      .my-task-card--completed  { border-left:3px solid var(--green); opacity:.8; }
+
+      .my-task-card__top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:10px; }
+      .my-task-card__badges { display:flex; gap:5px; flex-wrap:wrap; }
+      .priority-badge { display:inline-flex; align-items:center; padding:3px 8px; border-radius:99px; font-size:0.58rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; }
+      .priority-badge--high   { background:rgba(248,113,113,.15); color:var(--red); }
+      .priority-badge--medium { background:var(--orange-bg); color:var(--orange); }
+      .priority-badge--low    { background:var(--green-bg); color:var(--green); }
+      .status-badge { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:99px; font-size:0.65rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; flex-shrink:0; }
+      .status-badge::before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; }
+      .status-badge--pending    { background:var(--orange-bg); color:var(--orange); }
+      .status-badge--in-progress { background:var(--purple-bg); color:var(--purple); }
+      .status-badge--completed  { background:var(--green-bg); color:var(--green); }
+
+      .my-task-card__title { font-size:1rem; font-weight:600; color:var(--white); margin-bottom:6px; line-height:1.4; }
+      .my-task-card__desc  { font-size:0.8rem; color:var(--grey-3); line-height:1.5; margin-bottom:14px; flex:1; }
+      .my-task-card__timestamps { display:flex; flex-direction:column; gap:4px; padding:10px 0; border-top:1px solid var(--border); border-bottom:1px solid var(--border); margin-bottom:14px; }
+      .ts-row { font-size:0.72rem; color:var(--grey-3); display:flex; gap:6px; }
+      .ts-row strong { color:var(--grey-2); }
+
+      .my-task-card__actions { display:flex; gap:8px; flex-wrap:wrap; }
+      .btn-start {
+        padding:9px 16px; background:var(--purple); color:#000; font-weight:700;
+        font-size:0.72rem; letter-spacing:0.06em; text-transform:uppercase;
+        border-radius:6px; display:flex; align-items:center; gap:6px; transition:var(--trans);
+      }
+      .btn-start:hover { filter:brightness(1.15); }
+      .btn-start svg { width:14px; height:14px; }
+      .btn-complete {
+        padding:9px 16px; background:var(--green); color:#000; font-weight:700;
+        font-size:0.72rem; letter-spacing:0.06em; text-transform:uppercase;
+        border-radius:6px; display:flex; align-items:center; gap:6px; transition:var(--trans);
+      }
+      .btn-complete:hover { filter:brightness(1.1); }
+      .btn-complete svg { width:14px; height:14px; }
+      .btn-report {
+        padding:9px 14px; border:1px solid var(--border); border-radius:6px;
+        font-size:0.72rem; font-weight:500; color:var(--grey-2);
+        display:flex; align-items:center; gap:6px; transition:var(--trans);
+      }
+      .btn-report:hover { border-color:var(--gold); color:var(--gold); }
+      .btn-report svg { width:14px; height:14px; }
+
+      .reports-count { font-size:0.7rem; color:var(--grey-3); margin-top:10px; padding-top:10px; border-top:1px solid var(--border); }
+      .last-report-preview { font-size:0.75rem; color:var(--grey-3); margin-top:4px; font-style:italic; }
+
+      /* ── Empty state ── */
+      .empty-state { text-align:center; padding:60px 24px; color:var(--grey-3); }
+      .empty-state svg { width:48px; height:48px; margin:0 auto 16px; opacity:.4; }
+      .empty-state h3 { font-family:var(--serif); color:var(--grey-2); margin-bottom:8px; }
+
+      /* ── Report modal ── */
+      .modal-overlay { position:fixed; inset:0; z-index:9000; display:flex; align-items:center; justify-content:center; padding:24px; pointer-events:none; opacity:0; transition:opacity 0.25s; }
+      .modal-overlay.open { pointer-events:all; opacity:1; }
+      .modal-backdrop { position:absolute; inset:0; background:rgba(0,0,0,.85); backdrop-filter:blur(6px); }
+      .modal-box {
+        position:relative; z-index:1; background:var(--bg-2); border:1px solid var(--border);
+        border-radius:16px; padding:36px; width:100%; max-width:520px;
+        transform:scale(0.96); transition:transform 0.25s; max-height:90vh; overflow-y:auto;
+      }
+      .modal-overlay.open .modal-box { transform:scale(1); }
+      .modal-close { position:absolute; top:16px; right:16px; width:32px; height:32px; border-radius:50%; background:var(--bg-3); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--grey-2); transition:var(--trans); }
+      .modal-close:hover { background:var(--gold); color:#000; }
+      .modal-close svg { width:14px; height:14px; }
+      .modal-box h3 { font-family:var(--serif); font-size:1.3rem; color:var(--white); margin-bottom:6px; }
+      .modal-box .modal-subtitle { font-size:0.8rem; color:var(--grey-3); margin-bottom:20px; }
+
+      /* Report form inside modal */
+      .report-form-section { margin-bottom:24px; }
+      .report-form-label { font-size:0.68rem; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--grey-3); margin-bottom:8px; display:block; }
+      .report-textarea {
+        width:100%; background:var(--bg-3); border:1px solid var(--border);
+        border-radius:8px; padding:12px 14px; color:var(--white); font-size:0.875rem;
+        font-family:var(--sans); outline:none; transition:var(--trans);
+        resize:vertical; min-height:100px;
+      }
+      .report-textarea:focus { border-color:var(--gold); box-shadow:0 0 0 3px var(--gold-glow); }
+      .report-textarea::placeholder { color:var(--grey-4); }
+      .btn-submit-report {
+        padding:11px 24px; background:var(--gold); color:#000; font-weight:700;
+        font-size:0.8rem; letter-spacing:0.08em; text-transform:uppercase;
+        border-radius:8px; transition:var(--trans); margin-top:10px;
+      }
+      .btn-submit-report:hover { background:var(--gold-lt); }
+
+      /* Past reports */
+      .past-reports-title { font-size:0.72rem; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--grey-3); margin-bottom:12px; padding-top:20px; border-top:1px solid var(--border); }
+      .reports-list { display:flex; flex-direction:column; gap:10px; }
+      .report-item { background:var(--bg-3); border:1px solid var(--border); border-radius:8px; padding:14px; }
+      .report-item__header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+      .report-item__author { font-size:0.75rem; font-weight:600; color:var(--gold); }
+      .report-item__date { font-size:0.68rem; color:var(--grey-4); }
+      .report-item__body { font-size:0.82rem; color:var(--grey-2); line-height:1.6; white-space:pre-wrap; }
+      .no-reports { text-align:center; padding:20px; color:var(--grey-3); font-size:0.82rem; }
+
+      /* ── Toast ── */
+      .toast { position:fixed; bottom:80px; right:20px; z-index:99999; background:var(--bg-2); border:1px solid var(--border); border-left:3px solid var(--gold); border-radius:8px; padding:14px 20px; font-size:0.85rem; color:var(--grey-1); transform:translateY(16px); opacity:0; transition:var(--trans); pointer-events:none; max-width:300px; }
+      .toast.show { transform:translateY(0); opacity:1; }
+
+      /* ── Notification bell ── */
+      .notif-bell {
+        position:relative; width:34px; height:34px; display:flex; align-items:center; justify-content:center;
+        background:var(--bg-3); border:1px solid var(--border); border-radius:6px;
+        color:var(--grey-2); transition:var(--trans); cursor:pointer;
+      }
+      .notif-bell:hover { color:var(--gold); border-color:var(--gold); }
+      .notif-bell svg { width:16px; height:16px; }
+      .notif-bell__dot {
+        position:absolute; top:4px; right:4px; width:8px; height:8px;
+        background:var(--orange); border-radius:50%; border:2px solid var(--bg-3);
+        display:none;
+      }
+      .notif-bell__dot.visible { display:block; }
+
+      /* ── Notification panel ── */
+      .notif-panel {
+        position:fixed; top:60px; right:16px; z-index:5000;
+        background:var(--bg-2); border:1px solid var(--border); border-radius:12px;
+        width:320px; max-height:420px; overflow-y:auto;
+        box-shadow:0 8px 32px rgba(0,0,0,.5);
+        display:none; flex-direction:column;
+      }
+      .notif-panel.open { display:flex; }
+      .notif-panel__header {
+        display:flex; align-items:center; justify-content:space-between;
+        padding:14px 16px; border-bottom:1px solid var(--border); flex-shrink:0;
+      }
+      .notif-panel__title { font-size:0.82rem; font-weight:600; color:var(--white); }
+      .notif-panel__clear { font-size:0.72rem; color:var(--grey-4); cursor:pointer; transition:var(--trans); }
+      .notif-panel__clear:hover { color:var(--red); }
+      .notif-item {
+        padding:12px 16px; border-bottom:1px solid var(--border);
+        font-size:0.8rem; color:var(--grey-2); line-height:1.4;
+        display:flex; gap:10px; align-items:flex-start;
+      }
+      .notif-item:last-child { border-bottom:none; }
+      .notif-item.unread { background:rgba(201,168,76,.04); }
+      .notif-item__icon { font-size:1rem; flex-shrink:0; margin-top:1px; }
+      .notif-item__title { font-size:0.78rem; font-weight:600; color:var(--white); margin-bottom:2px; }
+      .notif-item__time { font-size:0.65rem; color:var(--grey-4); margin-top:2px; }
+      .notif-panel__empty { padding:28px 16px; text-align:center; font-size:0.82rem; color:var(--grey-4); }
+
+      /* ════ MOBILE BOTTOM NAV ════ */
+      .mobile-bottom-nav {
+        position:fixed; bottom:0; left:0; right:0; z-index:300;
+        background:var(--bg-2); border-top:1px solid var(--border);
+        padding:0 4px env(safe-area-inset-bottom);
+        display:none; /* shown via JS class on mobile only */
+      }
+      .mobile-bottom-nav .nav-inner { display:flex; flex:1; }
+      .mobile-nav-item {
+        flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+        gap:4px; padding:10px 4px; font-size:0.62rem; font-weight:500; letter-spacing:0.04em;
+        text-transform:uppercase; color:var(--grey-3); transition:var(--trans);
+      }
+      .mobile-nav-item svg { width:20px; height:20px; }
+      .mobile-nav-item.active { color:var(--gold); }
+
+      /* ════ SCHEDULE ════ */
+      .sch-header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+      .sch-header h2 { font-family:var(--serif); font-size:1.3rem; color:var(--white); }
+      .sch-header p { font-size:0.8rem; color:var(--grey-3); margin-top:2px; }
+
+      .sch-grid { display:flex; flex-direction:column; gap:12px; }
+
+      .sch-card {
+        background:var(--bg-2); border:1px solid var(--border);
+        border-radius:var(--radius); padding:18px 20px;
+        display:flex; gap:16px; align-items:flex-start; transition:var(--trans);
+      }
+      .sch-card:hover { border-color:var(--border-l); }
+      .sch-card--today { border-color:var(--gold); background:rgba(201,168,76,.04); }
+      .sch-card--past  { opacity:.5; }
+
+      .sch-date-block {
+        flex-shrink:0; text-align:center; min-width:54px;
+        background:var(--bg-3); border:1px solid var(--border);
+        border-radius:8px; padding:8px 6px;
+      }
+      .sch-date-block__day   { font-size:1.6rem; font-weight:700; line-height:1; color:var(--white); }
+      .sch-date-block__month { font-size:0.6rem; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--grey-3); margin-top:2px; }
+      .sch-card--today .sch-date-block { background:var(--gold-glow); border-color:rgba(201,168,76,.3); }
+      .sch-card--today .sch-date-block__day   { color:var(--gold); }
+      .sch-card--today .sch-date-block__month { color:var(--gold-lt); }
+
+      .sch-body { flex:1; min-width:0; }
+      .sch-body__top { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px; }
+
+      .sch-type-badge {
+        font-size:0.58rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase;
+        padding:2px 8px; border-radius:99px;
+      }
+      .sch-type--studio     { background:var(--blue-bg);              color:var(--blue); }
+      .sch-type--wedding    { background:rgba(251,146,60,.12);         color:var(--orange); }
+      .sch-type--event      { background:var(--purple-bg);             color:var(--purple); }
+      .sch-type--production { background:var(--green-bg);              color:var(--green); }
+      .sch-type--meeting    { background:rgba(255,255,255,.06);         color:var(--grey-2); }
+
+      .sch-today-pill {
+        font-size:0.58rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase;
+        padding:2px 8px; border-radius:99px; background:var(--gold); color:#000;
+      }
+
+      .sch-body__title { font-size:0.95rem; font-weight:600; color:var(--white); margin-bottom:2px; }
+      .sch-body__meta  { display:flex; flex-wrap:wrap; gap:10px; font-size:0.72rem; color:var(--grey-3); margin-top:6px; }
+      .sch-body__meta span { display:flex; align-items:center; gap:4px; }
+      .sch-body__notes { font-size:0.78rem; color:var(--grey-3); margin-top:8px; font-style:italic; line-height:1.5; }
+
+      .sch-section-label {
+        font-size:0.65rem; font-weight:600; letter-spacing:0.12em; text-transform:uppercase;
+        color:var(--grey-4); margin:20px 0 10px; padding-bottom:8px; border-bottom:1px solid var(--border);
+      }
+
+      .sch-empty { text-align:center; padding:60px 24px; color:var(--grey-3); }
+      .sch-empty svg { width:48px; height:48px; margin:0 auto 16px; display:block; opacity:.35; }
+      .sch-empty h3 { font-family:var(--serif); color:var(--grey-2); margin-bottom:8px; }
+
+      /* ════ SIGN-IN PANEL ════ */
+      .signin-hero {
+        display:flex; flex-direction:column; align-items:center; justify-content:center;
+        text-align:center; padding:40px 24px 32px; gap:20px;
+      }
+      .signin-hero__icon {
+        width:72px; height:72px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+        background:var(--gold-glow); border:2px solid rgba(201,168,76,.35);
+      }
+      .signin-hero__icon svg { width:34px; height:34px; color:var(--gold); }
+      .signin-hero__title { font-family:var(--serif); font-size:1.5rem; color:var(--white); }
+      .signin-hero__sub   { font-size:0.85rem; color:var(--grey-3); margin-top:4px; }
+      .signin-hero__date  { font-size:0.75rem; color:var(--gold); font-weight:600; letter-spacing:0.08em; text-transform:uppercase; }
+
+      .btn-signin {
+        display:inline-flex; align-items:center; gap:10px;
+        background:var(--gold); color:#000; font-weight:700; font-size:1rem;
+        border-radius:12px; padding:16px 36px; transition:var(--trans);
+        border:none; cursor:pointer; font-family:var(--sans);
+      }
+      .btn-signin:hover { background:var(--gold-lt); }
+      .btn-signin:disabled { background:var(--bg-4); color:var(--grey-3); cursor:not-allowed; border:1px solid var(--border); }
+      .btn-signin svg { width:20px; height:20px; }
+
+      /* Task completion rate bar */
+      .task-rate-wrap { margin-bottom:18px; }
+      .task-rate-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; font-size:0.78rem; color:var(--grey-2); }
+      .task-rate-pct { font-weight:700; font-size:0.9rem; color:var(--gold); }
+      .task-rate-track { height:8px; background:var(--bg-3); border-radius:99px; overflow:hidden; border:1px solid var(--border); }
+      .task-rate-fill { height:100%; background:linear-gradient(90deg,var(--gold-dk),var(--gold)); border-radius:99px; transition:width 0.5s cubic-bezier(0.4,0,0.2,1); }
+
+      /* Month-end performance banner */
+      .month-end-banner {
+        background:linear-gradient(135deg,rgba(201,168,76,.12),rgba(201,168,76,.05));
+        border:1px solid rgba(201,168,76,.35); border-radius:10px;
+        padding:14px 16px; margin-bottom:16px;
+      }
+      .month-end-banner__title { font-size:0.78rem; font-weight:700; color:var(--gold); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px; }
+      .month-end-banner__body { font-size:0.82rem; color:var(--grey-2); line-height:1.5; }
+      .month-end-banner__stat { display:inline-block; font-weight:700; color:var(--white); }
+
+      /* Absent badge */
+      .absent-status {
+        display:flex; flex-direction:column; align-items:center; gap:10px;
+        background:rgba(248,113,113,.07); border:1px solid rgba(248,113,113,.25);
+        border-radius:12px; padding:20px 28px; margin-top:4px; text-align:center;
+      }
+      .absent-status__icon { width:40px; height:40px; background:rgba(248,113,113,.1); border-radius:50%; display:flex; align-items:center; justify-content:center; }
+      .absent-status__icon svg { width:22px; height:22px; color:var(--red); }
+      .absent-status__label { font-size:0.85rem; font-weight:700; color:var(--red); letter-spacing:0.04em; text-transform:uppercase; }
+      .absent-status__sub { font-size:0.75rem; color:var(--grey-3); max-width:260px; }
+      .signin-row--absent .signin-row__dot { background:var(--red) !important; }
+
+      /* Late badge */
+      .late-badge {
+        display:inline-flex; align-items:center; gap:6px;
+        background:rgba(248,113,113,.1); border:1px solid rgba(248,113,113,.3);
+        border-radius:99px; padding:5px 12px; font-size:0.72rem; font-weight:700;
+        color:#f87171; letter-spacing:0.04em; margin-top:8px;
+      }
+      .late-badge svg { width:12px; height:12px; }
+      .ontime-badge {
+        display:inline-flex; align-items:center; gap:6px;
+        background:var(--green-bg); border:1px solid rgba(62,207,142,.3);
+        border-radius:99px; padding:5px 12px; font-size:0.72rem; font-weight:700;
+        color:var(--green); letter-spacing:0.04em; margin-top:8px;
+      }
+
+      .signin-confirmed {
+        display:flex; flex-direction:column; align-items:center; gap:10px;
+        background:rgba(62,207,142,.08); border:1px solid rgba(62,207,142,.25);
+        border-radius:12px; padding:20px 28px; margin-top:4px;
+      }
+      .signin-confirmed__check { width:40px; height:40px; background:var(--green-bg); border-radius:50%; display:flex; align-items:center; justify-content:center; }
+      .signin-confirmed__check svg { width:22px; height:22px; color:var(--green); }
+      .signin-confirmed__label { font-size:0.85rem; font-weight:600; color:var(--green); }
+      .signin-confirmed__time  { font-size:0.78rem; color:var(--grey-3); }
+
+      /* Sign-out block */
+      .signout-block {
+        margin-top:16px; padding:16px 20px;
+        background:var(--bg-3); border:1px solid var(--border); border-radius:12px;
+        display:flex; flex-direction:column; gap:10px;
+      }
+      .signout-block__label { font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:var(--grey-4); }
+      .signout-summary {
+        width:100%; background:var(--bg-2); border:1px solid var(--border);
+        border-radius:8px; padding:10px 14px; color:var(--grey-1);
+        font-family:var(--sans); font-size:0.85rem; resize:vertical; min-height:72px;
+        outline:none; transition:border-color 0.2s;
+      }
+      .signout-summary:focus { border-color:var(--gold); }
+      .btn-signout {
+        display:inline-flex; align-items:center; gap:8px;
+        background:transparent; border:1px solid var(--red); color:var(--red);
+        font-weight:700; font-size:0.82rem; border-radius:8px; padding:10px 22px;
+        cursor:pointer; transition:var(--trans); font-family:var(--sans);
+      }
+      .btn-signout:hover { background:rgba(248,113,113,.1); }
+      .btn-signout svg { width:16px; height:16px; }
+      .signedout-badge {
+        display:flex; flex-direction:column; align-items:center; gap:6px;
+        background:rgba(248,113,113,.07); border:1px solid rgba(248,113,113,.25);
+        border-radius:12px; padding:14px 20px; margin-top:12px;
+      }
+      .signedout-badge__label { font-size:0.82rem; color:#f87171; font-weight:600; }
+      .signedout-badge__time  { font-size:0.75rem; color:var(--grey-3); }
+
+      .signin-history { margin-top:28px; }
+      .signin-history__title {
+        font-size:0.65rem; font-weight:600; letter-spacing:0.12em; text-transform:uppercase;
+        color:var(--grey-4); margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--border);
+      }
+      .signin-row {
+        display:flex; align-items:flex-start; gap:10px;
+        padding:10px 0; border-bottom:1px solid var(--border);
+      }
+      .signin-row:last-child { border-bottom:none; }
+      .signin-row__info { flex:1; }
+      .signin-row__date { font-size:0.82rem; color:var(--grey-1); font-weight:500; }
+      .signin-row__times { display:flex; gap:12px; flex-wrap:wrap; margin-top:3px; }
+      .signin-row__time { font-size:0.78rem; color:var(--gold); font-weight:600; }
+      .signin-row__outtime { font-size:0.78rem; color:#f87171; font-weight:600; }
+      .signin-row__summary { font-size:0.72rem; color:var(--grey-3); margin-top:4px; font-style:italic; }
+      .signin-row__dot  {
+        width:8px; height:8px; border-radius:50%; background:var(--green); flex-shrink:0; margin-top:6px;
+      }
+      .signin-row__late { font-size:0.65rem; color:#f87171; font-weight:700; background:rgba(248,113,113,.1); border-radius:4px; padding:1px 5px; margin-left:4px; }
+      .signin-empty-hist { font-size:0.82rem; color:var(--grey-4); text-align:center; padding:20px 0; }
+
+      /* ════ WALK-IN FORM ════ */
+      .wk-group { display:flex; flex-direction:column; gap:6px; }
+      .wk-label {
+        font-size:0.68rem; font-weight:700; letter-spacing:0.1em;
+        text-transform:uppercase; color:var(--grey-3);
+      }
+      .wk-input, .wk-select {
+        background:var(--bg-3); border:1px solid var(--border);
+        border-radius:8px; padding:12px 14px; color:var(--white);
+        font-size:0.88rem; font-family:var(--sans); outline:none;
+        transition:var(--trans); width:100%;
+      }
+      .wk-input::placeholder { color:var(--grey-4); }
+      .wk-input:focus, .wk-select:focus { border-color:var(--gold); box-shadow:0 0 0 3px var(--gold-glow); }
+      .wk-input.err, .wk-select.err { border-color:var(--red); }
+      .wk-select {
+        appearance:none;
+        background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23707070' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+        background-repeat:no-repeat; background-position:right 14px center;
+        padding-right:36px; cursor:pointer;
+      }
+      .wk-select option { background:var(--bg-3); }
+
+      /* ════ RESPONSIVE ════ */
+
+      /* ── Desktop (≥768px): top tab nav only ── */
+      @media (min-width:768px) {
+        .t-content { padding-bottom:28px; }
+        .toast { bottom:28px; right:28px; }
+      }
+
+      /* ── Mobile (<768px): bottom nav only ── */
+      @media (max-width:767px) {
+        .t-tab-nav { display:none; }
+        .mobile-bottom-nav.nav-active { display:flex; }
+        .t-content { padding-bottom:80px; }
+      }
+
+      /* ── Small mobile tweaks (<600px) ── */
+      @media (max-width:600px) {
+        .t-content { padding:16px; padding-bottom:80px; }
+        .t-header { padding:12px 16px; }
+        .t-tab-btn { padding:11px 14px; font-size:0.75rem; }
+        .btn-home span, .btn-logout-sm span { display:none; }
+        .my-tasks-grid { grid-template-columns:1fr; }
+        .tasks-bar-scroll {
+          grid-template-columns:1fr;
+          padding:12px 16px;
+          gap:8px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+
+    <!-- ══ LOGIN GATE ══ -->
+    <div id="loginGate">
+      <div class="login-box">
+        <div class="login-logo">
+          <span class="login-logo-nej">NEJ</span><span class="login-logo-studios">studios</span>
+        </div>
+        <div class="login-role-badge">Team Portal</div>
+        <h2>Team Sign In</h2>
+        <p>Enter your username and PIN to access your tasks</p>
+
+        <div class="login-input-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+          </svg>
+          <input type="text" id="usernameInput" placeholder="Username (optional)" autocomplete="off" />
+        </div>
+        <div class="login-input-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
+          </svg>
+          <input type="password" id="pinInput" placeholder="Your PIN" autocomplete="off" maxlength="20" />
+        </div>
+        <div class="login-err" id="loginErr"></div>
+        <button class="btn-login" id="loginBtn">Sign In</button>
+        <p class="login-back">Admin? <a href="dashboard">Go to Admin Dashboard</a></p>
+      </div>
+    </div>
+
+    <!-- ══ TEAM PORTAL ══ -->
+    <div id="teamShell" style="display:none">
+
+      <!-- Header -->
+      <header class="t-header">
+        <div class="t-header__left">
+          <div class="t-logo">
+            <span class="t-logo-nej">NEJ</span><span class="t-logo-studios">studios</span>
+          </div>
+          <div class="t-user-badge" id="userBadge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span id="userBadgeName">Team Member</span>
+          </div>
+        </div>
+        <div class="t-header__right">
+          <!-- Notification bell -->
+          <button class="notif-bell" id="notifBell" title="Notifications" style="display:none">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+            <span class="notif-bell__dot" id="notifDot"></span>
+          </button>
+          <button class="btn-home" id="homeBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <span>Home</span>
+          </button>
+          <button class="btn-logout-sm" id="refreshBtn" title="Refresh data from server">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+            <span>Refresh</span>
+          </button>
+          <button class="btn-logout-sm" id="logoutBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <span>Sign Out</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Tab nav -->
+      <div class="t-tab-nav">
+        <button class="t-tab-btn active" data-tab="schedule">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Schedule
+          <span class="t-tab-badge hidden" id="scheduleBadge">0</span>
+        </button>
+        <button class="t-tab-btn" data-tab="all-tasks">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          All Tasks
+          <span class="t-tab-badge hidden" id="allTasksBadge">0</span>
+        </button>
+        <button class="t-tab-btn" data-tab="my-tasks">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          My Tasks
+          <span class="t-tab-badge hidden" id="myTasksBadge">0</span>
+        </button>
+        <button class="t-tab-btn" data-tab="walkin">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+          Walk-in
+        </button>
+        <button class="t-tab-btn" data-tab="signin">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+          Sign In
+        </button>
+      </div>
+
+      <div class="t-content">
+
+        <!-- ══ SCHEDULE PANEL ══ -->
+        <div id="panel-schedule" class="t-panel active">
+          <div id="portalGreeting" class="portal-greeting" style="display:none"></div>
+          <div class="sch-header">
+            <div>
+              <h2>Upcoming Shoots &amp; Events</h2>
+              <p>All scheduled shoots, weddings, events and meetings</p>
+            </div>
+          </div>
+          <div class="sch-grid" id="scheduleGrid">
+            <div class="sch-empty">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <h3>No upcoming shots yet</h3>
+              <p>Ask your admin to add upcoming shoots and events.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ ALL TASKS PANEL ══ -->
+        <div id="panel-all-tasks" class="t-panel">
+          <div class="tasks-overview">
+            <div class="tasks-overview__header">
+              <div class="tasks-overview__title">
+                Pending Tasks
+                <span class="tasks-overview__count" id="allTasksCount">0 tasks</span>
+              </div>
+              <div class="tasks-bar-filters">
+                <button class="tasks-bar-filter active" data-bar-filter="all">All</button>
+                <button class="tasks-bar-filter" data-bar-filter="pending">Pending</button>
+                <button class="tasks-bar-filter" data-bar-filter="in-progress">In Progress</button>
+                <button class="tasks-bar-filter" data-bar-filter="completed">Done</button>
+              </div>
+            </div>
+            <div class="tasks-bar-scroll" id="allTasksBar">
+              <div class="tasks-bar-empty">No tasks yet</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ MY TASKS PANEL ══ -->
+        <div id="panel-my-tasks" class="t-panel">
+          <!-- Month-end performance banner (shown 3 days before month end) -->
+          <div id="monthEndBanner" style="display:none" class="month-end-banner"></div>
+
+          <div class="my-tasks-header">
+            <div>
+              <h2>My Assigned Tasks</h2>
+              <p>Tasks assigned to you — start, complete, and write progress reports</p>
+            </div>
+          </div>
+
+          <!-- Task completion rate bar -->
+          <div id="taskRateWrap" style="display:none" class="task-rate-wrap">
+            <div class="task-rate-top">
+              <span id="taskRateLabel">0 of 0 tasks completed</span>
+              <span id="taskRatePct" class="task-rate-pct">0%</span>
+            </div>
+            <div class="task-rate-track">
+              <div id="taskRateFill" class="task-rate-fill" style="width:0%"></div>
+            </div>
+          </div>
+
+          <div class="my-tasks-grid" id="myTasksGrid"></div>
+        </div>
+
+        <!-- ══ WALK-IN BOOKING PANEL ══ -->
+        <div id="panel-walkin" class="t-panel">
+          <div class="my-tasks-header">
+            <div>
+              <h2>Walk-in Session</h2>
+              <p>Create a booking for a client who has walked in — saved instantly to all devices</p>
+            </div>
+          </div>
+
+          <!-- Success state -->
+          <div id="walkinSuccess" style="display:none;text-align:center;padding:40px 20px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius)">
+            <div style="width:60px;height:60px;background:var(--green-bg);border:1px solid rgba(62,207,142,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" style="width:28px;height:28px"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <h3 style="font-family:var(--serif);font-size:1.4rem;color:var(--white);margin-bottom:8px">Booking Created!</h3>
+            <p style="color:var(--grey-2);font-size:0.9rem;margin-bottom:4px">The booking has been saved and synced.</p>
+            <div id="walkinSuccessId" style="display:inline-block;margin:16px 0;padding:6px 18px;background:var(--bg-3);border:1px solid var(--border);border-radius:99px;font-size:0.75rem;letter-spacing:0.12em;color:var(--gold);font-weight:600"></div>
+            <br/>
+            <button id="walkinNewBtn" style="padding:10px 24px;background:var(--gold);color:#000;font-weight:700;font-size:0.78rem;letter-spacing:0.08em;text-transform:uppercase;border:none;border-radius:8px;cursor:pointer;font-family:var(--sans)">+ New Walk-in</button>
+          </div>
+
+          <!-- Form -->
+          <form id="walkinForm" novalidate style="background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:28px">
+
+            <!-- Created by (read-only) -->
+            <div style="margin-bottom:20px;padding:12px 16px;background:var(--gold-glow);border:1px solid rgba(201,168,76,.2);border-radius:8px;display:flex;align-items:center;gap:10px">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" style="width:16px;height:16px;flex-shrink:0"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span style="font-size:0.8rem;color:var(--grey-2)">Creating as <strong style="color:var(--gold)" id="walkinCreatorName">—</strong></span>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+              <div class="wk-group">
+                <label class="wk-label">First Name <span style="color:var(--gold)">*</span></label>
+                <input class="wk-input" type="text" id="wkFirstName" placeholder="e.g. Amaka" autocomplete="given-name"/>
+              </div>
+              <div class="wk-group">
+                <label class="wk-label">Middle Name</label>
+                <input class="wk-input" type="text" id="wkMiddleName" placeholder="optional" autocomplete="additional-name"/>
+              </div>
+            </div>
+
+            <div class="wk-group" style="margin-bottom:14px">
+              <label class="wk-label">Phone Number <span style="color:var(--gold)">*</span></label>
+              <input class="wk-input" type="tel" id="wkPhone" placeholder="+234 800 000 0000" autocomplete="tel"/>
+            </div>
+
+            <div class="wk-group" style="margin-bottom:14px">
+              <label class="wk-label">Email Address <span style="color:var(--gold)">*</span></label>
+              <input class="wk-input" type="email" id="wkEmail" placeholder="client@email.com" autocomplete="email"/>
+            </div>
+
+            <div class="wk-group" style="margin-bottom:14px">
+              <label class="wk-label">Session Type <span style="color:var(--gold)">*</span></label>
+              <select class="wk-select" id="wkSessionType">
+                <option value="">— Choose session —</option>
+                <option value="Half Session">Half Session — ₦45,000</option>
+                <option value="Regular Session">Regular Session — ₦70,000</option>
+                <option value="Birthday Session">Birthday Session — ₦100,000</option>
+                <option value="Outdoor Session">Outdoor Session — ₦250,000</option>
+              </select>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+              <div class="wk-group">
+                <label class="wk-label">No. of Outfits <span style="color:var(--gold)">*</span></label>
+                <select class="wk-select" id="wkNumOutfits">
+                  <option value="1">1 outfit</option>
+                </select>
+              </div>
+              <div class="wk-group">
+                <label class="wk-label">Amount Paid (₦) <span style="color:var(--gold)">*</span></label>
+                <input class="wk-input" type="number" id="wkAmount" placeholder="e.g. 45000" min="0"/>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+              <div class="wk-group">
+                <label class="wk-label">Shoot Date <span style="color:var(--gold)">*</span></label>
+                <input class="wk-input" type="date" id="wkDate" style="color-scheme:dark"/>
+              </div>
+              <div class="wk-group">
+                <label class="wk-label">Shoot Time <span style="color:var(--gold)">*</span></label>
+                <input class="wk-input" type="time" id="wkTime" style="color-scheme:dark"/>
+              </div>
+            </div>
+
+            <div class="wk-group" style="margin-bottom:20px">
+              <label class="wk-label">Instagram Handle <span style="color:var(--grey-4);font-weight:400;text-transform:none;letter-spacing:0;font-size:0.68rem">(optional)</span></label>
+              <input class="wk-input" type="text" id="wkInstagram" placeholder="@handle" autocomplete="off"/>
+            </div>
+
+            <div id="walkinErr" style="font-size:0.78rem;color:var(--red);margin-bottom:12px;display:none"></div>
+
+            <button type="submit" id="walkinSubmitBtn" style="width:100%;padding:14px;background:var(--gold);color:#000;font-weight:700;font-size:0.82rem;letter-spacing:0.1em;text-transform:uppercase;border:none;border-radius:8px;cursor:pointer;font-family:var(--sans);transition:0.25s;display:flex;align-items:center;justify-content:center;gap:10px">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+              <span id="walkinSubmitText">Save Walk-in Booking</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- ══ SIGN IN PANEL ══ -->
+        <div id="panel-signin" class="t-panel">
+          <div class="signin-hero">
+            <div class="signin-hero__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+            </div>
+            <div>
+              <div class="signin-hero__date" id="signinTodayDate"></div>
+              <div class="signin-hero__title">Daily Sign-In</div>
+              <div class="signin-hero__sub">Confirm your resumption time for today</div>
+            </div>
+            <div id="signinStatusArea">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+
+          <div class="signin-history">
+            <div class="signin-history__title">Recent Attendance</div>
+            <div id="signinHistoryList">
+              <div class="signin-empty-hist">No records yet</div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /t-content -->
+    </div><!-- /teamShell -->
+
+    <!-- Notification Panel -->
+    <div class="notif-panel" id="notifPanel">
+      <div class="notif-panel__header">
+        <span class="notif-panel__title">Notifications</span>
+        <button class="notif-panel__clear" id="notifClearBtn">Clear all</button>
+      </div>
+      <div id="notifList">
+        <div class="notif-panel__empty">No notifications</div>
+      </div>
+    </div>
+
+    <!-- Mobile Bottom Nav -->
+    <nav class="mobile-bottom-nav" id="mobileBottomNav">
+      <div class="nav-inner">
+        <button class="mobile-nav-item active" data-tab="schedule">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span>Schedule</span>
+        </button>
+        <button class="mobile-nav-item" data-tab="all-tasks">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          <span>All Tasks</span>
+        </button>
+        <button class="mobile-nav-item" data-tab="my-tasks">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span>My Tasks</span>
+        </button>
+        <button class="mobile-nav-item" data-tab="walkin">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+          <span>Walk-in</span>
+        </button>
+        <button class="mobile-nav-item" data-tab="signin">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+          <span>Sign In</span>
+        </button>
+        <button class="mobile-nav-item" id="mobileLogout">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span>Out</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Report Modal -->
+    <div class="modal-overlay" id="reportModal">
+      <div class="modal-backdrop" id="reportModalBackdrop"></div>
+      <div class="modal-box">
+        <button class="modal-close" id="reportModalClose">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <h3 id="reportModalTitle">Progress Report</h3>
+        <p class="modal-subtitle" id="reportModalSubtitle"></p>
+
+        <div class="report-form-section">
+          <label class="report-form-label">Write your progress update</label>
+          <textarea class="report-textarea" id="reportTextarea" placeholder="Describe what you've done, any blockers, next steps…" rows="4"></textarea>
+          <button class="btn-submit-report" id="submitReportBtn">Submit Report</button>
+        </div>
+
+        <div id="pastReportsSection">
+          <div class="past-reports-title">Previous Reports</div>
+          <div id="pastReportsList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Shoot Complete Modal -->
+    <div class="modal-overlay" id="shootCompleteModal">
+      <div class="modal-backdrop" id="shootCompleteBackdrop"></div>
+      <div class="modal-box">
+        <button class="modal-close" id="shootCompleteClose">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <h3 id="shootCompleteTitle">Mark Shoot Done</h3>
+        <p class="modal-subtitle" id="shootCompleteSubtitle"></p>
+
+        <div style="display:flex;flex-direction:column;gap:16px;margin-top:20px">
+          <div>
+            <label class="report-form-label">Client's Selection <span style="color:var(--grey-3);font-weight:400">(what they chose / notes on picks)</span></label>
+            <textarea class="report-textarea" id="scSelection" placeholder="e.g. Client selected 20 images from the birthday set, preferred warm tones…" rows="3"></textarea>
+          </div>
+          <div>
+            <label class="report-form-label">Number of Pictures</label>
+            <input type="number" min="0" id="scPictureCount" placeholder="e.g. 45"
+              style="width:100%;background:var(--bg-3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--white);font-size:0.9rem;font-family:var(--sans);outline:none;transition:var(--trans)"
+              onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border)'" />
+          </div>
+          <div>
+            <label class="report-form-label">File Names / Numbers <span style="color:var(--grey-3);font-weight:400">(one per line or comma-separated)</span></label>
+            <textarea class="report-textarea" id="scFileNames" placeholder="e.g. NEJ_0001.jpg, NEJ_0002.jpg&#10;or: IMG_4521 – IMG_4566" rows="4"></textarea>
+          </div>
+        </div>
+
+        <button class="btn-submit-report" id="shootCompleteSubmit" style="margin-top:20px;width:100%">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;display:inline-block;vertical-align:middle;margin-right:6px"><polyline points="20 6 9 17 4 12"/></svg>
+          Confirm Shoot Complete
+        </button>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({ appId: '7a5f454d-ffd0-4c33-8d87-d165a134bfe4', serviceWorkerPath: '/OneSignalSDKWorker.js' });
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/db.js?v=3.0"></script>
+    <script src="js/team.js?v=3.0"></script>
+  </body>
+</html>
