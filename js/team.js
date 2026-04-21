@@ -203,12 +203,16 @@ function showPortal(member) {
 }
 
 function scheduleSignInReminder(member) {
-  const now   = new Date();
+  const now = new Date();
+  const dow = now.getDay(); // 0=Sun, 6=Sat
+  if (dow === 0 || dow === 6) return; // no reminder on weekends
   const target = new Date(now);
   target.setHours(11, 0, 0, 0); // 11am
   let delay = target - now;
-  if (delay < 0) return; // already past 11pm
+  if (delay < 0) return; // already past 11am
   setTimeout(async () => {
+    const todayDow = new Date().getDay();
+    if (todayDow === 0 || todayDow === 6) return; // safety check at fire time
     const record = await dbGetTodaySignIn(member.id);
     if (!record) {
       notify('Sign-In Reminder', `${member.name}, you haven't signed in today. Please sign in before the day ends.`);

@@ -371,8 +371,10 @@ async function dbSignInToday(member) {
   return { alreadySignedIn: false, record };
 }
 
-// Mark a member absent for today — only if no sign-in record already exists
+// Mark a member absent for today — only on weekdays, only if no sign-in record already exists
 async function dbMarkAbsent(member) {
+  const dow = new Date().getDay();
+  if (dow === 0 || dow === 6) return { skipped: 'weekend' }; // no absent on Sat/Sun
   const today = new Date().toISOString().slice(0, 10);
   const data  = await dbGetAttendance();
   if (!data[member.id]) data[member.id] = [];
