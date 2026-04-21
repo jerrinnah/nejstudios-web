@@ -322,29 +322,33 @@
     { url: 'https://images.unsplash.com/photo-1574717024453-354056aafa98?w=600&q=80', label: 'Lighting Setup', cat: 'bts', tall: false },
   ];
 
-  function applyProductionGallery() {
-    const photos = cms.productionPhotos || PRODUCTION_PHOTO_DEFAULTS;
-    const grid = q('#productionPhotoGrid');
-    if (!grid) return;
-    grid.innerHTML = photos.map(item => `
-      <div class="masonry-item${item.tall ? ' masonry-item--tall' : ''}" data-category="${esc(item.cat || 'brand')}">
-        <img src="${esc(item.url)}" alt="${esc(item.label || '')}" loading="lazy" />
-        <div class="masonry-item__overlay"><span>${esc(item.label || '')}</span></div>
-      </div>
-    `).join('');
-  }
+  function applyProductionGallery() { /* merged into applyProductionVideos */ }
 
   /* ══════════════════════════════
-     PRODUCTION VIDEOS
+     PRODUCTION VIDEOS + PHOTOS (mixed grid)
   ══════════════════════════════ */
-  const CAT_LABELS = { brand: 'Brand Film', music: 'Music Video', doc: 'Documentary', event: 'Event Film' };
+  const CAT_LABELS = { brand: 'Brand Film', music: 'Music Video', doc: 'Documentary', event: 'Event Film', bts: 'Behind the Scenes' };
 
   function applyProductionVideos() {
-    if (!cms.productionVideos) return;
     const grid = q('#productionGrid');
     if (!grid) return;
 
-    grid.innerHTML = cms.productionVideos.map(v => {
+    const photos = cms.productionPhotos || PRODUCTION_PHOTO_DEFAULTS;
+    const videos = cms.productionVideos || [];
+
+    const photoItems = photos.map(item => `
+      <div class="video-card" data-category="${esc(item.cat || 'brand')}">
+        <div class="video-thumb" style="cursor:default">
+          <img src="${esc(item.url)}" alt="${esc(item.label || '')}" loading="lazy" style="object-fit:cover;width:100%;height:100%" />
+        </div>
+        <div class="video-card__info">
+          <span class="video-card__tag">${esc(CAT_LABELS[item.cat] || item.cat || 'Photo')}</span>
+          <h4>${esc(item.label || '')}</h4>
+        </div>
+      </div>
+    `);
+
+    const videoItems = videos.map(v => {
       const catLabel = CAT_LABELS[v.cat] || v.cat || 'Film';
       const thumb = v.featured
         ? `https://img.youtube.com/vi/${v.id}/maxresdefault.jpg`
@@ -369,7 +373,16 @@
           </div>
         </div>
       `;
-    }).join('');
+    });
+
+    // Interleave: photo, video, photo, video...
+    const merged = [];
+    let pi = 0, vi = 0;
+    while (pi < photoItems.length || vi < videoItems.length) {
+      if (pi < photoItems.length) merged.push(photoItems[pi++]);
+      if (vi < videoItems.length) merged.push(videoItems[vi++]);
+    }
+    grid.innerHTML = merged.join('');
   }
 
   /* ══════════════════════════════
