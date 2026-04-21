@@ -205,7 +205,7 @@ function showPortal(member) {
 function scheduleSignInReminder(member) {
   const now   = new Date();
   const target = new Date(now);
-  target.setHours(23, 0, 0, 0); // 11pm
+  target.setHours(11, 0, 0, 0); // 11am
   let delay = target - now;
   if (delay < 0) return; // already past 11pm
   setTimeout(async () => {
