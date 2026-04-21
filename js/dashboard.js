@@ -391,6 +391,12 @@ function showDash() {
   });
   renderConfirmationsAlert();
   requestNotifPermission();
+  // Register this device as 'admin' with OneSignal for push notifications
+  if (window.OneSignalDeferred) {
+    OneSignalDeferred.push(async function(OneSignal) {
+      try { await OneSignal.login('admin'); } catch {}
+    });
+  }
 }
 
 /* ════════════════════════════════════════════

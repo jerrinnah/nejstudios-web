@@ -407,6 +407,12 @@ async function dbSignOutToday(member, summary) {
 }
 
 // Save a sign-out brief (called automatically from dbSignOutToday)
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+function _pruneOldBriefs(arr) {
+  const cutoff = Date.now() - THIRTY_DAYS_MS;
+  return arr.filter(b => (b.ts || 0) >= cutoff);
+}
+
 async function dbSaveSignOutBrief(member, summary, date, signOutTime) {
   const brief = {
     id: 'SB-' + Date.now() + '-' + Math.random().toString(36).slice(2,5),
@@ -418,7 +424,7 @@ async function dbSaveSignOutBrief(member, summary, date, signOutTime) {
   try {
     const r   = await fetch('/api/sync.php?resource=sign_out_briefs', { cache: 'no-store' });
     const all = r.ok ? await r.json() : [];
-    const arr = Array.isArray(all) ? all : [];
+    const arr = _pruneOldBriefs(Array.isArray(all) ? all : []);
     arr.push(brief);
     localStorage.setItem('nej_sign_out_briefs', JSON.stringify(arr));
     await fetch('/api/sync.php?resource=sign_out_briefs', {
@@ -426,7 +432,7 @@ async function dbSaveSignOutBrief(member, summary, date, signOutTime) {
       body: JSON.stringify(arr),
     });
   } catch {
-    const arr = JSON.parse(localStorage.getItem('nej_sign_out_briefs') || '[]');
+    const arr = _pruneOldBriefs(JSON.parse(localStorage.getItem('nej_sign_out_briefs') || '[]'));
     arr.push(brief);
     localStorage.setItem('nej_sign_out_briefs', JSON.stringify(arr));
   }

@@ -198,6 +198,40 @@ function showPortal(member) {
   oneSignalLogin(member.id);
   // Init notification bell after member is set
   initNotifBell();
+  // Schedule 11pm reminder if not yet signed in today
+  scheduleSignInReminder(member);
+}
+
+function scheduleSignInReminder(member) {
+  const now   = new Date();
+  const target = new Date(now);
+  target.setHours(23, 0, 0, 0); // 11pm
+  let delay = target - now;
+  if (delay < 0) return; // already past 11pm
+  setTimeout(async () => {
+    const record = await dbGetTodaySignIn(member.id);
+    if (!record) {
+      notify('Sign-In Reminder', `${member.name}, you haven't signed in today. Please sign in before the day ends.`);
+      // Also push via OneSignal so it arrives even if tab is closed
+      if (window.OneSignalDeferred) {
+        OneSignalDeferred.push(async function(OneSignal) {
+          try {
+            await OneSignal.Notifications.requestPermission();
+            // Rely on the server-side push via notify.php for cross-device delivery
+            await fetch('/api/notify.php', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                memberId: member.id,
+                title:    'Sign-In Reminder',
+                message:  `${member.name}, you haven't signed in today. Please sign in.`,
+              }),
+            }).catch(() => {});
+          } catch {}
+        });
+      }
+    }
+  }, delay);
 }
 
 /* Link this browser/device to the team member's ID in OneSignal */

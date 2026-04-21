@@ -298,6 +298,19 @@
             }
           } catch (e) { /* non-critical — confirmation is still shown to client */ }
 
+          // Notify admin via push notification
+          try {
+            await fetch('/api/notify.php', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                target:  'admin',
+                title:   'Selection Confirmed',
+                message: `${confirmPayload.clientName || 'A client'} has confirmed their photo selection.`,
+              }),
+            });
+          } catch { /* non-critical */ }
+
           this.textContent = 'Confirmed ✓';
           document.getElementById('confirmedBadge').style.display = 'block';
         });

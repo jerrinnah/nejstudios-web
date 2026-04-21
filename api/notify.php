@@ -1,7 +1,9 @@
 <?php
 /* ──────────────────────────────────────────────
    NEJstudios — OneSignal Push Notification Proxy
-   POST body: { external_id, title, message }
+   POST body (member):  { memberId, title, message }
+   POST body (admin):   { target: 'admin', title, message }
+   POST body (legacy):  { external_id, title, message }
    ────────────────────────────────────────────── */
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -10,18 +12,29 @@ header('Access-Control-Allow-Headers: Content-Type');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
-$APP_ID      = '7a5f454d-ffd0-4c33-8d87-d165a134bfe4';
+$APP_ID       = '7a5f454d-ffd0-4c33-8d87-d165a134bfe4';
 $REST_API_KEY = 'os_v2_app_pjpuktp72bgdhdmh2fs2cnf74sheav6umwfenk4kb2rwn6ogemi7hwle2q4m3sjm6rtdmus4bdzrlgbv46jxvxu2cspolbqcrrk53ai';
+$ADMIN_ID     = 'admin';
 
 $data = json_decode(file_get_contents('php://input'), true);
+if (!$data || empty($data['message'])) {
+  echo json_encode(['error' => 'Missing message']); exit;
+}
 
-if (empty($data['external_id']) || empty($data['message'])) {
-  echo json_encode(['error' => 'Missing external_id or message']); exit;
+// Resolve recipient
+if (!empty($data['target']) && $data['target'] === 'admin') {
+  $externalId = $ADMIN_ID;
+} elseif (!empty($data['memberId'])) {
+  $externalId = $data['memberId'];
+} elseif (!empty($data['external_id'])) {
+  $externalId = $data['external_id'];
+} else {
+  echo json_encode(['error' => 'Missing recipient (memberId, target, or external_id)']); exit;
 }
 
 $payload = [
   'app_id'          => $APP_ID,
-  'include_aliases' => ['external_id' => [$data['external_id']]],
+  'include_aliases' => ['external_id' => [$externalId]],
   'target_channel'  => 'push',
   'headings'        => ['en' => $data['title']   ?? 'NEJstudios'],
   'contents'        => ['en' => $data['message']],
