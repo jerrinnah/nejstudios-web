@@ -501,6 +501,49 @@ usernameInput.addEventListener('keydown', e => { if (e.key === 'Enter') pinInput
 
 logoutBtn.addEventListener('click', () => { setSession(null); location.reload(); });
 
+/* ════════════════════════════════════════════
+   BROADCAST PUSH NOTIFICATION MODAL
+   ════════════════════════════════════════════ */
+const broadcastModal     = document.getElementById('broadcastModal');
+const broadcastTitleEl   = document.getElementById('broadcastTitle');
+const broadcastMessageEl = document.getElementById('broadcastMessage');
+
+function openBroadcastModal() {
+  broadcastTitleEl.value   = '';
+  broadcastMessageEl.value = '';
+  broadcastModal.classList.add('open');
+  broadcastTitleEl.focus();
+}
+function closeBroadcastModal() {
+  broadcastModal.classList.remove('open');
+}
+
+document.getElementById('notifyTeamBtn').addEventListener('click', openBroadcastModal);
+document.getElementById('broadcastModalClose').addEventListener('click', closeBroadcastModal);
+document.getElementById('broadcastModalBackdrop').addEventListener('click', closeBroadcastModal);
+document.getElementById('broadcastCancelBtn').addEventListener('click', closeBroadcastModal);
+
+document.getElementById('broadcastSendBtn').addEventListener('click', async () => {
+  const title   = broadcastTitleEl.value.trim();
+  const message = broadcastMessageEl.value.trim();
+  if (!title || !message) { showToast('Please enter both a title and message', 'err'); return; }
+
+  const sendBtn = document.getElementById('broadcastSendBtn');
+  sendBtn.textContent = 'Sending…';
+  sendBtn.disabled = true;
+
+  const team = getTeam().filter(m => m.id);
+  const results = await Promise.allSettled(team.map(m =>
+    pushTeamNotification(m.id, { title, message, ts: Date.now() })
+  ));
+  const sent = results.filter(r => r.status === 'fulfilled').length;
+
+  sendBtn.textContent = 'Send to All';
+  sendBtn.disabled = false;
+  closeBroadcastModal();
+  showToast(`Notification sent to ${sent} team member${sent !== 1 ? 's' : ''} ✓`);
+});
+
 // On load: check session
 const sess = getSession();
 if (sess && sess.role === 'admin') {
