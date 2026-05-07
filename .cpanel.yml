@@ -1,4 +1,13 @@
+
 ---
+
 deployment:
+
   tasks:
-    - /bin/rsync -av --exclude='.git' --exclude='.cpanel.yml' --exclude='.github' . $HOME/public_html/
+
+    - export DEPLOYPATH=/home/nejstudios/public_html/
+
+    - /bin/cp -R index.html $DEPLOYPATH
+
+    - /bin/cp -R assets $DEPLOYPATH
+
