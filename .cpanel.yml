@@ -2,4 +2,5 @@
 deployment:
   tasks:
     - export DEPLOYPATH=/home/nejstudios/public_html/
-    - /usr/bin/rsync -av --exclude='.git' --exclude='.github' --exclude='.claude' --exclude='.cpanel.yml' --exclude='.gitignore' --exclude='claude' --exclude='nej-old web' --exclude='NEJweb' --exclude='*.bk' --exclude='*7.08.34 AM*' --exclude='*8.27.48 AM*' --exclude='.DS_Store' ./ $DEPLOYPATH
+    - /usr/bin/rsync -av --chmod=D755,F644 --exclude='.git' --exclude='.github' --exclude='.claude' --exclude='.cpanel.yml' --exclude='.gitignore' --exclude='claude' --exclude='nej-old web' --exclude='NEJweb' --exclude='*.bk' --exclude='*7.08.34 AM*' --exclude='*8.27.48 AM*' --exclude='.DS_Store' ./ $DEPLOYPATH
+    - /bin/chmod 644 $DEPLOYPATH.htaccess
