@@ -2,27 +2,4 @@
 deployment:
   tasks:
     - export DEPLOYPATH=/home/nejstudios/public_html/
-    - /bin/cp -R css $DEPLOYPATH
-    - /bin/cp -R js $DEPLOYPATH
-    - /bin/cp -R images $DEPLOYPATH
-    - /bin/cp -R assets $DEPLOYPATH
-    - /bin/cp -R api $DEPLOYPATH
-    - /bin/cp -R uploads $DEPLOYPATH
-    - /bin/cp -R .well-known $DEPLOYPATH
-    - /bin/cp index.html $DEPLOYPATH
-    - /bin/cp booking.html $DEPLOYPATH
-    - /bin/cp booking-view.html $DEPLOYPATH
-    - /bin/cp booking.js $DEPLOYPATH
-    - /bin/cp client.html $DEPLOYPATH
-    - /bin/cp cms.html $DEPLOYPATH
-    - /bin/cp dashboard.html $DEPLOYPATH
-    - /bin/cp dashboard.js $DEPLOYPATH
-    - /bin/cp db.js $DEPLOYPATH
-    - /bin/cp gallery.html $DEPLOYPATH
-    - /bin/cp live.html $DEPLOYPATH
-    - /bin/cp selection-confirm.html $DEPLOYPATH
-    - /bin/cp team.html $DEPLOYPATH
-    - /bin/cp team.js $DEPLOYPATH
-    - /bin/cp sync.php $DEPLOYPATH
-    - /bin/cp OneSignalSDKWorker.js $DEPLOYPATH
-    - /bin/cp .htaccess $DEPLOYPATH
+    - /usr/bin/rsync -av --exclude='.git' --exclude='.github' --exclude='.claude' --exclude='.cpanel.yml' --exclude='.gitignore' --exclude='claude' --exclude='nej-old web' --exclude='NEJweb' --exclude='*.bk' --exclude='*7.08.34 AM*' --exclude='*8.27.48 AM*' --exclude='.DS_Store' ./ $DEPLOYPATH
