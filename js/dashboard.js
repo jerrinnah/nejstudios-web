@@ -3053,7 +3053,10 @@ async function renderAttendance() {
       statusHtml = `<div style="text-align:right">
         <div style="font-size:0.75rem;font-weight:700;color:var(--red)">✗ Absent${authorised ? ' (Authorised)' : ''}</div>
         <div style="font-size:0.65rem;color:var(--grey-4)">${authorised ? 'No deduction' : '₦5,000 deduction'}</div>
-        ${(isAbsent && !authorised) ? `<button class="action-btn" data-authorise-id="${m.id}" data-authorise-date="${todayDate}" style="margin-top:4px;font-size:0.62rem;padding:3px 8px;border-color:var(--green);color:var(--green)">Authorise</button>` : ''}
+        <div style="display:flex;gap:4px;justify-content:flex-end;margin-top:4px;flex-wrap:wrap">
+          <button class="action-btn" data-manual-signin-id="${m.id}" data-manual-signin-name="${m.name.replace(/"/g,'&quot;')}" style="font-size:0.62rem;padding:3px 8px;border-color:var(--gold);color:var(--gold)">Sign In Manually</button>
+          ${(isAbsent && !authorised) ? `<button class="action-btn" data-authorise-id="${m.id}" data-authorise-date="${todayDate}" style="font-size:0.62rem;padding:3px 8px;border-color:var(--green);color:var(--green)">Authorise</button>` : ''}
+        </div>
       </div>`;
     } else {
       dotBg = 'var(--bg-3)'; dotBorder = 'var(--border)'; dotColor = 'var(--grey-3)';
