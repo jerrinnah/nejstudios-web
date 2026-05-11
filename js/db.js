@@ -331,9 +331,10 @@ const TAKEOVER_BONUS_POINTS = 5;
 const TAKEOVER_BONUS_DAYS   = 3;
 
 function _isOverdue(task) {
-  if (!task.dueDate || task.status === 'completed') return false;
-  // dueDate format expected: 'YYYY-MM-DD'
-  const due = new Date(task.dueDate + 'T23:59:59');
+  const dl = task.deadline || task.dueDate;
+  if (!dl || task.status === 'completed') return false;
+  // deadline format expected: 'YYYY-MM-DD'
+  const due = new Date(dl + 'T23:59:59');
   return Date.now() > due.getTime();
 }
 

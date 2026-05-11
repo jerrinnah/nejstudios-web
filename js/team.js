@@ -737,7 +737,7 @@ async function renderHelpWanted() {
         ${t.desc ? `<div class="my-task-card__desc">${esc(t.desc)}</div>` : ''}
         <div class="my-task-card__timestamps">
           <div class="ts-row">Assigned to: <strong>${esc(t.assignedName || 'Unassigned')}</strong></div>
-          <div class="ts-row">Due: <strong style="color:var(--red)">${esc(t.dueDate || 'No date')}</strong></div>
+          <div class="ts-row">Due: <strong style="color:var(--red)">${esc(t.deadline || t.dueDate || 'No date')}</strong></div>
         </div>
         <div class="my-task-card__actions">
           ${pending
