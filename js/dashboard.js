@@ -1905,21 +1905,23 @@ function initGalleryForm() {
   // Upload Single
   const inputSingle = document.getElementById('galleryPanelInputSingle');
   const inputMulti  = document.getElementById('galleryPanelInputMulti');
-  document.getElementById('btnUploadSingle').addEventListener('click', () => inputSingle.click());
-  document.getElementById('btnUploadMulti').addEventListener('click',  () => inputMulti.click());
-  inputSingle.addEventListener('change', () => { handleGalleryPanelUpload(inputSingle.files); inputSingle.value = ''; });
-  inputMulti.addEventListener('change',  () => { handleGalleryPanelUpload(inputMulti.files);  inputMulti.value  = ''; });
+  document.getElementById('btnUploadSingle')?.addEventListener('click', () => inputSingle?.click());
+  document.getElementById('btnUploadMulti')?.addEventListener('click',  () => inputMulti?.click());
+  inputSingle?.addEventListener('change', () => { handleGalleryPanelUpload(inputSingle.files); inputSingle.value = ''; });
+  inputMulti?.addEventListener('change',  () => { handleGalleryPanelUpload(inputMulti.files);  inputMulti.value  = ''; });
 
   // Select All / Delete Selected
-  document.getElementById('btnGPSelectAll').addEventListener('click', () => {
+  document.getElementById('btnGPSelectAll')?.addEventListener('click', () => {
     const grid    = document.getElementById('galleryPanelGrid');
+    if (!grid) return;
     const thumbs  = grid.querySelectorAll('.gp-thumb');
     const allSel  = grid.querySelectorAll('.gp-thumb.selected').length === thumbs.length;
     thumbs.forEach(t => t.classList.toggle('selected', !allSel));
     updateGPSelCount();
   });
-  document.getElementById('btnGPDeleteSel').addEventListener('click', () => {
+  document.getElementById('btnGPDeleteSel')?.addEventListener('click', () => {
     const grid    = document.getElementById('galleryPanelGrid');
+    if (!grid) return;
     const ids     = Array.from(grid.querySelectorAll('.gp-thumb.selected')).map(t => t.dataset.id);
     if (!ids.length) { showToast('Select images first.'); return; }
     const allImgs   = getGalleryPanelImages();
@@ -1928,7 +1930,6 @@ function initGalleryForm() {
     saveGalleryPanelImages(remaining);
     renderGalleryPanelGrid();
     showToast(`${ids.length} image${ids.length > 1 ? 's' : ''} deleted`);
-    // Delete server files for any real uploaded paths
     toDelete.forEach(img => {
       if (img.url && img.url.startsWith('/uploads/')) {
         const filename = img.url.split('/').pop();
@@ -1938,16 +1939,15 @@ function initGalleryForm() {
     });
   });
 
-  // Render existing panel images on load
   renderGalleryPanelGrid();
 
   // Add file row button
-  document.getElementById('btnAddFile').addEventListener('click', () => {
-    document.getElementById('galleryFilesList').appendChild(_makeFileRow());
+  document.getElementById('btnAddFile')?.addEventListener('click', () => {
+    document.getElementById('galleryFilesList')?.appendChild(_makeFileRow());
   });
 
   // Create gallery link
-  document.getElementById('btnCreateGallery').addEventListener('click', createGalleryLink);
+  document.getElementById('btnCreateGallery')?.addEventListener('click', createGalleryLink);
 }
 
 async function createGalleryLink() {
