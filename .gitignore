@@ -2,3 +2,5 @@
 .claude
 *.zip
 uploads/
+api/data/
+api/rate_limits/

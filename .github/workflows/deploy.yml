@@ -24,7 +24,12 @@ jobs:
             **/.git/**
             **/.github/**
             .cpanel.yml
+            .gitignore
+            .gitmodules
             nej-old web/**
             claude/**
             uploads/**
+            api/data/**
+            api/rate_limits/**
+            **/.DS_Store
             *.zip
