@@ -322,6 +322,124 @@ async function dbDeleteTask(id) {
 }
 
 /* ════════════════════════════════════════════
+   TASK TAKEOVER FLOW
+   When a task is overdue, other team members can request it.
+   The original assignee approves the release; task gets reassigned.
+   If new assignee completes within 3 days of reassignment, +5 bonus points.
+   ════════════════════════════════════════════ */
+const TAKEOVER_BONUS_POINTS = 5;
+const TAKEOVER_BONUS_DAYS   = 3;
+
+function _isOverdue(task) {
+  if (!task.dueDate || task.status === 'completed') return false;
+  // dueDate format expected: 'YYYY-MM-DD'
+  const due = new Date(task.dueDate + 'T23:59:59');
+  return Date.now() > due.getTime();
+}
+
+async function dbGetOverdueTasksForOthers(memberId) {
+  const tasks = await _serverGet('tasks');
+  return tasks.filter(t =>
+    t.assignedTo !== memberId &&
+    t.status !== 'completed' &&
+    _isOverdue(t)
+  );
+}
+
+async function dbRequestTaskTakeover(taskId, requester) {
+  const tasks = await _serverGet('tasks');
+  const task  = tasks.find(t => t.id === taskId);
+  if (!task) return { error: 'Task not found' };
+  if (task.assignedTo === requester.id) return { error: 'You are already assigned' };
+  if (!Array.isArray(task.takeoverRequests)) task.takeoverRequests = [];
+  if (task.takeoverRequests.find(r => r.requesterId === requester.id && r.status === 'pending')) {
+    return { error: 'You already have a pending request' };
+  }
+  task.takeoverRequests.push({
+    requesterId:   requester.id,
+    requesterName: requester.name,
+    status: 'pending',
+    ts: Date.now(),
+  });
+  await _serverSave('tasks', tasks);
+  return { ok: true, task };
+}
+
+async function dbApproveTaskTakeover(taskId, requesterId) {
+  const tasks = await _serverGet('tasks');
+  const task  = tasks.find(t => t.id === taskId);
+  if (!task || !Array.isArray(task.takeoverRequests)) return { error: 'No request found' };
+  const req = task.takeoverRequests.find(r => r.requesterId === requesterId && r.status === 'pending');
+  if (!req) return { error: 'Request not found' };
+  req.status      = 'approved';
+  req.respondedAt = Date.now();
+  // Reassign
+  task.previousAssignedTo   = task.assignedTo;
+  task.previousAssignedName = task.assignedName;
+  task.assignedTo           = req.requesterId;
+  task.assignedName         = req.requesterName;
+  task.reassignedAt         = Date.now();
+  task.status               = 'pending'; // reset so new assignee can start fresh
+  // Reject all other pending requests
+  task.takeoverRequests.forEach(r => {
+    if (r.status === 'pending') { r.status = 'rejected'; r.respondedAt = Date.now(); }
+  });
+  await _serverSave('tasks', tasks);
+  _fireTasks(null);
+  return { ok: true, task };
+}
+
+async function dbRejectTaskTakeover(taskId, requesterId) {
+  const tasks = await _serverGet('tasks');
+  const task  = tasks.find(t => t.id === taskId);
+  if (!task || !Array.isArray(task.takeoverRequests)) return { error: 'No request found' };
+  const req = task.takeoverRequests.find(r => r.requesterId === requesterId && r.status === 'pending');
+  if (!req) return { error: 'Request not found' };
+  req.status      = 'rejected';
+  req.respondedAt = Date.now();
+  await _serverSave('tasks', tasks);
+  return { ok: true };
+}
+
+// Award bonus points on task completion if completed within 3 days of reassignment
+async function dbAwardTakeoverBonusIfEligible(task) {
+  if (!task.reassignedAt || task.bonusAwarded) return null;
+  const daysSinceReassign = (Date.now() - task.reassignedAt) / (24 * 60 * 60 * 1000);
+  if (daysSinceReassign > TAKEOVER_BONUS_DAYS) return null;
+  // Mark task so we don't double-award
+  await dbUpdateTask(task.id, { bonusAwarded: true, bonusPoints: TAKEOVER_BONUS_POINTS });
+  // Add to member's point total
+  try {
+    const r = await fetch('/api/sync.php?resource=team_points', { cache: 'no-store' });
+    let points = r.ok ? await r.json() : {};
+    if (!points || typeof points !== 'object' || Array.isArray(points)) points = {};
+    if (!points[task.assignedTo]) points[task.assignedTo] = { total: 0, entries: [] };
+    points[task.assignedTo].total = (points[task.assignedTo].total || 0) + TAKEOVER_BONUS_POINTS;
+    points[task.assignedTo].entries.push({
+      ts: Date.now(),
+      taskId: task.id,
+      taskTitle: task.title,
+      points: TAKEOVER_BONUS_POINTS,
+      reason: 'Completed taken-over task within 3 days',
+    });
+    await fetch('/api/sync.php?resource=team_points', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(points),
+    });
+  } catch {}
+  return TAKEOVER_BONUS_POINTS;
+}
+
+async function dbGetMemberPoints(memberId) {
+  try {
+    const r = await fetch('/api/sync.php?resource=team_points', { cache: 'no-store' });
+    if (!r.ok) return { total: 0, entries: [] };
+    const points = await r.json();
+    if (!points || typeof points !== 'object') return { total: 0, entries: [] };
+    return points[memberId] || { total: 0, entries: [] };
+  } catch { return { total: 0, entries: [] }; }
+}
+
+/* ════════════════════════════════════════════
    ATTENDANCE  (daily sign-in / sign-out log)
    Stored as { [memberId]: [{ date, time, ts, name,
      signOutTime, signOutTs, daySummary }] }

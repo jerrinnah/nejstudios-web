@@ -709,7 +709,82 @@ async function renderMyTasks() {
   grid.querySelectorAll('[data-my-action]').forEach(btn => {
     btn.addEventListener('click', () => handleMyTaskAction(btn.dataset.id, btn.dataset.myAction));
   });
+
+  // Render Help Wanted (overdue tasks from other members)
+  renderHelpWanted();
+  // Render bonus points summary
+  renderBonusPoints();
 }
+
+async function renderHelpWanted() {
+  const wrap = document.getElementById('helpWantedSection');
+  if (!wrap || !currentMember) return;
+  const overdue = await dbGetOverdueTasksForOthers(currentMember.id);
+  if (!overdue.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+  const cards = overdue.map(t => {
+    const myReq = (t.takeoverRequests || []).find(r => r.requesterId === currentMember.id);
+    const pending = myReq && myReq.status === 'pending';
+    return `
+      <div class="my-task-card" style="border-color:var(--orange);background:rgba(255,168,76,0.05)">
+        <div class="my-task-card__top">
+          <div class="my-task-card__badges">
+            <span class="priority-badge priority-badge--${t.priority || 'medium'}">${t.priority || 'medium'}</span>
+            <span class="status-badge" style="background:rgba(255,80,80,0.15);color:var(--red)">OVERDUE</span>
+          </div>
+        </div>
+        <div class="my-task-card__title">${esc(t.title)}</div>
+        ${t.desc ? `<div class="my-task-card__desc">${esc(t.desc)}</div>` : ''}
+        <div class="my-task-card__timestamps">
+          <div class="ts-row">Assigned to: <strong>${esc(t.assignedName || 'Unassigned')}</strong></div>
+          <div class="ts-row">Due: <strong style="color:var(--red)">${esc(t.dueDate || 'No date')}</strong></div>
+        </div>
+        <div class="my-task-card__actions">
+          ${pending
+            ? `<button class="btn-report" disabled style="opacity:0.6">⏳ Request Pending</button>`
+            : `<button class="btn-start" data-takeover-id="${t.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg> Request to Take Over</button>`}
+        </div>
+      </div>`;
+  }).join('');
+  document.getElementById('helpWantedGrid').innerHTML = cards;
+  document.querySelectorAll('[data-takeover-id]').forEach(btn => {
+    btn.addEventListener('click', () => requestTakeover(btn.dataset.takeoverId));
+  });
+}
+
+async function requestTakeover(taskId) {
+  if (!currentMember) return;
+  const result = await dbRequestTaskTakeover(taskId, currentMember);
+  if (result.error) { showToast(result.error, 'err'); return; }
+  // Notify the original assignee
+  if (result.task && result.task.previousAssignedTo !== currentMember.id) {
+    const origId = result.task.assignedTo;
+    pushNotifToMember(origId, {
+      type: 'task-takeover-request',
+      title: 'Task Takeover Request',
+      message: `${currentMember.name} wants to take over: "${result.task.title}". Open Tasks to approve.`,
+      taskId, requesterId: currentMember.id, ts: Date.now(),
+    });
+  }
+  showToast('Request sent — waiting for assignee to release the task.');
+  renderHelpWanted();
+}
+
+async function renderBonusPoints() {
+  const el = document.getElementById('bonusPointsCard');
+  if (!el || !currentMember) return;
+  const pts = await dbGetMemberPoints(currentMember.id);
+  if (!pts.total) { el.style.display = 'none'; return; }
+  el.style.display = '';
+  el.innerHTML = `
+    <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--grey-3);margin-bottom:6px">Bonus Points</div>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:0.85rem;color:var(--grey-2)">For taken-over tasks completed within 3 days</span>
+      <strong style="color:var(--gold);font-size:1.2rem">+${pts.total}</strong>
+    </div>`;
+}
+
+function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function buildMyTaskCard(t) {
   const prClass     = t.priority || 'medium';
@@ -791,10 +866,12 @@ async function completeTask(id) {
   const task = await dbGetTask(id);
   if (!task || task.status !== 'in-progress') return;
   await dbUpdateTask(id, { status: 'completed', completed_at: Date.now() });
+  // Check bonus eligibility (taken-over task completed within 3 days)
+  const updated = await dbGetTask(id);
+  const bonus   = await dbAwardTakeoverBonusIfEligible(updated);
   renderMyTasks();
   renderAllTasksBar();
   updateBadges();
-  // Notify all other team members
   if (currentMember) {
     const allMembers = getTeam().filter(m => m.id !== currentMember.id);
     allMembers.forEach(m => {
@@ -806,7 +883,7 @@ async function completeTask(id) {
       });
     });
   }
-  showToast('Task completed!');
+  showToast(bonus ? `Task completed! 🎉 +${bonus} bonus points awarded.` : 'Task completed!');
 }
 
 /* ════════════════════════════════════════════
@@ -1008,16 +1085,62 @@ async function renderNotifPanel() {
     return;
   }
 
-  const icons = { 'task-assigned': '📋', 'task-completed': '✅', 'booking-assigned': '📸', 'delivery-approved': '✅', 'delivery-failed': '⚠️', default: '🔔' };
-  list.innerHTML = [...notifs].reverse().map(n => `
+  const icons = { 'task-assigned': '📋', 'task-completed': '✅', 'booking-assigned': '📸', 'delivery-approved': '✅', 'delivery-failed': '⚠️', 'task-takeover-request': '🤝', 'task-released': '✅', default: '🔔' };
+  list.innerHTML = [...notifs].reverse().map(n => {
+    const isTakeover = n.type === 'task-takeover-request' && n.taskId && n.requesterId;
+    const actions = isTakeover ? `
+      <div style="display:flex;gap:6px;margin-top:6px">
+        <button class="btn-start" data-takeover-approve="${n.taskId}" data-requester="${n.requesterId}" style="font-size:0.72rem;padding:6px 10px">Release Task</button>
+        <button class="btn-report" data-takeover-reject="${n.taskId}" data-requester="${n.requesterId}" style="font-size:0.72rem;padding:6px 10px">Reject</button>
+      </div>` : '';
+    return `
     <div class="notif-item${n.read ? '' : ' unread'}">
       <div class="notif-item__icon">${icons[n.type] || icons.default}</div>
       <div>
         <div class="notif-item__title">${n.title || 'Notification'}</div>
         <div>${n.message || ''}</div>
         <div class="notif-item__time">${n.ts ? new Date(n.ts).toLocaleString('en-NG', { dateStyle:'short', timeStyle:'short' }) : ''}</div>
+        ${actions}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+
+  // Wire takeover approve/reject buttons
+  list.querySelectorAll('[data-takeover-approve]').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const taskId      = btn.dataset.takeoverApprove;
+      const requesterId = btn.dataset.requester;
+      if (!confirm('Release this task to the requesting team member?')) return;
+      const result = await dbApproveTaskTakeover(taskId, requesterId);
+      if (result.error) { showToast(result.error, 'err'); return; }
+      pushNotifToMember(requesterId, {
+        type: 'task-released',
+        title: 'Task Released to You',
+        message: `${currentMember.name} released "${result.task.title}" to you. Complete within 3 days for +5 bonus points!`,
+        taskId, ts: Date.now(),
+      });
+      showToast('Task released ✓');
+      renderMyTasks();
+      renderNotifPanel();
+    });
+  });
+  list.querySelectorAll('[data-takeover-reject]').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const taskId      = btn.dataset.takeoverReject;
+      const requesterId = btn.dataset.requester;
+      await dbRejectTaskTakeover(taskId, requesterId);
+      pushNotifToMember(requesterId, {
+        type: 'task-takeover-request',
+        title: 'Takeover Request Declined',
+        message: `Your request to take over a task was declined.`,
+        taskId, ts: Date.now(),
+      });
+      showToast('Request rejected');
+      renderNotifPanel();
+    });
+  });
 }
 
 function initNotifBell() {
