@@ -1510,6 +1510,7 @@ async function renderSignIn() {
         const lateStr = r.ts ? calcLate(r.ts) : null;
         const signInTime = r.time || '—';
         if (r.absent) {
+          const absentDed = r.authorised ? 0 : (r.absentDeduction || 5000);
           return `
             <div class="signin-row signin-row--absent">
               <div class="signin-row__dot" style="background:var(--red)"></div>
@@ -1517,11 +1518,14 @@ async function renderSignIn() {
                 <div class="signin-row__date">
                   ${fmt}${isToday ? ' <span style="font-size:0.68rem;color:var(--gold);font-weight:700">TODAY</span>' : ''}
                   <span style="font-size:0.68rem;font-weight:700;color:var(--red);margin-left:6px;text-transform:uppercase">ABSENT</span>
+                  ${r.authorised ? '<span style="font-size:0.68rem;font-weight:700;color:var(--green);margin-left:6px;text-transform:uppercase">AUTHORISED</span>' : ''}
                 </div>
                 <div class="signin-row__times" style="color:var(--red);opacity:0.7">Did not sign in before 12:00 PM</div>
+                ${absentDed ? `<div class="signin-row__summary" style="color:var(--red)">Deduction: ₦${absentDed.toLocaleString()}</div>` : ''}
               </div>
             </div>`;
         }
+        const lateDed = r.lateDeduction || 0;
         return `
           <div class="signin-row">
             <div class="signin-row__dot" style="${isToday ? 'background:var(--gold)' : ''}"></div>
@@ -1534,10 +1538,36 @@ async function renderSignIn() {
                 <span class="signin-row__time">In: ${signInTime}</span>
                 ${r.signOutTime ? `<span class="signin-row__outtime">Out: ${r.signOutTime}</span>` : ''}
               </div>
+              ${lateDed ? `<div class="signin-row__summary" style="color:var(--red)">Late deduction: ₦${lateDed.toLocaleString()}</div>` : ''}
               ${r.daySummary ? `<div class="signin-row__summary">"${r.daySummary}"</div>` : ''}
             </div>
           </div>`;
       }).join('');
+    }
+  }
+
+  // Render deductions summary card
+  const dedEl = document.getElementById('deductionsSummary');
+  if (dedEl) {
+    const ded = await dbGetMemberDeductions(currentMember.id, 30);
+    if (ded.total > 0) {
+      dedEl.style.display = 'block';
+      dedEl.innerHTML = `
+        <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--grey-3);margin-bottom:8px">Last 30 days</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:0.85rem;color:var(--grey-2)">Late deductions</span>
+          <strong style="color:var(--white)">₦${ded.lateTotal.toLocaleString()}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:0.85rem;color:var(--grey-2)">Absent deductions</span>
+          <strong style="color:var(--white)">₦${ded.absentTotal.toLocaleString()}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;margin-top:6px;border-top:1px solid var(--border)">
+          <span style="font-size:0.9rem;font-weight:600;color:var(--white)">Total</span>
+          <strong style="color:var(--red);font-size:1rem">₦${ded.total.toLocaleString()}</strong>
+        </div>`;
+    } else {
+      dedEl.style.display = 'none';
     }
   }
 }

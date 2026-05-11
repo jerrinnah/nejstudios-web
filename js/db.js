@@ -352,6 +352,24 @@ async function _saveAttendance(data) {
   } catch {}
 }
 
+// ── Deduction policy ──
+// Work starts at 9:00 AM. Any sign-in after that is late.
+// Lateness: ₦1,000 per hour late (rounded up to next full hour).
+// Absent without authorised permission: ₦5,000.
+const WORK_START_HOUR     = 9;
+const LATE_RATE_PER_HOUR  = 1000;
+const ABSENT_DEDUCTION    = 5000;
+
+function calcLateDeduction(signInTs) {
+  const signIn = new Date(signInTs);
+  const start  = new Date(signIn);
+  start.setHours(WORK_START_HOUR, 0, 0, 0);
+  const minutesLate = Math.max(0, Math.round((signIn - start) / 60000));
+  if (minutesLate <= 0) return { lateMinutes: 0, lateDeduction: 0 };
+  const hoursLate = Math.ceil(minutesLate / 60);
+  return { lateMinutes: minutesLate, lateDeduction: hoursLate * LATE_RATE_PER_HOUR };
+}
+
 // Sign in today — returns { alreadySignedIn, record }
 async function dbSignInToday(member) {
   const today = new Date().toISOString().slice(0, 10);
@@ -364,7 +382,12 @@ async function dbSignInToday(member) {
   const existing = data[member.id].find(r => r.date === today);
   if (existing) return { alreadySignedIn: true, record: existing };
 
-  const record = { date: today, time, ts, name: member.name, signOutTime: null, signOutTs: null, daySummary: null };
+  const { lateMinutes, lateDeduction } = calcLateDeduction(ts);
+  const record = {
+    date: today, time, ts, name: member.name,
+    signOutTime: null, signOutTs: null, daySummary: null,
+    lateMinutes, lateDeduction,
+  };
   data[member.id].unshift(record);
   data[member.id] = data[member.id].slice(0, 60); // keep last 60 entries per member
   await _saveAttendance(data);
@@ -380,11 +403,39 @@ async function dbMarkAbsent(member) {
   if (!data[member.id]) data[member.id] = [];
   const existing = data[member.id].find(r => r.date === today);
   if (existing) return { alreadyExists: true, record: existing };
-  const record = { date: today, absent: true, name: member.name, time: null, ts: null, signOutTime: null, daySummary: null };
+  const record = {
+    date: today, absent: true, name: member.name, time: null, ts: null,
+    signOutTime: null, signOutTs: null, daySummary: null,
+    authorised: false, absentDeduction: ABSENT_DEDUCTION,
+  };
   data[member.id].unshift(record);
   data[member.id] = data[member.id].slice(0, 60);
   await _saveAttendance(data);
   return { marked: true, record };
+}
+
+// Admin marks an absence as authorised — waives the ₦5,000 deduction
+async function dbAuthoriseAbsence(memberId, date) {
+  const data = await dbGetAttendance();
+  if (!data[memberId]) return false;
+  const rec = data[memberId].find(r => r.date === date);
+  if (!rec || !rec.absent) return false;
+  rec.authorised      = true;
+  rec.absentDeduction = 0;
+  await _saveAttendance(data);
+  return true;
+}
+
+// Sum deductions for a member over the last N days (default 30)
+async function dbGetMemberDeductions(memberId, days = 30) {
+  const data    = await dbGetAttendance();
+  const records = (data[memberId] || []).slice(0, days);
+  let lateTotal = 0, absentTotal = 0;
+  records.forEach(r => {
+    if (r.lateDeduction)    lateTotal   += r.lateDeduction;
+    if (r.absentDeduction)  absentTotal += r.absentDeduction;
+  });
+  return { lateTotal, absentTotal, total: lateTotal + absentTotal, records };
 }
 
 // Sign out today — returns { alreadySignedOut, notSignedIn, record }

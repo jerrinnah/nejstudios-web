@@ -3048,7 +3048,13 @@ async function renderAttendance() {
       </div>`;
     } else if (isAbsent || autoAbsent) {
       dotBg = 'rgba(248,113,113,.12)'; dotBorder = 'rgba(248,113,113,.3)'; dotColor = 'var(--red)';
-      statusHtml = `<div style="text-align:right"><div style="font-size:0.75rem;font-weight:700;color:var(--red)">✗ Absent</div><div style="font-size:0.65rem;color:var(--grey-4)">No sign-in by 12 PM</div></div>`;
+      const authorised = todayRec && todayRec.authorised;
+      const todayDate  = new Date().toISOString().slice(0,10);
+      statusHtml = `<div style="text-align:right">
+        <div style="font-size:0.75rem;font-weight:700;color:var(--red)">✗ Absent${authorised ? ' (Authorised)' : ''}</div>
+        <div style="font-size:0.65rem;color:var(--grey-4)">${authorised ? 'No deduction' : '₦5,000 deduction'}</div>
+        ${(isAbsent && !authorised) ? `<button class="action-btn" data-authorise-id="${m.id}" data-authorise-date="${todayDate}" style="margin-top:4px;font-size:0.62rem;padding:3px 8px;border-color:var(--green);color:var(--green)">Authorise</button>` : ''}
+      </div>`;
     } else {
       dotBg = 'var(--bg-3)'; dotBorder = 'var(--border)'; dotColor = 'var(--grey-3)';
       statusHtml = `<div style="font-size:0.72rem;color:var(--grey-4);font-style:italic">Not yet signed in</div>`;
@@ -3070,6 +3076,21 @@ async function renderAttendance() {
 }
 
 document.getElementById('refreshAttendanceBtn')?.addEventListener('click', () => renderAttendance());
+
+document.getElementById('attendanceGrid')?.addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-authorise-id]');
+  if (!btn) return;
+  const memberId = btn.dataset.authoriseId;
+  const date     = btn.dataset.authoriseDate;
+  if (!confirm('Mark this absence as authorised? The ₦5,000 deduction will be waived.')) return;
+  const ok = await dbAuthoriseAbsence(memberId, date);
+  if (ok) {
+    showToast('Absence authorised — deduction waived ✓');
+    renderAttendance();
+  } else {
+    showToast('Could not authorise absence', 'err');
+  }
+});
 
 /* ════════════════════════════════════════════
    TOAST
