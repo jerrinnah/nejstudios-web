@@ -696,6 +696,8 @@ async function renderMyTasks() {
         <h3>No tasks assigned yet</h3>
         <p>Your admin will assign tasks to you. Check back soon.</p>
       </div>`;
+    renderHelpWanted();
+    renderBonusPoints();
     return;
   }
 
@@ -720,6 +722,7 @@ async function renderHelpWanted() {
   const wrap = document.getElementById('helpWantedSection');
   if (!wrap || !currentMember) return;
   const overdue = await dbGetOverdueTasksForOthers(currentMember.id);
+  console.log('[Help Wanted] overdue tasks for others:', overdue.length, overdue);
   if (!overdue.length) { wrap.style.display = 'none'; return; }
   wrap.style.display = '';
   const cards = overdue.map(t => {
