@@ -414,6 +414,39 @@ async function dbMarkAbsent(member) {
   return { marked: true, record };
 }
 
+// Admin records a manual sign-in for a member at a specific time
+// timeStr format: 'HH:MM' (24-hour). date defaults to today.
+async function dbAdminSignInForMember(member, timeStr, date) {
+  if (!date) date = new Date().toISOString().slice(0, 10);
+  const [hh, mm] = (timeStr || '09:00').split(':').map(n => parseInt(n, 10) || 0);
+  const dt = new Date(date + 'T00:00:00');
+  dt.setHours(hh, mm, 0, 0);
+  const ts   = dt.getTime();
+  const time = dt.toLocaleTimeString('en-NG', { timeStyle: 'short' });
+
+  const data = await dbGetAttendance();
+  if (!data[member.id]) data[member.id] = [];
+  const existing = data[member.id].find(r => r.date === date);
+  if (existing && !existing.absent) return { alreadySignedIn: true, record: existing };
+
+  // Replace any existing absent record for this date
+  if (existing && existing.absent) {
+    data[member.id] = data[member.id].filter(r => r.date !== date);
+  }
+
+  const { lateMinutes, lateDeduction } = calcLateDeduction(ts);
+  const record = {
+    date, time, ts, name: member.name,
+    signOutTime: null, signOutTs: null, daySummary: null,
+    lateMinutes, lateDeduction,
+    manualEntry: true,
+  };
+  data[member.id].unshift(record);
+  data[member.id] = data[member.id].slice(0, 60);
+  await _saveAttendance(data);
+  return { marked: true, record };
+}
+
 // Admin marks an absence as authorised — waives the ₦5,000 deduction
 async function dbAuthoriseAbsence(memberId, date) {
   const data = await dbGetAttendance();

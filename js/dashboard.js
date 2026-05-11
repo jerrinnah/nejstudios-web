@@ -3057,7 +3057,10 @@ async function renderAttendance() {
       </div>`;
     } else {
       dotBg = 'var(--bg-3)'; dotBorder = 'var(--border)'; dotColor = 'var(--grey-3)';
-      statusHtml = `<div style="font-size:0.72rem;color:var(--grey-4);font-style:italic">Not yet signed in</div>`;
+      statusHtml = `<div style="text-align:right">
+        <div style="font-size:0.72rem;color:var(--grey-4);font-style:italic;margin-bottom:4px">Not yet signed in</div>
+        <button class="action-btn" data-manual-signin-id="${m.id}" data-manual-signin-name="${m.name.replace(/"/g,'&quot;')}" style="font-size:0.62rem;padding:3px 8px;border-color:var(--gold);color:var(--gold)">Sign In Manually</button>
+      </div>`;
     }
     return `
     <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px">
@@ -3078,17 +3081,37 @@ async function renderAttendance() {
 document.getElementById('refreshAttendanceBtn')?.addEventListener('click', () => renderAttendance());
 
 document.getElementById('attendanceGrid')?.addEventListener('click', async (e) => {
-  const btn = e.target.closest('[data-authorise-id]');
-  if (!btn) return;
-  const memberId = btn.dataset.authoriseId;
-  const date     = btn.dataset.authoriseDate;
-  if (!confirm('Mark this absence as authorised? The ₦5,000 deduction will be waived.')) return;
-  const ok = await dbAuthoriseAbsence(memberId, date);
-  if (ok) {
-    showToast('Absence authorised — deduction waived ✓');
-    renderAttendance();
-  } else {
-    showToast('Could not authorise absence', 'err');
+  const authBtn = e.target.closest('[data-authorise-id]');
+  if (authBtn) {
+    const memberId = authBtn.dataset.authoriseId;
+    const date     = authBtn.dataset.authoriseDate;
+    if (!confirm('Mark this absence as authorised? The ₦5,000 deduction will be waived.')) return;
+    const ok = await dbAuthoriseAbsence(memberId, date);
+    if (ok) { showToast('Absence authorised — deduction waived ✓'); renderAttendance(); }
+    else    { showToast('Could not authorise absence', 'err'); }
+    return;
+  }
+
+  const signBtn = e.target.closest('[data-manual-signin-id]');
+  if (signBtn) {
+    const memberId   = signBtn.dataset.manualSigninId;
+    const memberName = signBtn.dataset.manualSigninName;
+    const now = new Date();
+    const hhmm = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    const timeStr = prompt(`Enter sign-in time for ${memberName} (24-hour HH:MM):`, hhmm);
+    if (!timeStr) return;
+    if (!/^\d{1,2}:\d{2}$/.test(timeStr)) { showToast('Invalid time format. Use HH:MM', 'err'); return; }
+    const team = getTeam();
+    const member = team.find(m => m.id === memberId);
+    if (!member) { showToast('Member not found', 'err'); return; }
+    const result = await dbAdminSignInForMember(member, timeStr);
+    if (result.alreadySignedIn) {
+      showToast(`${memberName} already signed in today`, 'err');
+    } else {
+      const ded = result.record.lateDeduction;
+      showToast(`${memberName} signed in at ${timeStr}${ded ? ` (₦${ded.toLocaleString()} late deduction)` : ''} ✓`);
+      renderAttendance();
+    }
   }
 });
 
