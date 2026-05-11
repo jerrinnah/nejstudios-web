@@ -3055,7 +3055,7 @@ async function renderAttendance() {
         <div style="font-size:0.65rem;color:var(--grey-4)">${authorised ? 'No deduction' : '₦5,000 deduction'}</div>
         <div style="display:flex;gap:4px;justify-content:flex-end;margin-top:4px;flex-wrap:wrap">
           <button class="action-btn" data-manual-signin-id="${m.id}" data-manual-signin-name="${m.name.replace(/"/g,'&quot;')}" style="font-size:0.62rem;padding:3px 8px;border-color:var(--gold);color:var(--gold)">Sign In Manually</button>
-          ${(isAbsent && !authorised) ? `<button class="action-btn" data-authorise-id="${m.id}" data-authorise-date="${todayDate}" style="font-size:0.62rem;padding:3px 8px;border-color:var(--green);color:var(--green)">Authorise</button>` : ''}
+          ${!authorised ? `<button class="action-btn" data-authorise-id="${m.id}" data-authorise-date="${todayDate}" data-authorise-name="${m.name.replace(/"/g,'&quot;')}" style="font-size:0.62rem;padding:3px 8px;border-color:var(--green);color:var(--green)">Authorise</button>` : ''}
         </div>
       </div>`;
     } else {
@@ -3089,6 +3089,10 @@ document.getElementById('attendanceGrid')?.addEventListener('click', async (e) =
     const memberId = authBtn.dataset.authoriseId;
     const date     = authBtn.dataset.authoriseDate;
     if (!confirm('Mark this absence as authorised? The ₦5,000 deduction will be waived.')) return;
+    // Create absent record first if it doesn't exist yet (auto-absent state)
+    const team   = getTeam();
+    const member = team.find(m => m.id === memberId);
+    if (member) await dbMarkAbsent(member);
     const ok = await dbAuthoriseAbsence(memberId, date);
     if (ok) { showToast('Absence authorised — deduction waived ✓'); renderAttendance(); }
     else    { showToast('Could not authorise absence', 'err'); }
