@@ -13,7 +13,7 @@ header('Access-Control-Allow-Headers: Content-Type');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(200); exit; }
 
 // Allowed resources
-$allowed  = ['bookings', 'schedule', 'tasks', 'notifications', 'gallery', 'gallery_links', 'approvals', 'attendance', 'site_content', 'sign_out_briefs', 'team_members', 'confirmations', 'team_points'];
+$allowed  = ['bookings', 'schedule', 'tasks', 'notifications', 'gallery', 'gallery_links', 'approvals', 'attendance', 'site_content', 'sign_out_briefs', 'team_members', 'confirmations', 'team_points', 'team_deleted'];
 $resource = isset($_GET['resource']) ? preg_replace('/[^a-z_]/', '', $_GET['resource']) : '';
 
 if (!in_array($resource, $allowed)) {

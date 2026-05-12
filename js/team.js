@@ -24,12 +24,18 @@ const TEAM_CONFIG = [
    STORAGE HELPERS
    ════════════════════════════════════════════ */
 
-// Merges hardcoded TEAM_CONFIG with any members added via the admin UI (server + localStorage).
-// TEAM_CONFIG entries take precedence so credentials always work cross-device.
+const TEAM_DELETED_KEY = 'nej_team_deleted';
+function getDeletedTeamIds() {
+  try { return JSON.parse(localStorage.getItem(TEAM_DELETED_KEY) || '[]'); } catch { return []; }
+}
+
+// Merges hardcoded TEAM_CONFIG with admin-added members, then filters out admin-deleted IDs.
 function getTeam() {
-  const stored = JSON.parse(localStorage.getItem(TEAM_KEY) || '[]');
-  const merged = [...TEAM_CONFIG];
+  const stored  = JSON.parse(localStorage.getItem(TEAM_KEY) || '[]');
+  const deleted = new Set(getDeletedTeamIds());
+  const merged  = TEAM_CONFIG.filter(c => !deleted.has(c.id));
   stored.forEach(m => {
+    if (deleted.has(m.id)) return;
     if (!merged.find(c => c.id === m.id || c.username.toLowerCase() === m.username.toLowerCase())) {
       merged.push(m);
     }
@@ -40,16 +46,29 @@ function getTeam() {
 async function syncTeamFromServer() {
   try {
     const r = await fetch('/api/sync.php?resource=team_members', { cache: 'no-store' });
+    if (r.ok) {
+      const serverExtras = await r.json();
+      if (Array.isArray(serverExtras) && serverExtras.length > 0) {
+        const local = JSON.parse(localStorage.getItem(TEAM_KEY) || '[]');
+        const merged = [...local];
+        serverExtras.forEach(m => {
+          if (!merged.find(c => c.id === m.id)) merged.push(m);
+        });
+        localStorage.setItem(TEAM_KEY, JSON.stringify(merged));
+      }
+    }
+  } catch { /* server unreachable */ }
+  // Also sync deleted IDs
+  try {
+    const r = await fetch('/api/sync.php?resource=team_deleted', { cache: 'no-store' });
     if (!r.ok) return;
-    const serverExtras = await r.json();
-    if (!Array.isArray(serverExtras) || serverExtras.length === 0) return;
-    const local = JSON.parse(localStorage.getItem(TEAM_KEY) || '[]');
-    const merged = [...local];
-    serverExtras.forEach(m => {
-      if (!merged.find(c => c.id === m.id)) merged.push(m);
-    });
-    localStorage.setItem(TEAM_KEY, JSON.stringify(merged));
-  } catch { /* server unreachable — local data used */ }
+    const serverDeleted = await r.json();
+    if (Array.isArray(serverDeleted) && serverDeleted.length > 0) {
+      const local = getDeletedTeamIds();
+      const merged = Array.from(new Set([...local, ...serverDeleted]));
+      localStorage.setItem(TEAM_DELETED_KEY, JSON.stringify(merged));
+    }
+  } catch { /* server unreachable */ }
 }
 
 function getSession() {

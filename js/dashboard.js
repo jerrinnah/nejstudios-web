@@ -90,6 +90,17 @@ async function syncBookingsFromServer() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(serverBookings));
   } catch { /* server unreachable — local data used */ }
 }
+const TEAM_DELETED_KEY = 'nej_team_deleted';
+function getDeletedTeamIds() {
+  try { return JSON.parse(localStorage.getItem(TEAM_DELETED_KEY) || '[]'); } catch { return []; }
+}
+function saveDeletedTeamIds(ids) {
+  localStorage.setItem(TEAM_DELETED_KEY, JSON.stringify(ids));
+  fetch('/api/sync.php?resource=team_deleted', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(ids),
+  }).catch(() => {});
+}
+
 function saveTeam(arr) {
   // Only store non-hardcoded members locally and on server
   const extras = arr.filter(m => !TEAM_CONFIG.find(c => c.id === m.id));
@@ -100,16 +111,30 @@ function saveTeam(arr) {
 }
 
 // Merges hardcoded TEAM_CONFIG with members added via the UI (server + localStorage).
-// TEAM_CONFIG entries take precedence so credentials always work cross-device.
+// Filters out IDs in the deleted list so admin-removed members stay removed.
 function getTeam() {
-  const stored = JSON.parse(localStorage.getItem(TEAM_KEY) || '[]');
-  const merged = [...TEAM_CONFIG];
+  const stored  = JSON.parse(localStorage.getItem(TEAM_KEY) || '[]');
+  const deleted = new Set(getDeletedTeamIds());
+  const merged  = TEAM_CONFIG.filter(c => !deleted.has(c.id));
   stored.forEach(m => {
+    if (deleted.has(m.id)) return;
     if (!merged.find(c => c.id === m.id || c.username.toLowerCase() === m.username.toLowerCase())) {
       merged.push(m);
     }
   });
   return merged;
+}
+
+async function syncTeamDeletedFromServer() {
+  try {
+    const r = await fetch('/api/sync.php?resource=team_deleted', { cache: 'no-store' });
+    if (!r.ok) return;
+    const serverDeleted = await r.json();
+    if (!Array.isArray(serverDeleted) || serverDeleted.length === 0) return;
+    const local = getDeletedTeamIds();
+    const merged = Array.from(new Set([...local, ...serverDeleted]));
+    localStorage.setItem(TEAM_DELETED_KEY, JSON.stringify(merged));
+  } catch { /* server unreachable — local data used */ }
 }
 
 async function syncTeamFromServer() {
@@ -385,6 +410,7 @@ function showDash() {
   // Sync bookings and gallery from server then render (server data takes precedence)
   syncGalleryFromServer().catch(() => {});
   syncTeamFromServer().catch(() => {});
+  syncTeamDeletedFromServer().catch(() => {});
   syncBookingsFromServer().then(() => {
     renderBookings();
     renderTasksBadge();
@@ -2987,6 +3013,12 @@ function editMember(id) {
 async function removeMember(id, name) {
   if (!confirm(`Remove ${name} from the team? Their tasks will become unassigned.`)) return;
   await dbUnassignMemberTasks(id);
+  // Track ID as deleted so hardcoded TEAM_CONFIG entries stay removed
+  const deleted = getDeletedTeamIds();
+  if (!deleted.includes(id)) {
+    deleted.push(id);
+    saveDeletedTeamIds(deleted);
+  }
   saveTeam(getTeam().filter(m => m.id !== id));
   await renderTeam();
   await renderTasks();
