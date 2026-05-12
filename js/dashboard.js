@@ -3010,9 +3010,21 @@ function editMember(id) {
   document.querySelector('.team-form-card').scrollIntoView({ behavior:'smooth', block:'nearest' });
 }
 
+async function unassignMemberTasks(id) {
+  try {
+    const tasks = await dbGetTasks();
+    const mine  = tasks.filter(t => t.assignedTo === id);
+    for (const t of mine) {
+      await dbUpdateTask(t.id, { assignedTo: null, assignedName: null });
+    }
+  } catch (e) { console.error('unassignMemberTasks failed', e); }
+}
+
 async function removeMember(id, name) {
   if (!confirm(`Remove ${name} from the team? Their tasks will become unassigned.`)) return;
-  await dbUnassignMemberTasks(id);
+  try {
+    await unassignMemberTasks(id);
+  } catch (e) { console.error('unassign failed, continuing with removal', e); }
   // Track ID as deleted so hardcoded TEAM_CONFIG entries stay removed
   const deleted = getDeletedTeamIds();
   if (!deleted.includes(id)) {
@@ -3021,8 +3033,8 @@ async function removeMember(id, name) {
   }
   saveTeam(getTeam().filter(m => m.id !== id));
   await renderTeam();
-  await renderTasks();
-  populateAssigneeSelect();
+  if (typeof renderTasks === 'function') await renderTasks();
+  if (typeof populateAssigneeSelect === 'function') populateAssigneeSelect();
   showToast(`${name} removed`);
 }
 
