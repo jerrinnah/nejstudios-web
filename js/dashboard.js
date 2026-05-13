@@ -3002,7 +3002,7 @@ async function renderTeam() {
     const completedCount = memberTasks.filter(t => t.status === 'completed').length;
     const sal = salaries[i];
     return `
-      <div class="member-card">
+      <div class="member-card" data-member-id="${m.id}" style="cursor:pointer">
         <div class="member-avatar">${initials}</div>
         <div class="member-info">
           <div class="member-name">${m.name}</div>
@@ -3026,14 +3026,102 @@ async function renderTeam() {
   }).join('');
 
   grid.querySelectorAll('.member-action-btn--link').forEach(btn => {
-    btn.addEventListener('click', () => copyLoginLink(btn.dataset.mid));
+    btn.addEventListener('click', (e) => { e.stopPropagation(); copyLoginLink(btn.dataset.mid); });
   });
   grid.querySelectorAll('.member-action-btn--edit').forEach(btn => {
-    btn.addEventListener('click', () => editMember(btn.dataset.mid));
+    btn.addEventListener('click', (e) => { e.stopPropagation(); editMember(btn.dataset.mid); });
   });
   grid.querySelectorAll('.member-action-btn--delete').forEach(btn => {
-    btn.addEventListener('click', () => removeMember(btn.dataset.mid, btn.dataset.mname));
+    btn.addEventListener('click', (e) => { e.stopPropagation(); removeMember(btn.dataset.mid, btn.dataset.mname); });
   });
+  grid.querySelectorAll('[data-member-id]').forEach(card => {
+    card.addEventListener('click', () => openMemberDetailModal(card.dataset.memberId));
+  });
+}
+
+async function openMemberDetailModal(id) {
+  const team = getTeam();
+  const m    = team.find(x => x.id === id);
+  if (!m) return;
+  const initials = m.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
+
+  // Loading state
+  modalContent.innerHTML = `<div style="text-align:center;padding:30px;color:var(--grey-3)">Loading…</div>`;
+  detailModal.querySelector('h3').textContent = 'Team Member Profile';
+  detailModal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  // Gather data
+  const [sal, allTasks, attendance, points] = await Promise.all([
+    dbGetMonthlySalary(m).catch(() => null),
+    dbGetTasks().catch(() => []),
+    dbGetAttendance().catch(() => ({})),
+    dbGetMemberPoints(m.id).catch(() => ({ total: 0, entries: [] })),
+  ]);
+
+  const myTasks    = allTasks.filter(t => t.assignedTo === m.id);
+  const completed  = myTasks.filter(t => t.status === 'completed');
+  const inProgress = myTasks.filter(t => t.status === 'in-progress');
+  const pending    = myTasks.filter(t => t.status === 'pending');
+  const awaiting   = myTasks.filter(t => t.status === 'awaiting-approval');
+
+  const records = (attendance[m.id] || []).slice(0, 14);
+  const presentCount = records.filter(r => !r.absent).length;
+  const absentCount  = records.filter(r => r.absent).length;
+
+  const taskRow = (t) => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--bg-2);border:1px solid var(--border);border-radius:6px;margin-bottom:6px;font-size:0.78rem">
+      <div style="min-width:0;flex:1">
+        <div style="color:var(--white);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(t.title)}</div>
+        ${t.completedAt ? `<div style="color:var(--grey-3);font-size:0.68rem;margin-top:1px">Completed ${fmtDateShort(t.completedAt)}</div>` : ''}
+      </div>
+      <span style="font-size:0.62rem;font-weight:700;text-transform:uppercase;color:${t.status==='completed'?'var(--green)':t.status==='in-progress'?'var(--gold)':t.status==='awaiting-approval'?'var(--orange)':'var(--grey-3)'};margin-left:8px;flex-shrink:0">${t.status}</span>
+    </div>`;
+
+  modalContent.innerHTML = `
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--border)">
+      <div style="width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,var(--gold),#a98c43);display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:700;color:#000">${initials}</div>
+      <div>
+        <div style="font-size:1.05rem;color:var(--white);font-weight:700">${_escHtml(m.name)}</div>
+        <div style="font-size:0.78rem;color:var(--grey-3)">@${_escHtml(m.username)} · ID ${_escHtml(m.id)}</div>
+        <div style="font-size:0.7rem;color:var(--grey-4);margin-top:2px">Added ${fmtDateShort(m.createdAt)}${m.role==='admin'?' · ADMIN':''}</div>
+      </div>
+    </div>
+
+    ${sal && sal.baseSalary > 0 ? `
+      <div style="padding:14px;background:linear-gradient(135deg,rgba(201,168,76,0.08),rgba(201,168,76,0.02));border:1px solid rgba(201,168,76,0.3);border-radius:10px;margin-bottom:16px">
+        <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--grey-3);margin-bottom:10px">Salary Breakdown — ${new Date().toLocaleDateString('en-NG', { month: 'long' })}</div>
+        <div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:5px"><span style="color:var(--grey-2)">Base salary</span><strong style="color:var(--white)">₦${sal.baseSalary.toLocaleString()}</strong></div>
+        ${sal.lateTotal ? `<div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:5px"><span style="color:var(--grey-2)">Late deductions</span><strong style="color:var(--red)">− ₦${sal.lateTotal.toLocaleString()}</strong></div>` : ''}
+        ${sal.absentTotal ? `<div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:5px"><span style="color:var(--grey-2)">Absent deductions</span><strong style="color:var(--red)">− ₦${sal.absentTotal.toLocaleString()}</strong></div>` : ''}
+        ${sal.bonusAmount ? `<div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:5px"><span style="color:var(--grey-2)">Bonus (${sal.bonusPoints} pts)</span><strong style="color:var(--green)">+ ₦${sal.bonusAmount.toLocaleString()}</strong></div>` : ''}
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;margin-top:6px;border-top:1px solid var(--border)"><span style="font-size:0.9rem;font-weight:600;color:var(--white)">Expected payout</span><strong style="color:var(--gold);font-size:1.1rem">₦${sal.expected.toLocaleString()}</strong></div>
+      </div>` : '<div style="padding:12px;background:var(--bg-2);border:1px dashed var(--border);border-radius:8px;font-size:0.8rem;color:var(--grey-3);margin-bottom:16px">No salary configured. Click Edit to set a monthly salary.</div>'}
+
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px">
+      <div style="padding:10px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;text-align:center"><div style="font-size:1.1rem;color:var(--green);font-weight:700">${completed.length}</div><div style="font-size:0.65rem;color:var(--grey-3);text-transform:uppercase;letter-spacing:0.06em">Completed</div></div>
+      <div style="padding:10px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;text-align:center"><div style="font-size:1.1rem;color:var(--gold);font-weight:700">${inProgress.length}</div><div style="font-size:0.65rem;color:var(--grey-3);text-transform:uppercase;letter-spacing:0.06em">In Progress</div></div>
+      <div style="padding:10px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;text-align:center"><div style="font-size:1.1rem;color:var(--grey-2);font-weight:700">${pending.length}</div><div style="font-size:0.65rem;color:var(--grey-3);text-transform:uppercase;letter-spacing:0.06em">Pending</div></div>
+      <div style="padding:10px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;text-align:center"><div style="font-size:1.1rem;color:var(--orange);font-weight:700">${awaiting.length}</div><div style="font-size:0.65rem;color:var(--grey-3);text-transform:uppercase;letter-spacing:0.06em">Awaiting</div></div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <div style="flex:1;padding:10px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;text-align:center"><div style="font-size:1rem;color:var(--green);font-weight:700">${presentCount}</div><div style="font-size:0.65rem;color:var(--grey-3);text-transform:uppercase;letter-spacing:0.06em">Present (14d)</div></div>
+      <div style="flex:1;padding:10px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;text-align:center"><div style="font-size:1rem;color:var(--red);font-weight:700">${absentCount}</div><div style="font-size:0.65rem;color:var(--grey-3);text-transform:uppercase;letter-spacing:0.06em">Absent (14d)</div></div>
+      <div style="flex:1;padding:10px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;text-align:center"><div style="font-size:1rem;color:var(--gold);font-weight:700">${points.total}</div><div style="font-size:0.65rem;color:var(--grey-3);text-transform:uppercase;letter-spacing:0.06em">Bonus Pts</div></div>
+    </div>
+
+    ${completed.length ? `
+      <div style="margin-bottom:14px"><strong style="font-size:0.82rem;color:var(--white)">Completed Tasks (${completed.length})</strong></div>
+      ${completed.slice(0, 10).map(taskRow).join('')}
+      ${completed.length > 10 ? `<div style="font-size:0.72rem;color:var(--grey-3);text-align:center;padding:6px">+ ${completed.length - 10} more…</div>` : ''}
+    ` : ''}
+
+    ${(inProgress.length || pending.length || awaiting.length) ? `
+      <div style="margin:18px 0 10px 0"><strong style="font-size:0.82rem;color:var(--white)">Active Tasks</strong></div>
+      ${[...inProgress, ...awaiting, ...pending].slice(0, 8).map(taskRow).join('')}
+    ` : ''}
+  `;
 }
 
 async function renderCompletedTasksByMember() {
