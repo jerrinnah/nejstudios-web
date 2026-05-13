@@ -501,11 +501,15 @@ async function dbSignInToday(member) {
   const existing = data[member.id].find(r => r.date === today);
   if (existing) return { alreadySignedIn: true, record: existing };
 
-  const { lateMinutes, lateDeduction } = calcLateDeduction(ts);
+  let { lateMinutes, lateDeduction } = calcLateDeduction(ts);
+  const onLeave = await dbIsOnApprovedLeave(member.id, today);
+  if (onLeave) { lateDeduction = 0; }
+
   const record = {
     date: today, time, ts, name: member.name,
     signOutTime: null, signOutTs: null, daySummary: null,
     lateMinutes, lateDeduction,
+    onLeave,
   };
   data[member.id].unshift(record);
   data[member.id] = data[member.id].slice(0, 60); // keep last 60 entries per member
@@ -516,21 +520,95 @@ async function dbSignInToday(member) {
 // Mark a member absent for today — only on weekdays, only if no sign-in record already exists
 async function dbMarkAbsent(member) {
   const dow = new Date().getDay();
-  if (dow === 0 || dow === 6) return { skipped: 'weekend' }; // no absent on Sat/Sun
+  if (dow === 0 || dow === 6) return { skipped: 'weekend' };
   const today = new Date().toISOString().slice(0, 10);
   const data  = await dbGetAttendance();
   if (!data[member.id]) data[member.id] = [];
   const existing = data[member.id].find(r => r.date === today);
   if (existing) return { alreadyExists: true, record: existing };
+  // Skip if member is on approved leave for today
+  const onLeave = await dbIsOnApprovedLeave(member.id, today);
   const record = {
     date: today, absent: true, name: member.name, time: null, ts: null,
     signOutTime: null, signOutTs: null, daySummary: null,
-    authorised: false, absentDeduction: ABSENT_DEDUCTION,
+    authorised: onLeave,
+    absentDeduction: onLeave ? 0 : ABSENT_DEDUCTION,
+    onLeave,
   };
   data[member.id].unshift(record);
   data[member.id] = data[member.id].slice(0, 60);
   await _saveAttendance(data);
-  return { marked: true, record };
+  return { marked: true, record, onLeave };
+}
+
+/* ════════════════════════════════════════════
+   LEAVE REQUESTS  (excuses / absences with admin approval)
+   Stored as array of { id, memberId, memberName, startDate, endDate,
+     reason, status: 'pending'|'approved'|'rejected', createdAt, decidedAt }
+   ════════════════════════════════════════════ */
+async function dbGetLeaveRequests() {
+  try {
+    const r = await fetch('/api/sync.php?resource=leave_requests', { cache: 'no-store' });
+    if (r.ok) {
+      const d = await r.json();
+      if (Array.isArray(d)) return d;
+    }
+  } catch {}
+  return [];
+}
+
+async function dbAddLeaveRequest(member, startDate, endDate, reason) {
+  const all = await dbGetLeaveRequests();
+  const entry = {
+    id: 'LV-' + Date.now() + '-' + Math.random().toString(36).slice(2,5),
+    memberId:   member.id,
+    memberName: member.name,
+    startDate, endDate,
+    reason: reason || '',
+    status: 'pending',
+    createdAt: Date.now(),
+    decidedAt: null,
+  };
+  all.push(entry);
+  await fetch('/api/sync.php?resource=leave_requests', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(all),
+  });
+  return entry;
+}
+
+async function dbDecideLeaveRequest(id, decision) {
+  const all = await dbGetLeaveRequests();
+  const entry = all.find(e => e.id === id);
+  if (!entry) return null;
+  entry.status    = decision; // 'approved' or 'rejected'
+  entry.decidedAt = Date.now();
+  await fetch('/api/sync.php?resource=leave_requests', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(all),
+  });
+  // If approved, retroactively clear deductions for any existing records in that date range
+  if (decision === 'approved') {
+    const data = await dbGetAttendance();
+    const list = data[entry.memberId] || [];
+    let changed = false;
+    list.forEach(r => {
+      if (r.date >= entry.startDate && r.date <= entry.endDate) {
+        if (r.absent) { r.authorised = true; r.absentDeduction = 0; r.onLeave = true; changed = true; }
+        if (r.lateDeduction) { r.lateDeduction = 0; r.onLeave = true; changed = true; }
+      }
+    });
+    if (changed) await _saveAttendance(data);
+  }
+  return entry;
+}
+
+// Check if member is on approved leave for given date ('YYYY-MM-DD')
+async function dbIsOnApprovedLeave(memberId, date) {
+  const all = await dbGetLeaveRequests();
+  return all.some(e =>
+    e.memberId === memberId &&
+    e.status === 'approved' &&
+    date >= e.startDate && date <= e.endDate
+  );
 }
 
 // Admin records a manual sign-in for a member at a specific time

@@ -218,6 +218,8 @@ function showPortal(member) {
   // Init notification bell after member is set
   initNotifBell();
   initImpromptuModal();
+  initLeaveModal();
+  renderMyLeaveRequests();
   // Schedule 11pm reminder if not yet signed in today
   scheduleSignInReminder(member);
 }
@@ -929,6 +931,72 @@ async function completeTask(id) {
     });
   }
   showToast(bonus ? `Task completed! 🎉 +${bonus} bonus points awarded.` : 'Task completed!');
+}
+
+/* ════════════════════════════════════════════
+   LEAVE REQUEST — team member requests leave/excuse
+   ════════════════════════════════════════════ */
+function initLeaveModal() {
+  const btn    = document.getElementById('btnRequestLeave');
+  const modal  = document.getElementById('leaveModal');
+  const close  = document.getElementById('leaveCloseBtn');
+  const submit = document.getElementById('leaveSubmitBtn');
+  if (!btn || !modal) return;
+
+  const openModal = () => {
+    const today = new Date().toISOString().slice(0,10);
+    document.getElementById('leaveStartDate').value = today;
+    document.getElementById('leaveEndDate').value   = today;
+    document.getElementById('leaveReason').value    = '';
+    modal.style.display = 'flex';
+  };
+  const closeModal = () => { modal.style.display = 'none'; };
+
+  btn.addEventListener('click', openModal);
+  close?.addEventListener('click', closeModal);
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+  submit?.addEventListener('click', async () => {
+    if (!currentMember) return;
+    const startDate = document.getElementById('leaveStartDate').value;
+    const endDate   = document.getElementById('leaveEndDate').value;
+    const reason    = document.getElementById('leaveReason').value.trim();
+    if (!startDate || !endDate) { showToast('Pick both start and end dates', 'err'); return; }
+    if (endDate < startDate)    { showToast('End date must be after start date', 'err'); return; }
+    submit.disabled = true; submit.textContent = 'Submitting…';
+    await dbAddLeaveRequest(currentMember, startDate, endDate, reason);
+    // Notify admins
+    const admins = getTeam().filter(m => m.role === 'admin');
+    admins.forEach(a => pushNotifToMember(a.id, {
+      type: 'leave-request',
+      title: 'Leave Request',
+      message: `${currentMember.name} requested leave ${startDate} → ${endDate}. Open Dashboard to approve.`,
+      ts: Date.now(),
+    }));
+    submit.disabled = false; submit.textContent = 'Submit Request';
+    closeModal();
+    showToast('Leave request submitted ✓');
+    renderMyLeaveRequests();
+  });
+}
+
+async function renderMyLeaveRequests() {
+  const wrap = document.getElementById('myLeaveRequests');
+  if (!wrap || !currentMember) return;
+  const all = await dbGetLeaveRequests();
+  const mine = all.filter(e => e.memberId === currentMember.id).sort((a,b) => (b.createdAt||0) - (a.createdAt||0)).slice(0, 6);
+  if (!mine.length) { wrap.innerHTML = '<div style="font-size:0.78rem;color:var(--grey-4);padding:6px 0">No leave requests yet</div>'; return; }
+  wrap.innerHTML = mine.map(e => {
+    const color = e.status === 'approved' ? 'var(--green)' : e.status === 'rejected' ? 'var(--red)' : 'var(--gold)';
+    return `
+      <div style="padding:10px 12px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;margin-top:8px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:0.82rem;color:var(--white)">${esc(e.startDate)} → ${esc(e.endDate)}</div>
+          ${e.reason ? `<div style="font-size:0.72rem;color:var(--grey-3);margin-top:2px">"${esc(e.reason)}"</div>` : ''}
+        </div>
+        <span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;color:${color};letter-spacing:0.08em">${esc(e.status)}</span>
+      </div>`;
+  }).join('');
 }
 
 /* ════════════════════════════════════════════

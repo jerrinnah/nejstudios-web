@@ -939,6 +939,44 @@
 
           <div id="deductionsSummary" style="display:none;margin-top:28px;padding:18px;background:var(--bg-3);border:1px solid var(--border);border-radius:10px"></div>
 
+          <!-- Leave request section -->
+          <div style="margin-top:28px;padding:18px;background:var(--bg-3);border:1px solid var(--border);border-radius:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+              <div>
+                <div style="font-size:0.95rem;font-weight:600;color:var(--white);margin-bottom:2px">Leave / Excuse</div>
+                <div style="font-size:0.75rem;color:var(--grey-3)">Request leave so deductions don't apply on approved days</div>
+              </div>
+              <button id="btnRequestLeave" class="btn-start" style="padding:8px 14px;font-size:0.78rem">+ Request Leave</button>
+            </div>
+            <div id="myLeaveRequests"></div>
+          </div>
+
+          <!-- Leave request modal -->
+          <div id="leaveModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.8);align-items:center;justify-content:center;padding:20px">
+            <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:14px;width:100%;max-width:460px;padding:28px;position:relative">
+              <button id="leaveCloseBtn" type="button" style="position:absolute;top:14px;right:14px;background:none;border:none;color:var(--grey-3);font-size:1.1rem;cursor:pointer">✕</button>
+              <h3 style="margin:0 0 4px 0;color:var(--white)">Request Leave</h3>
+              <p style="font-size:0.78rem;color:var(--grey-3);margin-bottom:18px">Pick the date range you'll be away. Admin will approve, then late/absent deductions won't apply on those days.</p>
+              <div style="display:flex;flex-direction:column;gap:12px">
+                <div style="display:flex;gap:10px">
+                  <div style="flex:1">
+                    <label style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--grey-3);display:block;margin-bottom:5px">Start Date *</label>
+                    <input id="leaveStartDate" type="date" style="width:100%;padding:10px 12px;background:var(--bg-3);border:1px solid var(--border);border-radius:8px;color:var(--white);font-family:var(--sans);font-size:0.9rem" />
+                  </div>
+                  <div style="flex:1">
+                    <label style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--grey-3);display:block;margin-bottom:5px">End Date *</label>
+                    <input id="leaveEndDate" type="date" style="width:100%;padding:10px 12px;background:var(--bg-3);border:1px solid var(--border);border-radius:8px;color:var(--white);font-family:var(--sans);font-size:0.9rem" />
+                  </div>
+                </div>
+                <div>
+                  <label style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--grey-3);display:block;margin-bottom:5px">Reason</label>
+                  <textarea id="leaveReason" rows="3" placeholder="e.g. Family emergency, medical appointment…" style="width:100%;padding:10px 12px;background:var(--bg-3);border:1px solid var(--border);border-radius:8px;color:var(--white);font-family:var(--sans);font-size:0.88rem;resize:vertical"></textarea>
+                </div>
+                <button id="leaveSubmitBtn" class="btn-start" style="margin-top:6px;padding:12px;justify-content:center">Submit Request</button>
+              </div>
+            </div>
+          </div>
+
           <div class="signin-history">
             <div class="signin-history__title">Recent Attendance</div>
             <div id="signinHistoryList">
@@ -1059,7 +1097,7 @@
       });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/db.js?v=3.7"></script>
-    <script src="js/team.js?v=3.7"></script>
+    <script src="js/db.js?v=3.8"></script>
+    <script src="js/team.js?v=3.8"></script>
   </body>
 </html>

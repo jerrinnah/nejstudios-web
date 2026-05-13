@@ -616,7 +616,7 @@ function switchTab(name) {
   // Load panel content
   if (name === 'schedule') renderAdminSchedule();
   if (name === 'tasks')    renderTasks();
-  if (name === 'team')     { renderTeam(); renderAttendance(); renderCompletedTasksByMember(); }
+  if (name === 'team')     { renderTeam(); renderAttendance(); renderCompletedTasksByMember(); renderLeaveRequests(); }
   if (name === 'gallery')  renderGalleryPanel();
   if (name === 'summary')  renderDailySummary();
   closeSidebar();
@@ -3157,6 +3157,70 @@ async function renderAttendance() {
 }
 
 document.getElementById('refreshAttendanceBtn')?.addEventListener('click', () => renderAttendance());
+
+/* ════════════════════════════════════════════
+   LEAVE REQUESTS (admin approval)
+   ════════════════════════════════════════════ */
+async function renderLeaveRequests() {
+  const wrap = document.getElementById('leaveRequestsList');
+  if (!wrap) return;
+  const all = await dbGetLeaveRequests();
+  if (!all.length) { wrap.innerHTML = '<div style="color:var(--grey-4);font-size:0.82rem;padding:12px 0">No leave requests yet.</div>'; return; }
+  // Pending first, then by date
+  all.sort((a,b) => {
+    const order = { pending: 0, approved: 1, rejected: 2 };
+    return (order[a.status] - order[b.status]) || ((b.createdAt||0) - (a.createdAt||0));
+  });
+  wrap.innerHTML = all.slice(0, 20).map(e => {
+    const color = e.status === 'approved' ? 'var(--green)' : e.status === 'rejected' ? 'var(--red)' : 'var(--gold)';
+    return `
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;margin-bottom:8px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:0.85rem;font-weight:600;color:var(--white)">${escHtml(e.memberName)}</div>
+          <div style="font-size:0.74rem;color:var(--grey-3)">${escHtml(e.startDate)} → ${escHtml(e.endDate)}</div>
+          ${e.reason ? `<div style="font-size:0.72rem;color:var(--grey-3);margin-top:3px">"${escHtml(e.reason)}"</div>` : ''}
+        </div>
+        <span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;color:${color};letter-spacing:0.08em">${e.status}</span>
+        ${e.status === 'pending' ? `
+          <button class="action-btn" data-leave-approve="${e.id}" style="font-size:0.7rem;padding:5px 10px;border-color:var(--green);color:var(--green)">Approve</button>
+          <button class="action-btn" data-leave-reject="${e.id}" style="font-size:0.7rem;padding:5px 10px;border-color:var(--red);color:var(--red)">Reject</button>
+        ` : ''}
+      </div>`;
+  }).join('');
+
+  wrap.querySelectorAll('[data-leave-approve]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const entry = await dbDecideLeaveRequest(btn.dataset.leaveApprove, 'approved');
+      if (entry) {
+        pushTeamNotification(entry.memberId, {
+          type: 'leave-approved',
+          title: 'Leave Approved',
+          message: `Your leave ${entry.startDate} → ${entry.endDate} was approved.`,
+          ts: Date.now(),
+        });
+        showToast('Leave approved ✓');
+        renderLeaveRequests();
+        renderAttendance();
+      }
+    });
+  });
+  wrap.querySelectorAll('[data-leave-reject]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Reject this leave request?')) return;
+      const entry = await dbDecideLeaveRequest(btn.dataset.leaveReject, 'rejected');
+      if (entry) {
+        pushTeamNotification(entry.memberId, {
+          type: 'leave-rejected',
+          title: 'Leave Rejected',
+          message: `Your leave ${entry.startDate} → ${entry.endDate} was rejected.`,
+          ts: Date.now(),
+        });
+        showToast('Leave rejected');
+        renderLeaveRequests();
+      }
+    });
+  });
+}
 
 document.getElementById('attendanceGrid')?.addEventListener('click', async (e) => {
   const authBtn = e.target.closest('[data-authorise-id]');
