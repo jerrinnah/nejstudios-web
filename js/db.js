@@ -432,6 +432,46 @@ async function dbAwardTakeoverBonusIfEligible(task) {
   return TAKEOVER_BONUS_POINTS;
 }
 
+// Expected salary for current calendar month based on base salary + deductions + bonus
+async function dbGetMonthlySalary(member) {
+  const baseSalary = parseInt(member.salary, 10) || 0;
+  const now   = new Date();
+  const year  = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const monthPrefix = `${year}-${month}-`;
+
+  const attendance = await dbGetAttendance();
+  const records = (attendance[member.id] || []).filter(r => (r.date || '').startsWith(monthPrefix));
+  let lateTotal = 0, absentTotal = 0;
+  records.forEach(r => {
+    if (r.lateDeduction)   lateTotal   += r.lateDeduction;
+    if (r.absentDeduction) absentTotal += r.absentDeduction;
+  });
+
+  // Bonus points value (treat each point as ₦1,000 toward salary boost)
+  const POINT_VALUE = 1000;
+  let bonusPoints = 0;
+  try {
+    const r = await fetch('/api/sync.php?resource=team_points', { cache: 'no-store' });
+    if (r.ok) {
+      const all = await r.json();
+      if (all && typeof all === 'object' && all[member.id]) {
+        const entries = (all[member.id].entries || []).filter(e => {
+          const d = new Date(e.ts || 0);
+          return d.getFullYear() === year && d.getMonth() === now.getMonth();
+        });
+        bonusPoints = entries.reduce((sum, e) => sum + (e.points || 0), 0);
+      }
+    }
+  } catch {}
+  const bonusAmount = bonusPoints * POINT_VALUE;
+
+  const expected = Math.max(0, baseSalary - lateTotal - absentTotal + bonusAmount);
+  return {
+    baseSalary, lateTotal, absentTotal, bonusPoints, bonusAmount, expected,
+  };
+}
+
 async function dbGetMemberPoints(memberId) {
   try {
     const r = await fetch('/api/sync.php?resource=team_points', { cache: 'no-store' });

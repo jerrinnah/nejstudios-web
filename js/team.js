@@ -877,8 +877,10 @@ async function renderTeamBookingsCalendar() {
       return `<div style="font-size:0.6rem;background:rgba(255,255,255,0.04);border-left:2px solid ${color};color:var(--white);padding:1px 4px;margin-bottom:1px;border-radius:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(_tBookingLabel(b))}</div>`;
     }).join('');
     const more = list.length > 3 ? `<div style="font-size:0.58rem;color:var(--grey-3);padding:0 4px">+${list.length - 3}</div>` : '';
+    const booked = list.length > 0;
+    const bg = booked ? 'rgba(248,113,113,0.3)' : 'var(--bg-2)';
     html += `
-      <div data-tday="${dateStr}" style="background:var(--bg-2);min-height:60px;padding:4px;cursor:pointer;${isToday ? 'box-shadow:inset 0 0 0 1px var(--gold)' : ''}">
+      <div data-tday="${dateStr}" style="background:${bg};min-height:60px;padding:4px;cursor:pointer;${isToday ? 'box-shadow:inset 0 0 0 1px var(--gold)' : ''}">
         <div style="font-size:0.7rem;font-weight:600;color:${isToday ? 'var(--gold)' : 'var(--white)'};margin-bottom:3px">${day}</div>
         ${dots}${more}
       </div>`;
@@ -1962,6 +1964,43 @@ async function renderSignIn() {
             </div>
           </div>`;
       }).join('');
+    }
+  }
+
+  // Render expected salary card
+  const salEl = document.getElementById('salaryCard');
+  if (salEl && currentMember) {
+    const sal = await dbGetMonthlySalary(currentMember);
+    if (sal.baseSalary > 0) {
+      salEl.style.display = 'block';
+      const monthName = new Date().toLocaleDateString('en-NG', { month: 'long' });
+      salEl.innerHTML = `
+        <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--grey-3);margin-bottom:10px">Expected Salary — ${monthName}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:0.85rem;color:var(--grey-2)">Base salary</span>
+          <strong style="color:var(--white)">₦${sal.baseSalary.toLocaleString()}</strong>
+        </div>
+        ${sal.lateTotal ? `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:0.85rem;color:var(--grey-2)">Late deductions</span>
+          <strong style="color:var(--red)">− ₦${sal.lateTotal.toLocaleString()}</strong>
+        </div>` : ''}
+        ${sal.absentTotal ? `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:0.85rem;color:var(--grey-2)">Absent deductions</span>
+          <strong style="color:var(--red)">− ₦${sal.absentTotal.toLocaleString()}</strong>
+        </div>` : ''}
+        ${sal.bonusAmount ? `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:0.85rem;color:var(--grey-2)">Bonus (${sal.bonusPoints} pts)</span>
+          <strong style="color:var(--green)">+ ₦${sal.bonusAmount.toLocaleString()}</strong>
+        </div>` : ''}
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;margin-top:6px;border-top:1px solid var(--border)">
+          <span style="font-size:0.9rem;font-weight:600;color:var(--white)">Expected payout</span>
+          <strong style="color:var(--gold);font-size:1.1rem">₦${sal.expected.toLocaleString()}</strong>
+        </div>`;
+    } else {
+      salEl.style.display = 'none';
     }
   }
 

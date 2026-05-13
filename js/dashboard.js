@@ -2939,6 +2939,7 @@ document.getElementById('teamForm').addEventListener('submit', e => {
   const name     = document.getElementById('tmName').value.trim();
   const username = document.getElementById('tmUsername').value.trim().toLowerCase();
   const pin      = document.getElementById('tmPin').value.trim();
+  const salary   = parseInt(document.getElementById('tmSalary').value, 10) || 0;
   const editId   = document.getElementById('editMemberId').value;
 
   if (!name || !username || !pin) return;
@@ -2946,19 +2947,16 @@ document.getElementById('teamForm').addEventListener('submit', e => {
 
   const team = getTeam();
 
-  // Check username uniqueness (exclude self when editing)
   const duplicate = team.find(m => m.username.toLowerCase() === username && m.id !== editId);
   if (duplicate) { showToast('Username already exists'); return; }
 
   if (editId) {
-    // Edit existing
     const idx = team.findIndex(m => m.id === editId);
-    if (idx !== -1) { team[idx] = { ...team[idx], name, username, pin }; }
+    if (idx !== -1) { team[idx] = { ...team[idx], name, username, pin, salary }; }
   } else {
-    // Add new
     team.push({
       id:        'TM-' + Math.random().toString(36).slice(2,8).toUpperCase(),
-      name, username, pin,
+      name, username, pin, salary,
       createdAt: Date.now(),
     });
   }
@@ -2980,6 +2978,7 @@ function cancelEdit() {
   document.getElementById('tmName').value = '';
   document.getElementById('tmUsername').value = '';
   document.getElementById('tmPin').value = '';
+  const sal = document.getElementById('tmSalary'); if (sal) sal.value = '';
 }
 
 document.getElementById('cancelEditBtn').addEventListener('click', cancelEdit);
@@ -2995,11 +2994,13 @@ async function renderTeam() {
     return;
   }
 
-  grid.innerHTML = team.map(m => {
+  const salaries = await Promise.all(team.map(m => dbGetMonthlySalary(m).catch(() => null)));
+  grid.innerHTML = team.map((m, i) => {
     const initials  = m.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
     const memberTasks    = allTasks.filter(t => t.assignedTo === m.id);
     const taskCount      = memberTasks.length;
     const completedCount = memberTasks.filter(t => t.status === 'completed').length;
+    const sal = salaries[i];
     return `
       <div class="member-card">
         <div class="member-avatar">${initials}</div>
@@ -3008,6 +3009,13 @@ async function renderTeam() {
           <div class="member-username">@${m.username}</div>
           <div class="member-meta">${taskCount} task${taskCount !== 1 ? 's' : ''} assigned · Added ${fmtDateShort(m.createdAt)}</div>
           ${completedCount > 0 ? `<div style="font-size:0.72rem;color:var(--green);margin-top:2px">✓ ${completedCount} completed</div>` : ''}
+          ${sal && sal.baseSalary > 0 ? `
+            <div style="font-size:0.72rem;color:var(--grey-3);margin-top:4px">
+              Salary: <strong style="color:var(--white)">₦${sal.baseSalary.toLocaleString()}</strong>
+              ${(sal.lateTotal || sal.absentTotal) ? `<span style="color:var(--red)"> · −₦${(sal.lateTotal + sal.absentTotal).toLocaleString()}</span>` : ''}
+              ${sal.bonusAmount ? `<span style="color:var(--green)"> · +₦${sal.bonusAmount.toLocaleString()}</span>` : ''}
+              · This month: <strong style="color:var(--gold)">₦${sal.expected.toLocaleString()}</strong>
+            </div>` : ''}
         </div>
         <div class="member-actions">
           <button class="member-action-btn member-action-btn--link" data-mid="${m.id}" title="Copy login link to share with ${m.name}">🔗 Login Link</button>
@@ -3083,6 +3091,7 @@ function editMember(id) {
   document.getElementById('tmName').value     = m.name;
   document.getElementById('tmUsername').value = m.username;
   document.getElementById('tmPin').value      = m.pin;
+  const sal = document.getElementById('tmSalary'); if (sal) sal.value = m.salary || '';
   document.getElementById('teamFormTitle').textContent  = 'Edit Team Member';
   document.getElementById('teamFormSubmit').textContent = 'Save Changes';
   document.getElementById('cancelEditBtn').classList.add('visible');
@@ -3745,8 +3754,10 @@ async function renderBookingsCalendar() {
       return `<div style="font-size:0.66rem;background:rgba(255,255,255,0.04);border-left:3px solid ${color};color:var(--white);padding:2px 5px;margin-bottom:2px;border-radius:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_escHtml(_bookingLabel(b))}</div>`;
     }).join('');
     const more = list.length > 4 ? `<div style="font-size:0.62rem;color:var(--grey-3);padding:0 5px">+${list.length - 4} more</div>` : '';
+    const booked = list.length > 0;
+    const bg = booked ? 'rgba(248,113,113,0.3)' : 'var(--bg-2)';
     html += `
-      <div data-day="${dateStr}" style="background:var(--bg-2);min-height:84px;padding:6px;cursor:pointer;${isToday ? 'box-shadow:inset 0 0 0 1px var(--gold)' : ''}">
+      <div data-day="${dateStr}" style="background:${bg};min-height:84px;padding:6px;cursor:pointer;${isToday ? 'box-shadow:inset 0 0 0 1px var(--gold)' : ''}">
         <div style="font-size:0.78rem;font-weight:600;color:${isToday ? 'var(--gold)' : 'var(--white)'};margin-bottom:4px">${day}</div>
         ${dots}${more}
       </div>`;
