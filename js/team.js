@@ -1999,38 +1999,52 @@ async function renderSignIn() {
     }
   }
 
-  // Render expected salary card
+  // Render expected salary card (only for the logged-in member, with show/hide toggle)
   const salEl = document.getElementById('salaryCard');
   if (salEl && currentMember) {
     const sal = await dbGetMonthlySalary(currentMember);
     if (sal.baseSalary > 0) {
       salEl.style.display = 'block';
       const monthName = new Date().toLocaleDateString('en-NG', { month: 'long' });
+      const visKey  = 'nej_salary_visible_' + currentMember.id;
+      const visible = localStorage.getItem(visKey) !== '0'; // default ON
+      const fmt = v => visible ? `₦${v.toLocaleString()}` : '₦••••••';
       salEl.innerHTML = `
-        <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--grey-3);margin-bottom:10px">Expected Salary — ${monthName}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--grey-3)">Expected Salary — ${monthName}</span>
+          <button id="salaryToggleBtn" type="button" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--grey-3);font-size:0.7rem;padding:4px 10px;cursor:pointer;display:flex;align-items:center;gap:4px">
+            ${visible
+              ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>Hide'
+              : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Show'}
+          </button>
+        </div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <span style="font-size:0.85rem;color:var(--grey-2)">Base salary</span>
-          <strong style="color:var(--white)">₦${sal.baseSalary.toLocaleString()}</strong>
+          <strong style="color:var(--white)">${fmt(sal.baseSalary)}</strong>
         </div>
         ${sal.lateTotal ? `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <span style="font-size:0.85rem;color:var(--grey-2)">Late deductions</span>
-          <strong style="color:var(--red)">− ₦${sal.lateTotal.toLocaleString()}</strong>
+          <strong style="color:var(--red)">− ${fmt(sal.lateTotal)}</strong>
         </div>` : ''}
         ${sal.absentTotal ? `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <span style="font-size:0.85rem;color:var(--grey-2)">Absent deductions</span>
-          <strong style="color:var(--red)">− ₦${sal.absentTotal.toLocaleString()}</strong>
+          <strong style="color:var(--red)">− ${fmt(sal.absentTotal)}</strong>
         </div>` : ''}
         ${sal.bonusAmount ? `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <span style="font-size:0.85rem;color:var(--grey-2)">Bonus (${sal.bonusPoints} pts)</span>
-          <strong style="color:var(--green)">+ ₦${sal.bonusAmount.toLocaleString()}</strong>
+          <strong style="color:var(--green)">+ ${fmt(sal.bonusAmount)}</strong>
         </div>` : ''}
         <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;margin-top:6px;border-top:1px solid var(--border)">
           <span style="font-size:0.9rem;font-weight:600;color:var(--white)">Expected payout</span>
-          <strong style="color:var(--gold);font-size:1.1rem">₦${sal.expected.toLocaleString()}</strong>
+          <strong style="color:var(--gold);font-size:1.1rem">${fmt(sal.expected)}</strong>
         </div>`;
+      document.getElementById('salaryToggleBtn')?.addEventListener('click', () => {
+        localStorage.setItem(visKey, visible ? '0' : '1');
+        renderMyTasks().catch(() => {});
+      });
     } else {
       salEl.style.display = 'none';
     }
