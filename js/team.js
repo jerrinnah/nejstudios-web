@@ -964,7 +964,13 @@ function initLeaveModal() {
     if (!startDate || !endDate) { showToast('Pick both start and end dates', 'err'); return; }
     if (endDate < startDate)    { showToast('End date must be after start date', 'err'); return; }
     submit.disabled = true; submit.textContent = 'Submitting…';
-    await dbAddLeaveRequest(currentMember, startDate, endDate, reason);
+    try {
+      await dbAddLeaveRequest(currentMember, startDate, endDate, reason);
+    } catch (e) {
+      submit.disabled = false; submit.textContent = 'Submit Request';
+      showToast('Submission failed — ' + (e.message || 'check your connection'), 'err');
+      return;
+    }
     // Notify admins
     const admins = getTeam().filter(m => m.role === 'admin');
     admins.forEach(a => pushNotifToMember(a.id, {

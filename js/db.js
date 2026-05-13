@@ -570,9 +570,14 @@ async function dbAddLeaveRequest(member, startDate, endDate, reason) {
     decidedAt: null,
   };
   all.push(entry);
-  await fetch('/api/sync.php?resource=leave_requests', {
+  const r = await fetch('/api/sync.php?resource=leave_requests', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(all),
   });
+  if (!r.ok) {
+    const text = await r.text().catch(() => '');
+    console.error('Leave request save failed:', r.status, text);
+    throw new Error('Server rejected the leave request (HTTP ' + r.status + ')');
+  }
   return entry;
 }
 

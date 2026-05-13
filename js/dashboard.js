@@ -3157,6 +3157,7 @@ async function renderAttendance() {
 }
 
 document.getElementById('refreshAttendanceBtn')?.addEventListener('click', () => renderAttendance());
+document.getElementById('refreshLeaveBtn')?.addEventListener('click', () => renderLeaveRequests());
 
 /* ════════════════════════════════════════════
    LEAVE REQUESTS (admin approval)
