@@ -149,6 +149,7 @@ const _EVENT_TYPE_MAP = {
   'corporate-event':     'event',
   'birthday':            'event',
   'funeral':             'event',
+  'service-of-songs':    'event',
   'other-event':         'event',
 };
 const _EVENT_LABELS = {
@@ -163,6 +164,7 @@ const _EVENT_LABELS = {
   'corporate-event':     'Corporate Event',
   'birthday':            'Birthday Event',
   'funeral':             'Funeral / Memorial',
+  'service-of-songs':    'Service of Songs',
   'other-event':         'Other Event',
 };
 

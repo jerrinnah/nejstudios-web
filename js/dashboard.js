@@ -309,7 +309,8 @@ const EVENT_TYPE_LABELS = {
   'corporate-event':'🏢 Corporate Event','other-production':'📹 Production',
   'traditional-wedding':'💛 Traditional Wedding','white-wedding':'🤍 White Wedding',
   'full-wedding':'💍 Full Wedding','engagement':'💌 Engagement Shoot',
-  'funeral':'🕊️ Funeral / Memorial','birthday':'🎂 Birthday','other-event':'📅 Other Event',
+  'funeral':'🕊️ Funeral / Memorial','service-of-songs':'🎶 Service of Songs',
+  'birthday':'🎂 Birthday','other-event':'📅 Other Event',
 };
 const BUDGET_LABELS = { 'under150':'Under ₦150k','150-350':'₦150k–₦350k','350-600':'₦350k–₦600k','600-1m':'₦600k–₦1M','above1m':'Above ₦1M','800k-1m':'₦800k–₦1M','1m-1.2m':'₦1M–₦1.2M','1.2m-1.4m':'₦1.2M–₦1.4M','above1.4m':'Above ₦1.4M' };
 
@@ -769,6 +770,15 @@ function renderBookings() {
       (b.eventType || '').toLowerCase().includes(q)
     );
   }
+  // Sort: most-recently created first; within same createdAt, upcoming booking dates first
+  bookings.sort((a, b) => {
+    const ca = a.createdAt || 0, cb = b.createdAt || 0;
+    if (cb !== ca) return cb - ca;
+    const da = (a.bookingKind === 'studio' ? (a.shootDate || a.preferredDate) : a.eventDate) || '';
+    const db_ = (b.bookingKind === 'studio' ? (b.shootDate || b.preferredDate) : b.eventDate) || '';
+    return db_.localeCompare(da);
+  });
+
   const grid = document.getElementById('bookingsGrid');
   if (bookings.length === 0) {
     grid.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><h3>No bookings found</h3><p>No bookings match the current filter.</p><a href="booking" target="_blank">+ New Studio Booking</a></div>`;
@@ -2329,7 +2339,7 @@ async function renderAdminSchedule() {
       let newId = 'NEJ-';
       for (let i = 0; i < 6; i++) newId += chars[Math.floor(Math.random() * chars.length)];
 
-      const typeMap = { wedding:'full-wedding', event:'corporate-event', production:'other-production', funeral:'funeral', studio:'', meeting:'' };
+      const typeMap = { wedding:'full-wedding', event:'corporate-event', production:'other-production', funeral:'funeral', 'service-of-songs':'service-of-songs', studio:'', meeting:'' };
       const booking = {
         id:          newId,
         bookingKind: entry.type === 'studio' ? 'studio' : 'event',
