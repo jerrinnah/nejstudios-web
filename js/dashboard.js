@@ -2581,6 +2581,10 @@ async function renderTasks() {
   });
 }
 
+function _escHtml(s) {
+  return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 function buildTaskCard(t) {
   const priorityMap = { high:'high', medium:'medium', low:'low' };
   const prClass     = priorityMap[t.priority] || 'medium';
@@ -2612,7 +2616,8 @@ function buildTaskCard(t) {
       <div class="task-card__top">
         <div class="task-card__badges">
           <span class="priority-badge priority-badge--${prClass}">${t.priority}</span>
-          <span class="status-badge status-badge--${t.status}">${t.status === 'in-progress' ? 'In Progress' : t.status.charAt(0).toUpperCase()+t.status.slice(1)}</span>
+          <span class="status-badge status-badge--${t.status}">${t.status === 'in-progress' ? 'In Progress' : t.status === 'awaiting-approval' ? 'Awaiting Approval' : t.status.charAt(0).toUpperCase()+t.status.slice(1)}</span>
+          ${t.impromptu ? '<span class="status-badge" style="background:rgba(168,85,247,0.18);color:#c4a4f8">SELF-ADDED</span>' : ''}
           ${deadlineBadge}
           ${t.deliveryStatus === 'approved' ? `<span class="delivery-badge delivery-badge--approved">✓ Delivery Approved</span>` : ''}
           ${t.deliveryStatus === 'failed'   ? `<span class="delivery-badge delivery-badge--failed">✗ Failed to Deliver</span>` : ''}
@@ -2625,6 +2630,11 @@ function buildTaskCard(t) {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           Assigned: <strong>${t.assignedName || 'Unassigned'}</strong>
         </div>
+        ${t.createdByName ? `
+          <div class="task-info-row">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            Added by: <strong>${_escHtml(t.createdByName)}</strong>
+          </div>` : ''}
         <div class="task-info-row">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
           Created: <strong>${fmtDateShort(t.createdAt)}</strong>
