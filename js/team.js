@@ -831,6 +831,7 @@ function buildMyTaskCard(t) {
           <span class="priority-badge priority-badge--${prClass}">${t.priority || 'medium'}</span>
           <span class="status-badge status-badge--${t.status}">${statusLabel}</span>
           ${t.impromptu ? '<span class="status-badge" style="background:rgba(168,85,247,0.18);color:#c4a4f8">SELF-ADDED</span>' : ''}
+          ${t.doneByBoss ? `<span class="status-badge" style="background:rgba(201,168,76,0.18);color:var(--gold)">${esc(t.doneByBoss)} HANDLED</span>` : ''}
         </div>
       </div>
 

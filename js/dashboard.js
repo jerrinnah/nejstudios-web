@@ -2642,10 +2642,13 @@ function buildTaskCard(t) {
           ${t.completedAt ? `&nbsp;·&nbsp; Done: <strong>${fmtDateShort(t.completedAt)}</strong>` : ''}
         </div>
       </div>
+      ${t.doneByBoss ? `<div class="task-info-row" style="margin-top:4px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Handled by: <strong style="color:var(--gold)">${_escHtml(t.doneByBoss)}</strong></div>` : ''}
       ${lastReport ? `<div class="task-reports-preview"><strong>${reportCount} report${reportCount>1?'s':''}</strong> — "${lastReport.content.slice(0,80)}${lastReport.content.length>80?'…':''}"</div>` : ''}
       <div class="task-card__actions">
         ${t.status === 'awaiting-approval' ? `<button class="task-action-btn task-action-btn--approve" data-id="${t.id}" data-task-action="approve-impromptu">✓ Approve</button>` : ''}
         ${t.status === 'awaiting-approval' ? `<button class="task-action-btn task-action-btn--fail" data-id="${t.id}" data-task-action="reject-impromptu">✗ Reject</button>` : ''}
+        ${t.status !== 'completed' ? `<button class="task-action-btn task-action-btn--approve" data-id="${t.id}" data-task-action="done-by-boss-1" style="border-color:var(--gold);color:var(--gold)">Done by Boss 1</button>` : ''}
+        ${t.status !== 'completed' ? `<button class="task-action-btn task-action-btn--approve" data-id="${t.id}" data-task-action="done-by-boss-2" style="border-color:var(--gold);color:var(--gold)">Done by Boss 2</button>` : ''}
         <button class="task-action-btn task-action-btn--reports" data-id="${t.id}" data-task-action="reports">Reports (${reportCount})</button>
         <button class="task-action-btn task-action-btn--reassign" data-id="${t.id}" data-task-action="reassign">Reassign</button>
         ${t.status === 'completed' && t.deliveryStatus !== 'approved' ? `<button class="task-action-btn task-action-btn--approve" data-id="${t.id}" data-task-action="approve-delivery">✓ Approve Delivery</button>` : ''}
@@ -2656,6 +2659,30 @@ function buildTaskCard(t) {
 }
 
 async function handleTaskAction(id, action) {
+  if (action === 'done-by-boss-1' || action === 'done-by-boss-2') {
+    const boss = action === 'done-by-boss-1' ? 'Boss 1' : 'Boss 2';
+    const task = await dbGetTask(id);
+    if (!task) return;
+    if (!confirm(`Mark this task as handled by ${boss}? It will be marked completed.`)) return;
+    await dbUpdateTask(id, {
+      status: 'completed',
+      completed_at: Date.now(),
+      doneByBoss: boss,
+      doneByBossAt: Date.now(),
+    });
+    if (task.assignedTo) {
+      pushTeamNotification(task.assignedTo, {
+        type: 'task-completed',
+        title: 'Task Handled by Admin',
+        message: `Your task "${task.title}" was completed by ${boss}.`,
+        taskId: id, ts: Date.now(),
+      });
+    }
+    await renderTasks();
+    await renderTasksBadge();
+    showToast(`Task marked done by ${boss} ✓`);
+    return;
+  }
   if (action === 'approve-impromptu') {
     const task = await dbGetTask(id);
     if (!task) return;
