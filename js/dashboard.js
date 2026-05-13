@@ -2551,11 +2551,11 @@ async function renderTasks() {
   let tasks = await dbGetTasks();
   if (activeTaskStatus !== 'all') tasks = tasks.filter(t => t.status === activeTaskStatus);
 
-  // Sort: in-progress first, then pending, then completed; within each group newest first
-  const statusOrder = { 'in-progress': 0, 'pending': 1, 'completed': 2 };
+  // Awaiting approval at the top, then in-progress, pending, completed; newest first
+  const statusOrder = { 'awaiting-approval': 0, 'in-progress': 1, 'pending': 2, 'completed': 3 };
   tasks.sort((a, b) => {
-    const sa = statusOrder[a.status] ?? 1;
-    const sb = statusOrder[b.status] ?? 1;
+    const sa = statusOrder[a.status] ?? 4;
+    const sb = statusOrder[b.status] ?? 4;
     if (sa !== sb) return sa - sb;
     return (b.createdAt || 0) - (a.createdAt || 0);
   });
@@ -2634,6 +2634,8 @@ function buildTaskCard(t) {
       </div>
       ${lastReport ? `<div class="task-reports-preview"><strong>${reportCount} report${reportCount>1?'s':''}</strong> — "${lastReport.content.slice(0,80)}${lastReport.content.length>80?'…':''}"</div>` : ''}
       <div class="task-card__actions">
+        ${t.status === 'awaiting-approval' ? `<button class="task-action-btn task-action-btn--approve" data-id="${t.id}" data-task-action="approve-impromptu">✓ Approve</button>` : ''}
+        ${t.status === 'awaiting-approval' ? `<button class="task-action-btn task-action-btn--fail" data-id="${t.id}" data-task-action="reject-impromptu">✗ Reject</button>` : ''}
         <button class="task-action-btn task-action-btn--reports" data-id="${t.id}" data-task-action="reports">Reports (${reportCount})</button>
         <button class="task-action-btn task-action-btn--reassign" data-id="${t.id}" data-task-action="reassign">Reassign</button>
         ${t.status === 'completed' && t.deliveryStatus !== 'approved' ? `<button class="task-action-btn task-action-btn--approve" data-id="${t.id}" data-task-action="approve-delivery">✓ Approve Delivery</button>` : ''}
@@ -2644,6 +2646,35 @@ function buildTaskCard(t) {
 }
 
 async function handleTaskAction(id, action) {
+  if (action === 'approve-impromptu') {
+    const task = await dbGetTask(id);
+    if (!task) return;
+    await dbUpdateTask(id, { status: 'completed', completed_at: Date.now(), approvedBy: 'admin', approvedAt: Date.now() });
+    pushTeamNotification(task.assignedTo, {
+      type: 'task-completed',
+      title: 'Task Approved',
+      message: `Your task "${task.title}" was approved by admin.`,
+      taskId: id, ts: Date.now(),
+    });
+    await renderTasks();
+    showToast(`${task.assignedName || 'Team member'}'s task approved ✓`);
+    return;
+  }
+  if (action === 'reject-impromptu') {
+    const task = await dbGetTask(id);
+    if (!task) return;
+    if (!confirm('Reject this completion? Task will go back to in-progress.')) return;
+    await dbUpdateTask(id, { status: 'in-progress', rejectedAt: Date.now() });
+    pushTeamNotification(task.assignedTo, {
+      type: 'task-assigned',
+      title: 'Task Needs More Work',
+      message: `Your task "${task.title}" was sent back. Please complete it again.`,
+      taskId: id, ts: Date.now(),
+    });
+    await renderTasks();
+    showToast('Task rejected — sent back to team member');
+    return;
+  }
   if (action === 'delete') {
     if (!confirm('Delete this task?')) return;
     await dbDeleteTask(id);

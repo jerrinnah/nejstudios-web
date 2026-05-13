@@ -217,6 +217,7 @@ function showPortal(member) {
   oneSignalLogin(member.id);
   // Init notification bell after member is set
   initNotifBell();
+  initImpromptuModal();
   // Schedule 11pm reminder if not yet signed in today
   scheduleSignInReminder(member);
 }
@@ -720,8 +721,8 @@ async function renderMyTasks() {
     return;
   }
 
-  // Sort: in-progress first, then pending, then completed
-  const order = { 'in-progress': 0, pending: 1, completed: 2 };
+  // Sort: in-progress, awaiting-approval, pending, completed
+  const order = { 'in-progress': 0, 'awaiting-approval': 1, pending: 2, completed: 3 };
   myTasks.sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9));
 
   grid.innerHTML = myTasks.map(t => buildMyTaskCard(t)).join('');
@@ -818,6 +819,7 @@ function buildMyTaskCard(t) {
   const isCompleted = t.status === 'completed';
 
   const statusLabel = t.status === 'in-progress' ? 'In Progress'
+    : t.status === 'awaiting-approval' ? 'Awaiting Approval'
     : t.status.charAt(0).toUpperCase() + t.status.slice(1);
 
   return `
@@ -826,6 +828,7 @@ function buildMyTaskCard(t) {
         <div class="my-task-card__badges">
           <span class="priority-badge priority-badge--${prClass}">${t.priority || 'medium'}</span>
           <span class="status-badge status-badge--${t.status}">${statusLabel}</span>
+          ${t.impromptu ? '<span class="status-badge" style="background:rgba(168,85,247,0.18);color:#c4a4f8">SELF-ADDED</span>' : ''}
         </div>
       </div>
 
@@ -887,8 +890,28 @@ async function pushNotifToMember(memberId, notif) {
 async function completeTask(id) {
   const task = await dbGetTask(id);
   if (!task || task.status !== 'in-progress') return;
+
+  // Impromptu (self-created) tasks need admin approval before going to completed
+  if (task.impromptu) {
+    await dbUpdateTask(id, { status: 'awaiting-approval', submittedForApprovalAt: Date.now() });
+    // Notify all admins
+    const admins = getTeam().filter(m => m.role === 'admin');
+    admins.forEach(a => {
+      pushNotifToMember(a.id, {
+        type: 'task-awaiting-approval',
+        title: 'Task Needs Approval',
+        message: `${currentMember.name} completed an impromptu task: "${task.title}". Open Dashboard to approve.`,
+        taskId: id, ts: Date.now(),
+      });
+    });
+    renderMyTasks();
+    renderAllTasksBar();
+    updateBadges();
+    showToast('Task submitted for admin approval ✓');
+    return;
+  }
+
   await dbUpdateTask(id, { status: 'completed', completed_at: Date.now() });
-  // Check bonus eligibility (taken-over task completed within 3 days)
   const updated = await dbGetTask(id);
   const bonus   = await dbAwardTakeoverBonusIfEligible(updated);
   renderMyTasks();
@@ -906,6 +929,67 @@ async function completeTask(id) {
     });
   }
   showToast(bonus ? `Task completed! 🎉 +${bonus} bonus points awarded.` : 'Task completed!');
+}
+
+/* ════════════════════════════════════════════
+   IMPROMPTU TASK MODAL — team member creates own task
+   ════════════════════════════════════════════ */
+function initImpromptuModal() {
+  const btn    = document.getElementById('btnAddImpromptu');
+  const modal  = document.getElementById('impromptuModal');
+  const close  = document.getElementById('impromptuCloseBtn');
+  const submit = document.getElementById('impromptuSubmit');
+  if (!btn || !modal) return;
+
+  const openModal = () => {
+    document.getElementById('impromptuTitle').value    = '';
+    document.getElementById('impromptuDesc').value     = '';
+    document.getElementById('impromptuPriority').value = 'medium';
+    document.getElementById('impromptuDeadline').value = '';
+    modal.style.display = 'flex';
+    setTimeout(() => document.getElementById('impromptuTitle').focus(), 100);
+  };
+  const closeModal = () => { modal.style.display = 'none'; };
+
+  btn.addEventListener('click', openModal);
+  close?.addEventListener('click', closeModal);
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+  submit?.addEventListener('click', async () => {
+    if (!currentMember) return;
+    const title    = document.getElementById('impromptuTitle').value.trim();
+    const desc     = document.getElementById('impromptuDesc').value.trim();
+    const priority = document.getElementById('impromptuPriority').value;
+    const deadline = document.getElementById('impromptuDeadline').value || null;
+    if (!title) { showToast('Title is required', 'err'); return; }
+
+    const task = {
+      id:           'TASK-' + Math.random().toString(36).slice(2,8).toUpperCase(),
+      title, desc,
+      assignedTo:   currentMember.id,
+      assignedName: currentMember.name,
+      createdBy:    currentMember.id,
+      createdByName: currentMember.name,
+      impromptu:    true,
+      priority,
+      deadline,
+      status:       'pending',
+      createdAt:    Date.now(),
+      startedAt:    null,
+      completedAt:  null,
+      reports:      [],
+    };
+
+    submit.disabled = true;
+    submit.textContent = 'Adding…';
+    await dbAddTask(task);
+    submit.disabled = false;
+    submit.textContent = 'Add Task';
+    closeModal();
+    showToast('Task added to your list ✓');
+    renderMyTasks();
+    updateBadges();
+  });
 }
 
 /* ════════════════════════════════════════════
