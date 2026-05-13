@@ -617,6 +617,7 @@ function switchTab(name) {
   if (name === 'schedule') renderAdminSchedule();
   if (name === 'tasks')    renderTasks();
   if (name === 'team')     { renderTeam(); renderAttendance(); renderCompletedTasksByMember(); renderLeaveRequests(); }
+  if (name === 'calendar') renderBookingsCalendar();
   if (name === 'gallery')  renderGalleryPanel();
   if (name === 'summary')  renderDailySummary();
   closeSidebar();
@@ -3677,3 +3678,111 @@ document.getElementById('bmEventForm').addEventListener('submit', e => {
   renderBookings();
   showToast(`Event booking for ${eventName} added ✓`);
 });
+
+/* ════════════════════════════════════════════
+   BOOKINGS CALENDAR (month view)
+   ════════════════════════════════════════════ */
+let _calCursor = new Date(); _calCursor.setDate(1);
+
+function _bookingDate(b) {
+  if (b.bookingKind === 'studio') return b.shootDate || b.preferredDate || '';
+  return b.eventDate || '';
+}
+
+function _bookingLabel(b) {
+  if (b.bookingKind === 'studio') return b.sessionType ? `${b.clientName} — ${b.sessionType}` : (b.clientName || 'Studio');
+  return b.clientName || 'Event';
+}
+
+async function renderBookingsCalendar() {
+  const grid       = document.getElementById('bookingsCalendar');
+  const monthLabel = document.getElementById('calMonthLabel');
+  if (!grid) return;
+
+  const year  = _calCursor.getFullYear();
+  const month = _calCursor.getMonth();
+  monthLabel.textContent = _calCursor.toLocaleDateString('en-NG', { month: 'long', year: 'numeric' });
+
+  // Fetch and filter bookings for this month (and adjacent days for grid completeness)
+  const bookings = (await dbFetchBookings()).filter(b => !b.deletedAt);
+  const byDate = {};
+  bookings.forEach(b => {
+    const d = _bookingDate(b);
+    if (!d) return;
+    (byDate[d] = byDate[d] || []).push(b);
+  });
+
+  const firstDayOfWeek = new Date(year, month, 1).getDay(); // 0 = Sun
+  const lastDate       = new Date(year, month + 1, 0).getDate();
+  const todayStr       = new Date().toISOString().slice(0,10);
+
+  let html = `<div style="display:grid;grid-template-columns:repeat(7,1fr);background:var(--border);gap:1px">`;
+  ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(d => {
+    html += `<div style="background:var(--bg-3);padding:8px 6px;text-align:center;font-size:0.7rem;font-weight:700;color:var(--grey-3);text-transform:uppercase;letter-spacing:0.06em">${d}</div>`;
+  });
+  // Leading blanks
+  for (let i = 0; i < firstDayOfWeek; i++) {
+    html += `<div style="background:var(--bg-2);min-height:84px"></div>`;
+  }
+  // Days
+  for (let day = 1; day <= lastDate; day++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const list    = byDate[dateStr] || [];
+    const isToday = dateStr === todayStr;
+    const dots = list.slice(0, 4).map(b => {
+      const color = b.status === 'pending' ? '#f87171'
+        : b.bookingKind === 'studio' ? 'var(--gold)' : '#4ade80';
+      return `<div style="font-size:0.66rem;background:rgba(255,255,255,0.04);border-left:3px solid ${color};color:var(--white);padding:2px 5px;margin-bottom:2px;border-radius:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_escHtml(_bookingLabel(b))}</div>`;
+    }).join('');
+    const more = list.length > 4 ? `<div style="font-size:0.62rem;color:var(--grey-3);padding:0 5px">+${list.length - 4} more</div>` : '';
+    html += `
+      <div data-day="${dateStr}" style="background:var(--bg-2);min-height:84px;padding:6px;cursor:pointer;${isToday ? 'box-shadow:inset 0 0 0 1px var(--gold)' : ''}">
+        <div style="font-size:0.78rem;font-weight:600;color:${isToday ? 'var(--gold)' : 'var(--white)'};margin-bottom:4px">${day}</div>
+        ${dots}${more}
+      </div>`;
+  }
+  // Trailing blanks
+  const totalCells = firstDayOfWeek + lastDate;
+  const trail = (7 - (totalCells % 7)) % 7;
+  for (let i = 0; i < trail; i++) {
+    html += `<div style="background:var(--bg-2);min-height:84px"></div>`;
+  }
+  html += `</div>`;
+  grid.innerHTML = html;
+
+  grid.querySelectorAll('[data-day]').forEach(cell => {
+    cell.addEventListener('click', () => renderCalDayDetail(cell.dataset.day, byDate[cell.dataset.day] || []));
+  });
+}
+
+function renderCalDayDetail(dateStr, list) {
+  const wrap = document.getElementById('calDayDetail');
+  if (!wrap) return;
+  const fmt = new Date(dateStr + 'T12:00:00').toLocaleDateString('en-NG', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  if (!list.length) {
+    wrap.style.display = 'block';
+    wrap.innerHTML = `<h3 style="font-size:0.95rem;color:var(--white);margin:0 0 6px 0">${fmt}</h3><p style="color:var(--grey-3);font-size:0.85rem;margin:0">No bookings — date is available ✓</p>`;
+    return;
+  }
+  wrap.style.display = 'block';
+  wrap.innerHTML = `
+    <h3 style="font-size:0.95rem;color:var(--white);margin:0 0 12px 0">${fmt} — ${list.length} booking${list.length>1?'s':''}</h3>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      ${list.map(b => {
+        const color = b.status === 'pending' ? '#f87171' : b.bookingKind === 'studio' ? 'var(--gold)' : '#4ade80';
+        const subtype = b.sessionType || EVENT_TYPE_LABELS[b.eventType] || b.eventType || '';
+        return `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--bg-2);border:1px solid var(--border);border-left:3px solid ${color};border-radius:6px">
+            <div>
+              <div style="font-size:0.88rem;font-weight:600;color:var(--white)">${_escHtml(b.clientName)}</div>
+              <div style="font-size:0.75rem;color:var(--grey-3);margin-top:2px">${_escHtml(subtype)} ${b.location ? '· ' + _escHtml(b.location) : ''}</div>
+            </div>
+            <span style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:${color}">${b.status}</span>
+          </div>`;
+      }).join('')}
+    </div>`;
+}
+
+document.getElementById('calPrev')?.addEventListener('click', () => { _calCursor.setMonth(_calCursor.getMonth() - 1); renderBookingsCalendar(); });
+document.getElementById('calNext')?.addEventListener('click', () => { _calCursor.setMonth(_calCursor.getMonth() + 1); renderBookingsCalendar(); });
+document.getElementById('calToday')?.addEventListener('click', () => { _calCursor = new Date(); _calCursor.setDate(1); renderBookingsCalendar(); });

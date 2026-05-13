@@ -1185,6 +1185,10 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
             Gallery
           </button>
+          <button class="tab-btn" data-tab="calendar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Calendar
+          </button>
           <button class="tab-btn" data-tab="summary">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 10h8M8 14h5"/></svg>
             Summary
@@ -1508,6 +1512,32 @@
                 </div>
               </div>
             </div>
+          </div>
+
+          <!-- ══ CALENDAR PANEL ══ -->
+          <div id="panel-calendar" class="tab-panel">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+              <div>
+                <h2 style="font-family:var(--serif);font-size:1.5rem;color:var(--white);margin:0">Bookings Calendar</h2>
+                <p style="font-size:0.82rem;color:var(--grey-3);margin:4px 0 0 0">All confirmed and pending studio + event bookings. Click a day for details.</p>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <button id="calPrev" class="action-btn" style="padding:6px 12px">←</button>
+                <strong id="calMonthLabel" style="color:var(--white);font-size:0.95rem;min-width:180px;text-align:center;display:inline-block"></strong>
+                <button id="calNext" class="action-btn" style="padding:6px 12px">→</button>
+                <button id="calToday" class="action-btn" style="padding:6px 12px;border-color:var(--gold);color:var(--gold);margin-left:8px">Today</button>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:0.72rem;color:var(--grey-3);margin-bottom:12px">
+              <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--gold);margin-right:5px;vertical-align:middle"></span>Studio</span>
+              <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#4ade80;margin-right:5px;vertical-align:middle"></span>Event / Wedding</span>
+              <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#f87171;margin-right:5px;vertical-align:middle"></span>Pending</span>
+            </div>
+
+            <div id="bookingsCalendar" style="border:1px solid var(--border);border-radius:10px;overflow:hidden"></div>
+
+            <div id="calDayDetail" style="margin-top:16px;display:none;padding:18px;background:var(--bg-3);border:1px solid var(--border);border-radius:10px"></div>
           </div>
 
           <!-- ══ SUMMARY PANEL ══ -->
@@ -1980,7 +2010,7 @@
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/db.js?v=4.2"></script>
-    <script src="js/dashboard.js?v=4.2"></script>
+    <script src="js/db.js?v=4.3"></script>
+    <script src="js/dashboard.js?v=4.3"></script>
   </body>
 </html>
