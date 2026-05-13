@@ -353,25 +353,38 @@ document.getElementById('mobileLogout').addEventListener('click', doLogout);
   } catch { /* malformed payload — ignore */ }
 })();
 
-// Sync server team members to localStorage so admin-created accounts work on any device
-syncTeamFromServer().catch(() => {});
+// Sync server team data (members + overrides + deleted IDs) BEFORE restoring session
+// so currentMember has the latest salary/role/overrides applied.
+(async () => {
+  await syncTeamFromServer().catch(() => {});
 
-// On page load: check existing session
-const sess = getSession();
-if (sess && sess.role === 'team') {
-  const team   = getTeam();
-  const member = team.find(m => m.id === sess.memberId);
-  if (member) {
-    showPortal(member);
-  } else if (sess.name && sess.memberId) {
-    // Member not in this device's team list but session is valid — trust it
-    showPortal({ id: sess.memberId, name: sess.name, username: sess.username || '' });
-  } else {
-    setSession(null);
+  const sess = getSession();
+  if (sess && sess.role === 'team') {
+    const team   = getTeam();
+    const member = team.find(m => m.id === sess.memberId);
+    if (member) {
+      showPortal(member);
+    } else if (sess.name && sess.memberId) {
+      showPortal({ id: sess.memberId, name: sess.name, username: sess.username || '' });
+    } else {
+      setSession(null);
+    }
+  } else if (sess && sess.role === 'admin') {
+    window.location.href = 'dashboard';
   }
-} else if (sess && sess.role === 'admin') {
-  window.location.href = 'dashboard';
-}
+})();
+
+// Auto-refresh currentMember overrides every 60s while logged in,
+// so a salary update from admin reflects without re-login
+setInterval(async () => {
+  if (!currentMember) return;
+  await syncTeamFromServer().catch(() => {});
+  const fresh = getTeam().find(m => m.id === currentMember.id);
+  if (fresh) {
+    currentMember = fresh;
+    if (document.getElementById('salaryCard')) renderMyTasks().catch(() => {});
+  }
+}, 60000);
 
 /* ════════════════════════════════════════════
    TAB SWITCHING
