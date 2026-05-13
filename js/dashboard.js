@@ -3162,6 +3162,10 @@ document.getElementById('refreshLeaveBtn')?.addEventListener('click', () => rend
 /* ════════════════════════════════════════════
    LEAVE REQUESTS (admin approval)
    ════════════════════════════════════════════ */
+function escHtml(s) {
+  return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 async function renderLeaveRequests() {
   const wrap = document.getElementById('leaveRequestsList');
   if (!wrap) return;
