@@ -24,16 +24,23 @@ const TEAM_CONFIG = [
    STORAGE HELPERS
    ════════════════════════════════════════════ */
 
-const TEAM_DELETED_KEY = 'nej_team_deleted';
+const TEAM_DELETED_KEY   = 'nej_team_deleted';
+const TEAM_OVERRIDES_KEY = 'nej_team_overrides';
 function getDeletedTeamIds() {
   try { return JSON.parse(localStorage.getItem(TEAM_DELETED_KEY) || '[]'); } catch { return []; }
 }
+function getTeamOverrides() {
+  try { return JSON.parse(localStorage.getItem(TEAM_OVERRIDES_KEY) || '{}'); } catch { return {}; }
+}
 
-// Merges hardcoded TEAM_CONFIG with admin-added members, then filters out admin-deleted IDs.
+// Merges hardcoded TEAM_CONFIG with overrides + admin-added members, filtering deleted IDs.
 function getTeam() {
-  const stored  = JSON.parse(localStorage.getItem(TEAM_KEY) || '[]');
-  const deleted = new Set(getDeletedTeamIds());
-  const merged  = TEAM_CONFIG.filter(c => !deleted.has(c.id));
+  const stored    = JSON.parse(localStorage.getItem(TEAM_KEY) || '[]');
+  const deleted   = new Set(getDeletedTeamIds());
+  const overrides = getTeamOverrides();
+  const merged    = TEAM_CONFIG.filter(c => !deleted.has(c.id)).map(c =>
+    overrides[c.id] ? { ...c, ...overrides[c.id] } : c
+  );
   stored.forEach(m => {
     if (deleted.has(m.id)) return;
     if (!merged.find(c => c.id === m.id || c.username.toLowerCase() === m.username.toLowerCase())) {
@@ -61,14 +68,26 @@ async function syncTeamFromServer() {
   // Also sync deleted IDs
   try {
     const r = await fetch('/api/sync.php?resource=team_deleted', { cache: 'no-store' });
-    if (!r.ok) return;
-    const serverDeleted = await r.json();
-    if (Array.isArray(serverDeleted) && serverDeleted.length > 0) {
-      const local = getDeletedTeamIds();
-      const merged = Array.from(new Set([...local, ...serverDeleted]));
-      localStorage.setItem(TEAM_DELETED_KEY, JSON.stringify(merged));
+    if (r.ok) {
+      const serverDeleted = await r.json();
+      if (Array.isArray(serverDeleted) && serverDeleted.length > 0) {
+        const local = getDeletedTeamIds();
+        const merged = Array.from(new Set([...local, ...serverDeleted]));
+        localStorage.setItem(TEAM_DELETED_KEY, JSON.stringify(merged));
+      }
     }
-  } catch { /* server unreachable */ }
+  } catch {}
+  // Sync overrides (salary etc.) for hardcoded members
+  try {
+    const r = await fetch('/api/sync.php?resource=team_overrides', { cache: 'no-store' });
+    if (!r.ok) return;
+    const server = await r.json();
+    if (server && typeof server === 'object' && !Array.isArray(server)) {
+      const local  = getTeamOverrides();
+      const merged = { ...local, ...server };
+      localStorage.setItem(TEAM_OVERRIDES_KEY, JSON.stringify(merged));
+    }
+  } catch {}
 }
 
 function getSession() {

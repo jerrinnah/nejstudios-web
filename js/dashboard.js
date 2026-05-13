@@ -101,21 +101,52 @@ function saveDeletedTeamIds(ids) {
   }).catch(() => {});
 }
 
+const TEAM_OVERRIDES_KEY = 'nej_team_overrides';
+function getTeamOverrides() {
+  try { return JSON.parse(localStorage.getItem(TEAM_OVERRIDES_KEY) || '{}'); } catch { return {}; }
+}
+function saveTeamOverrides(map) {
+  localStorage.setItem(TEAM_OVERRIDES_KEY, JSON.stringify(map));
+  fetch('/api/sync.php?resource=team_overrides', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(map),
+  }).catch(() => {});
+}
+
 function saveTeam(arr) {
-  // Only store non-hardcoded members locally and on server
-  const extras = arr.filter(m => !TEAM_CONFIG.find(c => c.id === m.id));
+  // Non-hardcoded members go to TEAM_KEY (full records).
+  // Hardcoded members' edits (salary, etc.) go to TEAM_OVERRIDES_KEY keyed by id.
+  const extras = [];
+  const overrides = getTeamOverrides();
+  arr.forEach(m => {
+    const hc = TEAM_CONFIG.find(c => c.id === m.id);
+    if (hc) {
+      // Track only fields that differ from the hardcoded baseline
+      const diff = {};
+      ['name','username','pin','salary','role'].forEach(k => {
+        if (m[k] !== undefined && m[k] !== hc[k]) diff[k] = m[k];
+      });
+      if (Object.keys(diff).length) overrides[m.id] = diff;
+      else delete overrides[m.id];
+    } else {
+      extras.push(m);
+    }
+  });
   localStorage.setItem(TEAM_KEY, JSON.stringify(extras));
   fetch('/api/sync.php?resource=team_members', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(extras),
   }).catch(() => {});
+  saveTeamOverrides(overrides);
 }
 
-// Merges hardcoded TEAM_CONFIG with members added via the UI (server + localStorage).
+// Merges hardcoded TEAM_CONFIG with overrides and admin-added members.
 // Filters out IDs in the deleted list so admin-removed members stay removed.
 function getTeam() {
-  const stored  = JSON.parse(localStorage.getItem(TEAM_KEY) || '[]');
-  const deleted = new Set(getDeletedTeamIds());
-  const merged  = TEAM_CONFIG.filter(c => !deleted.has(c.id));
+  const stored    = JSON.parse(localStorage.getItem(TEAM_KEY) || '[]');
+  const deleted   = new Set(getDeletedTeamIds());
+  const overrides = getTeamOverrides();
+  const merged    = TEAM_CONFIG.filter(c => !deleted.has(c.id)).map(c =>
+    overrides[c.id] ? { ...c, ...overrides[c.id] } : c
+  );
   stored.forEach(m => {
     if (deleted.has(m.id)) return;
     if (!merged.find(c => c.id === m.id || c.username.toLowerCase() === m.username.toLowerCase())) {
@@ -123,6 +154,18 @@ function getTeam() {
     }
   });
   return merged;
+}
+
+async function syncTeamOverridesFromServer() {
+  try {
+    const r = await fetch('/api/sync.php?resource=team_overrides', { cache: 'no-store' });
+    if (!r.ok) return;
+    const server = await r.json();
+    if (!server || typeof server !== 'object' || Array.isArray(server)) return;
+    const local  = getTeamOverrides();
+    const merged = { ...local, ...server };
+    localStorage.setItem(TEAM_OVERRIDES_KEY, JSON.stringify(merged));
+  } catch {}
 }
 
 async function syncTeamDeletedFromServer() {
@@ -412,6 +455,7 @@ function showDash() {
   syncGalleryFromServer().catch(() => {});
   syncTeamFromServer().catch(() => {});
   syncTeamDeletedFromServer().catch(() => {});
+  syncTeamOverridesFromServer().catch(() => {});
   syncBookingsFromServer().then(() => {
     renderBookings();
     renderTasksBadge();
