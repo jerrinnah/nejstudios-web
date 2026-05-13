@@ -878,7 +878,7 @@ async function renderTeamBookingsCalendar() {
     }).join('');
     const more = list.length > 3 ? `<div style="font-size:0.58rem;color:var(--grey-3);padding:0 4px">+${list.length - 3}</div>` : '';
     const booked = list.length > 0;
-    const bg = booked ? 'rgba(248,113,113,0.3)' : 'var(--bg-2)';
+    const bg = booked ? 'rgba(230,57,70,0.45)' : 'var(--bg-2)';
     html += `
       <div data-tday="${dateStr}" style="background:${bg};min-height:60px;padding:4px;cursor:pointer;${isToday ? 'box-shadow:inset 0 0 0 1px var(--gold)' : ''}">
         <div style="font-size:0.7rem;font-weight:600;color:${isToday ? 'var(--gold)' : 'var(--white)'};margin-bottom:3px">${day}</div>

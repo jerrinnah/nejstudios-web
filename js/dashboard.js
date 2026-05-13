@@ -3755,7 +3755,7 @@ async function renderBookingsCalendar() {
     }).join('');
     const more = list.length > 4 ? `<div style="font-size:0.62rem;color:var(--grey-3);padding:0 5px">+${list.length - 4} more</div>` : '';
     const booked = list.length > 0;
-    const bg = booked ? 'rgba(248,113,113,0.3)' : 'var(--bg-2)';
+    const bg = booked ? 'rgba(230,57,70,0.45)' : 'var(--bg-2)';
     html += `
       <div data-day="${dateStr}" style="background:${bg};min-height:84px;padding:6px;cursor:pointer;${isToday ? 'box-shadow:inset 0 0 0 1px var(--gold)' : ''}">
         <div style="font-size:0.78rem;font-weight:600;color:${isToday ? 'var(--gold)' : 'var(--white)'};margin-bottom:4px">${day}</div>
