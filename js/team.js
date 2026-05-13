@@ -220,6 +220,7 @@ function showPortal(member) {
   initImpromptuModal();
   initLeaveModal();
   renderMyLeaveRequests();
+  renderTeamBookingsCalendar();
   // Schedule 11pm reminder if not yet signed in today
   scheduleSignInReminder(member);
 }
@@ -810,6 +811,120 @@ async function renderBonusPoints() {
 }
 
 function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+/* ════════════════════════════════════════════
+   BOOKINGS CALENDAR (read-only for team)
+   ════════════════════════════════════════════ */
+let _tCalCursor = new Date(); _tCalCursor.setDate(1);
+
+const T_EVENT_LABELS = {
+  'brand-film':'Brand Film','music-video':'Music Video','documentary':'Documentary',
+  'corporate-event':'Corporate Event','other-production':'Production',
+  'traditional-wedding':'Traditional Wedding','white-wedding':'White Wedding',
+  'full-wedding':'Full Wedding','engagement':'Engagement',
+  'funeral':'Funeral','service-of-songs':'Service of Songs',
+  'birthday':'Birthday','other-event':'Event',
+};
+
+function _tBookingDate(b) {
+  if (b.bookingKind === 'studio') return b.shootDate || b.preferredDate || '';
+  return b.eventDate || '';
+}
+
+function _tBookingLabel(b) {
+  if (b.bookingKind === 'studio') return b.sessionType ? `${b.clientName} — ${b.sessionType}` : (b.clientName || 'Studio');
+  return b.clientName || 'Event';
+}
+
+async function renderTeamBookingsCalendar() {
+  const grid       = document.getElementById('tBookingsCalendar');
+  const monthLabel = document.getElementById('tCalMonthLabel');
+  if (!grid) return;
+
+  const year  = _tCalCursor.getFullYear();
+  const month = _tCalCursor.getMonth();
+  monthLabel.textContent = _tCalCursor.toLocaleDateString('en-NG', { month: 'long', year: 'numeric' });
+
+  let bookings = [];
+  try {
+    bookings = (await dbFetchBookings()).filter(b => !b.deletedAt);
+  } catch {}
+  const byDate = {};
+  bookings.forEach(b => {
+    const d = _tBookingDate(b);
+    if (!d) return;
+    (byDate[d] = byDate[d] || []).push(b);
+  });
+
+  const firstDayOfWeek = new Date(year, month, 1).getDay();
+  const lastDate       = new Date(year, month + 1, 0).getDate();
+  const todayStr       = new Date().toISOString().slice(0,10);
+
+  let html = `<div style="display:grid;grid-template-columns:repeat(7,1fr);background:var(--border);gap:1px">`;
+  ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(d => {
+    html += `<div style="background:var(--bg-3);padding:6px 4px;text-align:center;font-size:0.62rem;font-weight:700;color:var(--grey-3);text-transform:uppercase;letter-spacing:0.06em">${d}</div>`;
+  });
+  for (let i = 0; i < firstDayOfWeek; i++) {
+    html += `<div style="background:var(--bg-2);min-height:60px"></div>`;
+  }
+  for (let day = 1; day <= lastDate; day++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const list    = byDate[dateStr] || [];
+    const isToday = dateStr === todayStr;
+    const dots = list.slice(0, 3).map(b => {
+      const color = b.status === 'pending' ? '#f87171'
+        : b.bookingKind === 'studio' ? 'var(--gold)' : '#4ade80';
+      return `<div style="font-size:0.6rem;background:rgba(255,255,255,0.04);border-left:2px solid ${color};color:var(--white);padding:1px 4px;margin-bottom:1px;border-radius:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(_tBookingLabel(b))}</div>`;
+    }).join('');
+    const more = list.length > 3 ? `<div style="font-size:0.58rem;color:var(--grey-3);padding:0 4px">+${list.length - 3}</div>` : '';
+    html += `
+      <div data-tday="${dateStr}" style="background:var(--bg-2);min-height:60px;padding:4px;cursor:pointer;${isToday ? 'box-shadow:inset 0 0 0 1px var(--gold)' : ''}">
+        <div style="font-size:0.7rem;font-weight:600;color:${isToday ? 'var(--gold)' : 'var(--white)'};margin-bottom:3px">${day}</div>
+        ${dots}${more}
+      </div>`;
+  }
+  const totalCells = firstDayOfWeek + lastDate;
+  const trail = (7 - (totalCells % 7)) % 7;
+  for (let i = 0; i < trail; i++) html += `<div style="background:var(--bg-2);min-height:60px"></div>`;
+  html += `</div>`;
+  grid.innerHTML = html;
+
+  grid.querySelectorAll('[data-tday]').forEach(cell => {
+    cell.addEventListener('click', () => renderTeamCalDayDetail(cell.dataset.tday, byDate[cell.dataset.tday] || []));
+  });
+}
+
+function renderTeamCalDayDetail(dateStr, list) {
+  const wrap = document.getElementById('tCalDayDetail');
+  if (!wrap) return;
+  const fmt = new Date(dateStr + 'T12:00:00').toLocaleDateString('en-NG', { weekday:'long', month:'long', day:'numeric' });
+  if (!list.length) {
+    wrap.style.display = 'block';
+    wrap.innerHTML = `<strong style="font-size:0.85rem;color:var(--white)">${fmt}</strong><p style="color:var(--grey-3);font-size:0.78rem;margin:6px 0 0 0">No bookings — date is available ✓</p>`;
+    return;
+  }
+  wrap.style.display = 'block';
+  wrap.innerHTML = `
+    <strong style="font-size:0.85rem;color:var(--white);display:block;margin-bottom:8px">${fmt} — ${list.length} booking${list.length>1?'s':''}</strong>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      ${list.map(b => {
+        const color = b.status === 'pending' ? '#f87171' : b.bookingKind === 'studio' ? 'var(--gold)' : '#4ade80';
+        const subtype = b.sessionType || T_EVENT_LABELS[b.eventType] || b.eventType || '';
+        return `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--bg-3);border:1px solid var(--border);border-left:3px solid ${color};border-radius:6px">
+            <div>
+              <div style="font-size:0.8rem;font-weight:600;color:var(--white)">${esc(b.clientName)}</div>
+              <div style="font-size:0.68rem;color:var(--grey-3);margin-top:2px">${esc(subtype)} ${b.location ? '· ' + esc(b.location) : ''}</div>
+            </div>
+            <span style="font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:${color}">${b.status}</span>
+          </div>`;
+      }).join('')}
+    </div>`;
+}
+
+document.getElementById('tCalPrev')?.addEventListener('click', () => { _tCalCursor.setMonth(_tCalCursor.getMonth() - 1); renderTeamBookingsCalendar(); });
+document.getElementById('tCalNext')?.addEventListener('click', () => { _tCalCursor.setMonth(_tCalCursor.getMonth() + 1); renderTeamBookingsCalendar(); });
+document.getElementById('tCalToday')?.addEventListener('click', () => { _tCalCursor = new Date(); _tCalCursor.setDate(1); renderTeamBookingsCalendar(); });
 
 function buildMyTaskCard(t) {
   const prClass     = t.priority || 'medium';

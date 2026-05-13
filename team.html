@@ -717,6 +717,27 @@
               <p>All scheduled shoots, weddings, events and meetings</p>
             </div>
           </div>
+
+          <!-- Bookings Calendar -->
+          <div style="margin-bottom:24px;padding:16px;background:var(--bg-3);border:1px solid var(--border);border-radius:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+              <strong style="color:var(--white);font-size:0.95rem">Bookings Calendar</strong>
+              <div style="display:flex;align-items:center;gap:6px">
+                <button id="tCalPrev" style="font-size:0.7rem;background:var(--bg-2);border:1px solid var(--border);color:var(--white);border-radius:6px;padding:5px 10px;cursor:pointer">←</button>
+                <span id="tCalMonthLabel" style="color:var(--white);font-size:0.82rem;min-width:140px;text-align:center;display:inline-block"></span>
+                <button id="tCalNext" style="font-size:0.7rem;background:var(--bg-2);border:1px solid var(--border);color:var(--white);border-radius:6px;padding:5px 10px;cursor:pointer">→</button>
+                <button id="tCalToday" style="font-size:0.7rem;background:var(--bg-2);border:1px solid var(--gold);color:var(--gold);border-radius:6px;padding:5px 10px;cursor:pointer;margin-left:6px">Today</button>
+              </div>
+            </div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:0.68rem;color:var(--grey-3);margin-bottom:8px">
+              <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--gold);margin-right:4px;vertical-align:middle"></span>Studio</span>
+              <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#4ade80;margin-right:4px;vertical-align:middle"></span>Event</span>
+              <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#f87171;margin-right:4px;vertical-align:middle"></span>Pending</span>
+            </div>
+            <div id="tBookingsCalendar" style="border:1px solid var(--border);border-radius:8px;overflow:hidden"></div>
+            <div id="tCalDayDetail" style="margin-top:12px;display:none;padding:14px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px"></div>
+          </div>
+
           <div class="sch-grid" id="scheduleGrid">
             <div class="sch-empty">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -1097,7 +1118,7 @@
       });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/db.js?v=4.2"></script>
-    <script src="js/team.js?v=4.2"></script>
+    <script src="js/db.js?v=4.4"></script>
+    <script src="js/team.js?v=4.4"></script>
   </body>
 </html>
