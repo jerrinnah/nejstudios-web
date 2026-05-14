@@ -14,15 +14,24 @@ jobs:
         with:
           submodules: false
 
+      - name: Diagnostic - probe FTP host
+        run: |
+          echo "Resolving ${{ secrets.FTP_HOST }}..."
+          getent hosts "${{ secrets.FTP_HOST }}" || true
+          echo "---"
+          echo "Testing plain FTP port 21..."
+          timeout 10 bash -c '</dev/tcp/${{ secrets.FTP_HOST }}/21' && echo "Port 21 reachable" || echo "Port 21 BLOCKED or unreachable"
+          echo "Testing FTPS port 990..."
+          timeout 10 bash -c '</dev/tcp/${{ secrets.FTP_HOST }}/990' && echo "Port 990 reachable" || echo "Port 990 BLOCKED or unreachable"
+
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_HOST }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
+          protocol: ftp
           port: 21
-          security: loose
           timeout: 60000
           log-level: verbose
           local-dir: ./
