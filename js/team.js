@@ -753,6 +753,7 @@ async function renderMyTasks() {
       </div>`;
     renderHelpWanted();
     renderBonusPoints();
+    renderSharedTasks();
     return;
   }
 
@@ -771,6 +772,48 @@ async function renderMyTasks() {
   renderHelpWanted();
   // Render bonus points summary
   renderBonusPoints();
+  // Render shared tasks (any staff can claim)
+  renderSharedTasks();
+}
+
+async function renderSharedTasks() {
+  const wrap = document.getElementById('sharedTasksSection');
+  if (!wrap || !currentMember) return;
+  const all = await dbGetTasks();
+  const shared = all.filter(t => t.sharedTask && !t.assignedTo && t.status !== 'completed');
+  if (!shared.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+  const grid = document.getElementById('sharedTasksGrid');
+  grid.innerHTML = shared.map(t => `
+    <div class="my-task-card" style="border-color:rgba(74,222,128,0.3);background:rgba(74,222,128,0.05)">
+      <div class="my-task-card__top">
+        <div class="my-task-card__badges">
+          <span class="priority-badge priority-badge--${t.priority || 'medium'}">${t.priority || 'medium'}</span>
+          <span class="status-badge" style="background:rgba(74,222,128,0.18);color:#4ade80">SHARED</span>
+        </div>
+      </div>
+      <div class="my-task-card__title">${esc(t.title)}</div>
+      ${t.desc ? `<div class="my-task-card__desc">${esc(t.desc)}</div>` : ''}
+      <div class="my-task-card__timestamps">
+        ${t.deadline ? `<div class="ts-row">Due: <strong>${esc(t.deadline)}</strong></div>` : ''}
+      </div>
+      <div class="my-task-card__actions">
+        <button class="btn-start" data-claim-id="${t.id}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>
+          Claim This Task
+        </button>
+      </div>
+    </div>`).join('');
+  grid.querySelectorAll('[data-claim-id]').forEach(btn => {
+    btn.addEventListener('click', () => claimSharedTask(btn.dataset.claimId));
+  });
+}
+
+async function claimSharedTask(taskId) {
+  if (!currentMember) return;
+  await dbUpdateTask(taskId, { assignedTo: currentMember.id, assignedName: currentMember.name });
+  showToast('Task claimed — added to your list ✓');
+  renderMyTasks();
 }
 
 async function renderHelpWanted() {
