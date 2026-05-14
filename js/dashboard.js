@@ -2603,6 +2603,50 @@ document.querySelectorAll('[data-task-status]').forEach(btn => {
   });
 });
 
+// Multi-select state for tasks
+let tasksSelectMode = false;
+const tasksSelectedIds = new Set();
+
+function updateTasksSelectedCount() {
+  const el = document.getElementById('tasksSelectedCount');
+  if (el) el.textContent = `${tasksSelectedIds.size} selected`;
+}
+
+function setTasksSelectMode(on) {
+  tasksSelectMode = on;
+  tasksSelectedIds.clear();
+  document.getElementById('tasksSelectAllBtn').style.display     = on ? '' : 'none';
+  document.getElementById('tasksSelectedCount').style.display    = on ? '' : 'none';
+  document.getElementById('tasksBulkDeleteBtn').style.display    = on ? '' : 'none';
+  document.getElementById('tasksSelectCancelBtn').style.display  = on ? '' : 'none';
+  document.getElementById('tasksSelectModeBtn').style.display    = on ? 'none' : '';
+  updateTasksSelectedCount();
+  renderTasks();
+}
+
+document.getElementById('tasksSelectModeBtn')?.addEventListener('click', () => setTasksSelectMode(true));
+document.getElementById('tasksSelectCancelBtn')?.addEventListener('click', () => setTasksSelectMode(false));
+document.getElementById('tasksSelectAllBtn')?.addEventListener('click', async () => {
+  let tasks = await dbGetTasks();
+  if (activeTaskStatus !== 'all') tasks = tasks.filter(t => t.status === activeTaskStatus);
+  const allSelected = tasks.length > 0 && tasks.every(t => tasksSelectedIds.has(t.id));
+  if (allSelected) tasksSelectedIds.clear();
+  else tasks.forEach(t => tasksSelectedIds.add(t.id));
+  updateTasksSelectedCount();
+  renderTasks();
+});
+document.getElementById('tasksBulkDeleteBtn')?.addEventListener('click', async () => {
+  if (tasksSelectedIds.size === 0) { showToast('No tasks selected', 'err'); return; }
+  if (!confirm(`Delete ${tasksSelectedIds.size} selected task${tasksSelectedIds.size > 1 ? 's' : ''}? This cannot be undone.`)) return;
+  const ids = Array.from(tasksSelectedIds);
+  for (const id of ids) {
+    await dbDeleteTask(id).catch(() => {});
+  }
+  showToast(`${ids.length} task${ids.length > 1 ? 's' : ''} deleted ✓`);
+  setTasksSelectMode(false);
+  await renderTasksBadge();
+});
+
 async function renderTasks() {
   let tasks = await dbGetTasks();
   if (activeTaskStatus !== 'all') tasks = tasks.filter(t => t.status === activeTaskStatus);
@@ -2624,9 +2668,19 @@ async function renderTasks() {
 
   grid.innerHTML = tasks.map(t => buildTaskCard(t)).join('');
 
-  // Card click → open detail modal
+  // Card click → toggle selection if in select mode, otherwise open detail modal
   grid.querySelectorAll('.task-card').forEach(card => {
-    card.addEventListener('click', () => openTaskDetailModal(card.dataset.taskId));
+    card.addEventListener('click', (e) => {
+      if (tasksSelectMode) {
+        const id = card.dataset.taskId;
+        if (tasksSelectedIds.has(id)) tasksSelectedIds.delete(id);
+        else tasksSelectedIds.add(id);
+        updateTasksSelectedCount();
+        renderTasks();
+      } else if (!e.target.closest('[data-task-action]')) {
+        openTaskDetailModal(card.dataset.taskId);
+      }
+    });
   });
 
   grid.querySelectorAll('[data-task-action]').forEach(btn => {
@@ -2667,8 +2721,11 @@ function buildTaskCard(t) {
     }
   }
 
+  const isSelected = tasksSelectMode && tasksSelectedIds.has(t.id);
+  const selectCheck = tasksSelectMode ? `<div class="task-select-check" data-task-select-id="${t.id}" style="position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:5px;border:2px solid ${isSelected ? 'var(--gold)' : 'var(--border)'};background:${isSelected ? 'var(--gold)' : 'var(--bg-3)'};display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2">${isSelected ? '<svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" style="width:14px;height:14px"><polyline points="20 6 9 17 4 12"/></svg>' : ''}</div>` : '';
   return `
-    <div class="task-card task-card--${t.status}" data-task-id="${t.id}">
+    <div class="task-card task-card--${t.status}" data-task-id="${t.id}" style="position:relative${isSelected ? ';box-shadow:0 0 0 2px var(--gold)' : ''}">
+      ${selectCheck}
       <div class="task-card__top">
         <div class="task-card__badges">
           <span class="priority-badge priority-badge--${prClass}">${t.priority}</span>

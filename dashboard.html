@@ -1361,12 +1361,21 @@
               </div>
             </div>
 
-            <!-- Tasks filter -->
-            <div class="tasks-filter">
-              <button class="tasks-filter-btn active" data-task-status="all">All Tasks</button>
-              <button class="tasks-filter-btn" data-task-status="pending">Pending</button>
-              <button class="tasks-filter-btn" data-task-status="in-progress">In Progress</button>
-              <button class="tasks-filter-btn" data-task-status="completed">Completed</button>
+            <!-- Tasks filter + bulk select bar -->
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+              <div class="tasks-filter" style="margin-bottom:0">
+                <button class="tasks-filter-btn active" data-task-status="all">All Tasks</button>
+                <button class="tasks-filter-btn" data-task-status="pending">Pending</button>
+                <button class="tasks-filter-btn" data-task-status="in-progress">In Progress</button>
+                <button class="tasks-filter-btn" data-task-status="completed">Completed</button>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <button id="tasksSelectModeBtn" class="action-btn" style="font-size:0.72rem;padding:6px 12px">☑ Select</button>
+                <button id="tasksSelectAllBtn" class="action-btn" style="font-size:0.72rem;padding:6px 12px;display:none">Select All</button>
+                <span id="tasksSelectedCount" style="font-size:0.74rem;color:var(--grey-3);display:none">0 selected</span>
+                <button id="tasksBulkDeleteBtn" class="action-btn" style="font-size:0.72rem;padding:6px 12px;display:none;border-color:var(--red);color:var(--red)">🗑 Delete Selected</button>
+                <button id="tasksSelectCancelBtn" class="action-btn" style="font-size:0.72rem;padding:6px 12px;display:none">Cancel</button>
+              </div>
             </div>
 
             <div class="tasks-grid" id="tasksGrid"></div>
@@ -2023,7 +2032,7 @@
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/db.js?v=5.1"></script>
-    <script src="js/dashboard.js?v=5.1"></script>
+    <script src="js/db.js?v=5.2"></script>
+    <script src="js/dashboard.js?v=5.2"></script>
   </body>
 </html>
