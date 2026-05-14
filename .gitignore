@@ -1,5 +1,7 @@
 *.DS_Store
 .claude
+claude/
+nej-old web/
 *.zip
 uploads/
 api/data/
