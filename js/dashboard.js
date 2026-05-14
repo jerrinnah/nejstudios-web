@@ -3944,21 +3944,21 @@ async function autoCreateEventDayTasks() {
       templates.push({ title: `Backup ${eventName}`, deadline: sameDay, priority: 'high', assignee: DORATHY });
     }
 
-    // Lightroom
     if (isStudio) {
-      templates.push({ title: `Lightroom ${eventName}`, deadline: plus3, priority: 'high', assignee: UZO });
+      // Studio shoots: only Retouching after Backup (no Lightroom, Photobook, Thriller, or Full video)
+      templates.push({ title: `Retouching ${eventName}`, deadline: plus3, priority: 'high', assignee: UZO });
     } else {
-      // Split into two co-assigned tasks
+      // Event/wedding: Lightroom split between Dorathy + Lolya
       templates.push({ title: `Lightroom ${eventName} (Dorathy)`, deadline: plus3, priority: 'high', assignee: DORATHY });
       templates.push({ title: `Lightroom ${eventName} (Lolya)`,   deadline: plus3, priority: 'high', assignee: LOLYA   });
-    }
-
-    // Video/Thriller tasks are event/wedding only — studio shoots are stills only
-    if (!isStudio) {
+      // Thriller (Light)
       templates.push({ title: `Create Thriller for ${eventName}`, deadline: plus3, priority: 'medium', assignee: LIGHT });
-      templates.push({ title: `Create full video ${eventName}`,    deadline: plus3, priority: 'medium', assignee: NEJ   });
+      // Full video split between Nej + Lolya
+      templates.push({ title: `Create full video ${eventName} (Nej)`,   deadline: plus3, priority: 'medium', assignee: NEJ   });
+      templates.push({ title: `Create full video ${eventName} (Lolya)`, deadline: plus3, priority: 'medium', assignee: LOLYA });
+      // Photobook (Dorathy)
+      templates.push({ title: `Design Photobook ${eventName}`, deadline: plus3, priority: 'medium', assignee: DORATHY });
     }
-    templates.push({ title: `Design Photobook ${eventName}`, deadline: plus3, priority: 'medium', assignee: DORATHY });
 
     for (const t of templates) {
       const exists = tasks.some(x => x.bookingId === b.id && x.title === t.title);
