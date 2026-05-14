@@ -3953,9 +3953,12 @@ async function autoCreateEventDayTasks() {
       templates.push({ title: `Lightroom ${eventName} (Lolya)`,   deadline: plus3, priority: 'high', assignee: LOLYA   });
     }
 
-    templates.push({ title: `Create Thriller for ${eventName}`, deadline: plus3, priority: 'medium', assignee: LIGHT   });
-    templates.push({ title: `Create full video ${eventName}`,    deadline: plus3, priority: 'medium', assignee: NEJ     });
-    templates.push({ title: `Design Photobook ${eventName}`,     deadline: plus3, priority: 'medium', assignee: DORATHY });
+    // Video/Thriller tasks are event/wedding only — studio shoots are stills only
+    if (!isStudio) {
+      templates.push({ title: `Create Thriller for ${eventName}`, deadline: plus3, priority: 'medium', assignee: LIGHT });
+      templates.push({ title: `Create full video ${eventName}`,    deadline: plus3, priority: 'medium', assignee: NEJ   });
+    }
+    templates.push({ title: `Design Photobook ${eventName}`, deadline: plus3, priority: 'medium', assignee: DORATHY });
 
     for (const t of templates) {
       const exists = tasks.some(x => x.bookingId === b.id && x.title === t.title);
