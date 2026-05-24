@@ -754,6 +754,7 @@ async function renderMyTasks() {
     renderHelpWanted();
     renderBonusPoints();
     renderSharedTasks();
+    renderMonthlyDelivery();
     return;
   }
 
@@ -774,6 +775,45 @@ async function renderMyTasks() {
   renderBonusPoints();
   // Render shared tasks (any staff can claim)
   renderSharedTasks();
+  // Render monthly delivery summary
+  renderMonthlyDelivery();
+}
+
+async function renderMonthlyDelivery() {
+  const el = document.getElementById('monthlyDeliveryCard');
+  if (!el || !currentMember) return;
+  const d = await dbGetMemberMonthlyDelivery(currentMember.id);
+  if (d.totalCompleted === 0 && d.bonusPoints === 0) { el.style.display = 'none'; return; }
+  el.style.display = '';
+  const monthName = new Date().toLocaleDateString('en-NG', { month: 'long', year: 'numeric' });
+  const typeRows = Object.entries(d.byType).map(([k, v]) =>
+    `<div style="display:flex;justify-content:space-between;font-size:0.78rem;color:var(--grey-2);padding:3px 0"><span>${k}</span><strong style="color:var(--white)">${v}</strong></div>`
+  ).join('');
+  el.innerHTML = `
+    <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--grey-3);margin-bottom:10px">Monthly Delivery — ${monthName}</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
+      <div style="padding:10px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;text-align:center">
+        <div style="font-size:1.3rem;color:var(--white);font-weight:700">${d.totalCompleted}</div>
+        <div style="font-size:0.62rem;color:var(--grey-3);text-transform:uppercase;letter-spacing:0.06em">Completed</div>
+      </div>
+      <div style="padding:10px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;text-align:center">
+        <div style="font-size:1.3rem;color:var(--green);font-weight:700">${d.approved}</div>
+        <div style="font-size:0.62rem;color:var(--grey-3);text-transform:uppercase;letter-spacing:0.06em">Approved</div>
+      </div>
+      <div style="padding:10px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;text-align:center">
+        <div style="font-size:1.3rem;color:var(--red);font-weight:700">${d.failed}</div>
+        <div style="font-size:0.62rem;color:var(--grey-3);text-transform:uppercase;letter-spacing:0.06em">Failed</div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:var(--grey-2);padding:4px 0">
+      <span>On-time</span><strong style="color:var(--green)">${d.onTime}</strong>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:var(--grey-2);padding:4px 0;border-bottom:1px solid var(--border);margin-bottom:8px">
+      <span>Late</span><strong style="color:var(--red)">${d.late}</strong>
+    </div>
+    ${typeRows}
+    ${d.bonusPoints ? `<div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;margin-top:8px;border-top:1px solid var(--border)"><span style="font-size:0.85rem;color:var(--gold);font-weight:600">Bonus points earned</span><strong style="color:var(--gold);font-size:1rem">+${d.bonusPoints}</strong></div>` : ''}
+  `;
 }
 
 async function renderSharedTasks() {

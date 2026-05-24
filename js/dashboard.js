@@ -665,7 +665,7 @@ function switchTab(name) {
   if (name === 'team')     { renderTeam(); renderAttendance(); renderCompletedTasksByMember(); renderLeaveRequests(); }
   if (name === 'calendar') renderBookingsCalendar();
   if (name === 'gallery')  renderGalleryPanel();
-  if (name === 'summary')  renderDailySummary();
+  if (name === 'summary')  { renderDailySummary(); renderMonthlyDeliveryAdmin(); }
   closeSidebar();
 }
 
@@ -3405,6 +3405,47 @@ async function renderAttendance() {
 
 document.getElementById('refreshAttendanceBtn')?.addEventListener('click', () => renderAttendance());
 document.getElementById('refreshLeaveBtn')?.addEventListener('click', () => renderLeaveRequests());
+document.getElementById('btnRefreshDelivery')?.addEventListener('click', () => renderMonthlyDeliveryAdmin());
+
+async function renderMonthlyDeliveryAdmin() {
+  const wrap = document.getElementById('monthlyDeliveryGrid');
+  if (!wrap) return;
+  const team = getTeam().filter(m => m.role !== 'admin');
+  if (!team.length) { wrap.innerHTML = '<div style="color:var(--grey-4);font-size:0.85rem;padding:12px 0">No team members yet.</div>'; return; }
+  wrap.innerHTML = '<div style="color:var(--grey-3);font-size:0.85rem;padding:12px 0">Loading…</div>';
+
+  const rows = await Promise.all(team.map(async m => ({ m, d: await dbGetMemberMonthlyDelivery(m.id) })));
+  rows.sort((a, b) => b.d.totalCompleted - a.d.totalCompleted);
+
+  wrap.innerHTML = rows.map(({ m, d }) => {
+    const initials = (m.name || '').split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
+    const typeRows = Object.entries(d.byType).map(([k, v]) =>
+      `<span style="display:inline-block;padding:2px 8px;background:var(--bg-3);border:1px solid var(--border);border-radius:12px;font-size:0.66rem;color:var(--grey-2);margin:2px 4px 0 0">${k}: <strong style="color:var(--white)">${v}</strong></span>`
+    ).join('');
+    return `
+      <div style="padding:14px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--gold),#a98c43);display:flex;align-items:center;justify-content:center;font-size:0.78rem;font-weight:700;color:#000;flex-shrink:0">${initials}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:0.9rem;font-weight:600;color:var(--white)">${_escHtml(m.name)}</div>
+            <div style="font-size:0.7rem;color:var(--grey-3)">@${_escHtml(m.username)}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:1.2rem;font-weight:700;color:var(--white)">${d.totalCompleted}</div>
+            <div style="font-size:0.62rem;color:var(--grey-3);text-transform:uppercase;letter-spacing:0.06em">Completed</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:14px;font-size:0.72rem;color:var(--grey-2);flex-wrap:wrap;margin-bottom:8px">
+          <span><strong style="color:var(--green)">${d.approved}</strong> approved</span>
+          <span><strong style="color:var(--red)">${d.failed}</strong> failed</span>
+          <span><strong style="color:var(--grey-3)">${d.unrated}</strong> unrated</span>
+          <span style="margin-left:auto"><strong style="color:var(--green)">${d.onTime}</strong> on-time · <strong style="color:var(--red)">${d.late}</strong> late</span>
+          ${d.bonusPoints ? `<span><strong style="color:var(--gold)">+${d.bonusPoints}</strong> bonus pts</span>` : ''}
+        </div>
+        ${typeRows ? `<div>${typeRows}</div>` : ''}
+      </div>`;
+  }).join('');
+}
 
 /* ════════════════════════════════════════════
    LEAVE REQUESTS (admin approval)

@@ -472,6 +472,74 @@ async function dbGetMonthlySalary(member) {
   };
 }
 
+// Monthly delivery summary for a team member.
+// year/month optional — defaults to current month. month is 0-indexed (Jan=0).
+async function dbGetMemberMonthlyDelivery(memberId, year, month) {
+  const now = new Date();
+  if (year  == null) year  = now.getFullYear();
+  if (month == null) month = now.getMonth();
+  const monthStart = new Date(year, month, 1).getTime();
+  const monthEnd   = new Date(year, month + 1, 1).getTime();
+
+  const all = await dbGetTasks();
+  const completed = all.filter(t => {
+    if (t.assignedTo !== memberId) return false;
+    if (t.status !== 'completed') return false;
+    const ts = t.completedAt || t.completed_at || 0;
+    return ts >= monthStart && ts < monthEnd;
+  });
+
+  let approved = 0, failed = 0, unrated = 0;
+  let onTime = 0, late = 0, noDeadline = 0;
+  const byType = {};
+
+  completed.forEach(t => {
+    if (t.deliveryStatus === 'approved') approved++;
+    else if (t.deliveryStatus === 'failed') failed++;
+    else unrated++;
+
+    if (t.deadline) {
+      const ts = t.completedAt || t.completed_at || 0;
+      const dl = new Date(t.deadline + 'T23:59:59').getTime();
+      if (ts <= dl) onTime++; else late++;
+    } else noDeadline++;
+
+    // Bucket by task title keyword (Backup, Lightroom, Retouching, Thriller, Full video, Photobook, Other)
+    const title = (t.title || '').toLowerCase();
+    let bucket = 'Other';
+    if (title.includes('backup'))         bucket = 'Backup';
+    else if (title.includes('lightroom')) bucket = 'Lightroom';
+    else if (title.includes('retouch'))   bucket = 'Retouching';
+    else if (title.includes('thriller'))  bucket = 'Thriller';
+    else if (title.includes('full video')) bucket = 'Full Video';
+    else if (title.includes('photobook')) bucket = 'Photobook';
+    byType[bucket] = (byType[bucket] || 0) + 1;
+  });
+
+  // Bonus points earned within the month
+  let bonusPoints = 0;
+  try {
+    const r = await fetch('/api/sync.php?resource=team_points', { cache: 'no-store' });
+    if (r.ok) {
+      const map = await r.json();
+      if (map && typeof map === 'object' && map[memberId]) {
+        (map[memberId].entries || []).forEach(e => {
+          if ((e.ts || 0) >= monthStart && (e.ts || 0) < monthEnd) bonusPoints += (e.points || 0);
+        });
+      }
+    }
+  } catch {}
+
+  return {
+    totalCompleted: completed.length,
+    approved, failed, unrated,
+    onTime, late, noDeadline,
+    byType,
+    bonusPoints,
+    tasks: completed,
+  };
+}
+
 async function dbGetMemberPoints(memberId) {
   try {
     const r = await fetch('/api/sync.php?resource=team_points', { cache: 'no-store' });
