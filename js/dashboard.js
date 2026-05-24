@@ -4460,28 +4460,72 @@ function renderCalDayDetail(dateStr, list) {
   const wrap = document.getElementById('calDayDetail');
   if (!wrap) return;
   const fmt = new Date(dateStr + 'T12:00:00').toLocaleDateString('en-NG', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
-  if (!list.length) {
-    wrap.style.display = 'block';
-    wrap.innerHTML = `<h3 style="font-size:0.95rem;color:var(--white);margin:0 0 6px 0">${fmt}</h3><p style="color:var(--grey-3);font-size:0.85rem;margin:0">No bookings — date is available ✓</p>`;
-    return;
-  }
-  wrap.style.display = 'block';
-  wrap.innerHTML = `
-    <h3 style="font-size:0.95rem;color:var(--white);margin:0 0 12px 0">${fmt} — ${list.length} booking${list.length>1?'s':''}</h3>
-    <div style="display:flex;flex-direction:column;gap:8px">
-      ${list.map(b => {
-        const color = b.status === 'pending' ? '#f87171' : b.bookingKind === 'studio' ? 'var(--gold)' : '#4ade80';
-        const subtype = b.sessionType || EVENT_TYPE_LABELS[b.eventType] || b.eventType || '';
-        return `
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--bg-2);border:1px solid var(--border);border-left:3px solid ${color};border-radius:6px">
-            <div>
-              <div style="font-size:0.88rem;font-weight:600;color:var(--white)">${_escHtml(b.clientName)}</div>
-              <div style="font-size:0.75rem;color:var(--grey-3);margin-top:2px">${_escHtml(subtype)} ${b.location ? '· ' + _escHtml(b.location) : ''}</div>
-            </div>
-            <span style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:${color}">${b.status}</span>
-          </div>`;
-      }).join('')}
+  const actions = `
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+      <button data-cal-add="event" data-cal-date="${dateStr}" style="font-size:0.74rem;padding:7px 14px;background:var(--bg-3);border:1px solid var(--gold);border-radius:6px;color:var(--gold);cursor:pointer;font-weight:600">+ Add Event/Booking</button>
+      <button data-cal-add="task" data-cal-date="${dateStr}" style="font-size:0.74rem;padding:7px 14px;background:var(--bg-3);border:1px solid #4ade80;border-radius:6px;color:#4ade80;cursor:pointer;font-weight:600">+ Add Task</button>
     </div>`;
+
+  wrap.style.display = 'block';
+  if (!list.length) {
+    wrap.innerHTML = `
+      <h3 style="font-size:0.95rem;color:var(--white);margin:0 0 6px 0">${fmt}</h3>
+      <p style="color:var(--grey-3);font-size:0.85rem;margin:0">No bookings — date is available ✓</p>
+      ${actions}`;
+  } else {
+    wrap.innerHTML = `
+      <h3 style="font-size:0.95rem;color:var(--white);margin:0 0 12px 0">${fmt} — ${list.length} booking${list.length>1?'s':''}</h3>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${list.map(b => {
+          const color = b.status === 'pending' ? '#f87171' : b.bookingKind === 'studio' ? 'var(--gold)' : '#4ade80';
+          const subtype = b.sessionType || EVENT_TYPE_LABELS[b.eventType] || b.eventType || '';
+          return `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--bg-2);border:1px solid var(--border);border-left:3px solid ${color};border-radius:6px">
+              <div>
+                <div style="font-size:0.88rem;font-weight:600;color:var(--white)">${_escHtml(b.clientName)}</div>
+                <div style="font-size:0.75rem;color:var(--grey-3);margin-top:2px">${_escHtml(subtype)} ${b.location ? '· ' + _escHtml(b.location) : ''}</div>
+              </div>
+              <span style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:${color}">${b.status}</span>
+            </div>`;
+        }).join('')}
+      </div>
+      ${actions}`;
+  }
+
+  // Wire up Add Event / Add Task buttons
+  wrap.querySelectorAll('[data-cal-add]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const kind = btn.dataset.calAdd;
+      const date = btn.dataset.calDate;
+      if (kind === 'task')  openTaskCreateFromDate(date);
+      if (kind === 'event') openBookingCreateFromDate(date);
+    });
+  });
+}
+
+function openTaskCreateFromDate(date) {
+  // Switch to Tasks tab and open the create form with the deadline pre-filled
+  switchTab('tasks');
+  const toggle = document.getElementById('taskCreateToggle');
+  const body   = document.getElementById('taskCreateBody');
+  if (toggle && !body?.classList.contains('open')) toggle.click();
+  setTimeout(() => {
+    const dl = document.getElementById('taskDeadline');
+    if (dl) { dl.value = date; dl.focus(); }
+    const t = document.getElementById('taskTitle');
+    if (t) t.focus();
+  }, 150);
+}
+
+function openBookingCreateFromDate(date) {
+  // Open the new booking modal and pre-fill the event date
+  const modal = document.getElementById('newBookingModal');
+  if (!modal) return;
+  modal.classList.add('open');
+  setTimeout(() => {
+    const ed = document.getElementById('bmEDate');
+    if (ed) ed.value = date;
+  }, 100);
 }
 
 document.getElementById('calPrev')?.addEventListener('click', () => { _calCursor.setMonth(_calCursor.getMonth() - 1); renderBookingsCalendar(); });
