@@ -782,32 +782,40 @@ async function renderMyTasks() {
 async function renderMonthlyDelivery() {
   const el = document.getElementById('monthlyDeliveryCard');
   if (!el || !currentMember) return;
-  const [d, total] = await Promise.all([
-    dbGetMemberMonthlyDelivery(currentMember.id),
-    dbGetMemberTotalDelivery(currentMember.id),
-  ]);
-  if (d.totalCompleted === 0 && total.totalCompleted === 0 && d.bonusPoints === 0) { el.style.display = 'none'; return; }
+  const d = await dbGetMemberMonthlyDelivery(currentMember.id);
+  if (d.totalCreated === 0 && d.totalCompleted === 0 && d.bonusPoints === 0) { el.style.display = 'none'; return; }
   el.style.display = '';
   const monthName = new Date().toLocaleDateString('en-NG', { month: 'long', year: 'numeric' });
 
-  // Combine type breakdown - show monthly count / total count per type
-  const allTypes = new Set([...Object.keys(d.byType), ...Object.keys(total.byType)]);
-  const typeRows = Array.from(allTypes).map(k => {
-    const mo = d.byType[k] || 0;
-    const tot = total.byType[k] || 0;
-    return `<div style="display:flex;justify-content:space-between;font-size:0.78rem;color:var(--grey-2);padding:3px 0"><span>${k}</span><strong style="color:var(--white)">${mo} <span style="color:var(--grey-4);font-weight:400">/ ${tot} all-time</span></strong></div>`;
+  // Per-category rows: Created / Delivered for the month
+  const allTypes = new Set([...Object.keys(d.createdByType), ...Object.keys(d.byType)]);
+  const typeRows = Array.from(allTypes).sort().map(k => {
+    const cr  = d.createdByType[k] || 0;
+    const del = d.byType[k]        || 0;
+    return `<div style="display:flex;justify-content:space-between;font-size:0.78rem;color:var(--grey-2);padding:4px 0"><span>${k}</span><strong style="color:var(--white)">${del} <span style="color:var(--grey-4);font-weight:400">delivered of ${cr}</span></strong></div>`;
   }).join('');
+
+  // Delivered tasks list
+  const fmtDateShort = (ts) => ts ? new Date(ts).toLocaleDateString('en-NG', { month:'short', day:'numeric' }) : '';
+  const deliveredList = d.tasks.length ? d.tasks.map(t => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:var(--bg-2);border:1px solid var(--border);border-radius:6px;margin-top:6px;font-size:0.76rem">
+      <div style="min-width:0;flex:1">
+        <div style="color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.title)}</div>
+        ${t.completedAt ? `<div style="color:var(--grey-4);font-size:0.66rem;margin-top:1px">Delivered ${fmtDateShort(t.completedAt)}</div>` : ''}
+      </div>
+      <span style="font-size:0.6rem;font-weight:700;text-transform:uppercase;color:${t.deliveryStatus==='approved'?'var(--green)':t.deliveryStatus==='failed'?'var(--red)':'var(--grey-3)'};margin-left:8px;flex-shrink:0">${t.deliveryStatus || 'pending'}</span>
+    </div>`).join('') : '<div style="font-size:0.75rem;color:var(--grey-4);font-style:italic;padding:8px 0">No deliveries yet this month</div>';
 
   el.innerHTML = `
     <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--grey-3);margin-bottom:10px">Delivery Summary — ${monthName}</div>
     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px">
       <div style="padding:12px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;text-align:center">
-        <div style="font-size:1.5rem;color:var(--gold);font-weight:700">${d.totalCompleted}</div>
-        <div style="font-size:0.65rem;color:var(--grey-3);text-transform:uppercase;letter-spacing:0.06em">This Month</div>
+        <div style="font-size:1.5rem;color:var(--white);font-weight:700">${d.totalCreated}</div>
+        <div style="font-size:0.65rem;color:var(--grey-3);text-transform:uppercase;letter-spacing:0.06em">Created This Month</div>
       </div>
       <div style="padding:12px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;text-align:center">
-        <div style="font-size:1.5rem;color:var(--white);font-weight:700">${total.totalCompleted}</div>
-        <div style="font-size:0.65rem;color:var(--grey-3);text-transform:uppercase;letter-spacing:0.06em">All-Time Total</div>
+        <div style="font-size:1.5rem;color:var(--gold);font-weight:700">${d.totalCompleted}</div>
+        <div style="font-size:0.65rem;color:var(--grey-3);text-transform:uppercase;letter-spacing:0.06em">Delivered This Month</div>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px">
@@ -830,8 +838,10 @@ async function renderMonthlyDelivery() {
     <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:var(--grey-2);padding:4px 0;border-bottom:1px solid var(--border);margin-bottom:8px">
       <span>Late</span><strong style="color:var(--red)">${d.late}</strong>
     </div>
-    <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--grey-3);margin-bottom:4px">By Category (Month / All-Time)</div>
+    <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--grey-3);margin-bottom:4px">By Category (Delivered / Created)</div>
     ${typeRows || '<div style="font-size:0.75rem;color:var(--grey-4);font-style:italic">No tasks yet</div>'}
+    <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--grey-3);margin:14px 0 4px">Delivered Tasks This Month</div>
+    ${deliveredList}
     ${d.bonusPoints ? `<div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;margin-top:8px;border-top:1px solid var(--border)"><span style="font-size:0.85rem;color:var(--gold);font-weight:600">Bonus points earned this month</span><strong style="color:var(--gold);font-size:1rem">+${d.bonusPoints}</strong></div>` : ''}
   `;
 }

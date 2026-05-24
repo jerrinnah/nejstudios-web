@@ -3417,8 +3417,7 @@ async function renderMonthlyDeliveryAdmin() {
   const boss = await dbGetBossDelivery();
   const rows = await Promise.all(team.map(async m => ({
     m,
-    d:     await dbGetMemberMonthlyDelivery(m.id),
-    total: await dbGetMemberTotalDelivery(m.id),
+    d: await dbGetMemberMonthlyDelivery(m.id),
   })));
   rows.sort((a, b) => b.d.totalCompleted - a.d.totalCompleted);
 
@@ -3449,14 +3448,25 @@ async function renderMonthlyDeliveryAdmin() {
       ${bossCard('Boss 2', boss['Boss 2'], '#9b8cd4')}
     </div>`;
 
-  const memberCards = rows.map(({ m, d, total }) => {
+  const memberCards = rows.map(({ m, d }) => {
     const initials = (m.name || '').split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
-    const allTypes = new Set([...Object.keys(d.byType), ...Object.keys(total.byType)]);
-    const typeChips = Array.from(allTypes).map(k => {
-      const mo  = d.byType[k]    || 0;
-      const tot = total.byType[k] || 0;
-      return `<span style="display:inline-block;padding:2px 8px;background:var(--bg-3);border:1px solid var(--border);border-radius:12px;font-size:0.66rem;color:var(--grey-2);margin:2px 4px 0 0">${k}: <strong style="color:var(--white)">${mo}</strong><span style="color:var(--grey-4)"> / ${tot}</span></span>`;
+    const allTypes = new Set([...Object.keys(d.createdByType), ...Object.keys(d.byType)]);
+    const typeChips = Array.from(allTypes).sort().map(k => {
+      const cr  = d.createdByType[k] || 0;
+      const del = d.byType[k]        || 0;
+      return `<span style="display:inline-block;padding:2px 8px;background:var(--bg-3);border:1px solid var(--border);border-radius:12px;font-size:0.66rem;color:var(--grey-2);margin:2px 4px 0 0">${k}: <strong style="color:var(--white)">${del}</strong><span style="color:var(--grey-4)"> / ${cr}</span></span>`;
     }).join('');
+    const fmtDateShort = (ts) => ts ? new Date(ts).toLocaleDateString('en-NG', { month:'short', day:'numeric' }) : '';
+    const deliveredList = d.tasks.length ? `
+      <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--grey-3);margin:10px 0 4px">Delivered Tasks (${d.tasks.length})</div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+      ${d.tasks.map(t => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 9px;background:var(--bg-3);border:1px solid var(--border);border-radius:5px;font-size:0.72rem">
+          <div style="min-width:0;flex:1;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(t.title)}</div>
+          <span style="font-size:0.6rem;color:var(--grey-3);margin-left:8px;flex-shrink:0">${fmtDateShort(t.completedAt || t.completed_at)}</span>
+          <span style="font-size:0.58rem;font-weight:700;text-transform:uppercase;color:${t.deliveryStatus==='approved'?'var(--green)':t.deliveryStatus==='failed'?'var(--red)':'var(--grey-3)'};margin-left:8px;flex-shrink:0">${t.deliveryStatus || 'pending'}</span>
+        </div>`).join('')}
+      </div>` : '';
     return `
       <div style="padding:14px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
@@ -3466,8 +3476,8 @@ async function renderMonthlyDeliveryAdmin() {
             <div style="font-size:0.7rem;color:var(--grey-3)">@${_escHtml(m.username)}</div>
           </div>
           <div style="text-align:right">
-            <div style="font-size:0.62rem;color:var(--grey-3);text-transform:uppercase">This month / Total</div>
-            <div><strong style="color:var(--gold);font-size:1.2rem">${d.totalCompleted}</strong> <span style="color:var(--grey-4)">/</span> <strong style="color:var(--white);font-size:1.2rem">${total.totalCompleted}</strong></div>
+            <div style="font-size:0.62rem;color:var(--grey-3);text-transform:uppercase">Delivered / Created</div>
+            <div><strong style="color:var(--gold);font-size:1.2rem">${d.totalCompleted}</strong> <span style="color:var(--grey-4)">/</span> <strong style="color:var(--white);font-size:1.2rem">${d.totalCreated}</strong></div>
           </div>
         </div>
         <div style="display:flex;gap:14px;font-size:0.72rem;color:var(--grey-2);flex-wrap:wrap;margin-bottom:8px">
@@ -3477,7 +3487,8 @@ async function renderMonthlyDeliveryAdmin() {
           <span style="margin-left:auto"><strong style="color:var(--green)">${d.onTime}</strong> on-time · <strong style="color:var(--red)">${d.late}</strong> late</span>
           ${d.bonusPoints ? `<span><strong style="color:var(--gold)">+${d.bonusPoints}</strong> bonus pts</span>` : ''}
         </div>
-        ${typeChips ? `<div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--grey-3);margin:6px 0 4px">Categories — this month / all-time</div><div>${typeChips}</div>` : ''}
+        ${typeChips ? `<div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--grey-3);margin:6px 0 4px">Categories — delivered / created</div><div>${typeChips}</div>` : ''}
+        ${deliveredList}
       </div>`;
   }).join('');
 

@@ -482,6 +482,13 @@ async function dbGetMemberMonthlyDelivery(memberId, year, month) {
   const monthEnd   = new Date(year, month + 1, 1).getTime();
 
   const all = await dbGetTasks();
+  // All tasks created for this member during the month (any status)
+  const created = all.filter(t => {
+    if (t.assignedTo !== memberId) return false;
+    const ts = t.createdAt || 0;
+    return ts >= monthStart && ts < monthEnd;
+  });
+  // Tasks completed (delivered) by this member during the month
   const completed = all.filter(t => {
     if (t.assignedTo !== memberId) return false;
     if (t.status !== 'completed') return false;
@@ -530,13 +537,30 @@ async function dbGetMemberMonthlyDelivery(memberId, year, month) {
     }
   } catch {}
 
+  // Per-category breakdown of CREATED tasks (any status)
+  const createdByType = {};
+  created.forEach(t => {
+    const title = (t.title || '').toLowerCase();
+    let bucket = 'Other';
+    if (title.includes('backup'))         bucket = 'Backup';
+    else if (title.includes('lightroom')) bucket = 'Lightroom';
+    else if (title.includes('retouch'))   bucket = 'Retouching';
+    else if (title.includes('thriller'))  bucket = 'Thriller';
+    else if (title.includes('full video')) bucket = 'Full Video';
+    else if (title.includes('photobook')) bucket = 'Photobook';
+    createdByType[bucket] = (createdByType[bucket] || 0) + 1;
+  });
+
   return {
+    totalCreated:   created.length,
     totalCompleted: completed.length,
     approved, failed, unrated,
     onTime, late, noDeadline,
-    byType,
+    byType,           // delivered (completed) by type
+    createdByType,    // all created by type
     bonusPoints,
     tasks: completed,
+    createdTasks: created,
   };
 }
 
