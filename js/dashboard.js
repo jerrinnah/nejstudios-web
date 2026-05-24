@@ -665,7 +665,7 @@ function switchTab(name) {
   if (name === 'team')     { renderTeam(); renderAttendance(); renderCompletedTasksByMember(); renderLeaveRequests(); }
   if (name === 'calendar') renderBookingsCalendar();
   if (name === 'gallery')  renderGalleryPanel();
-  if (name === 'summary')  { renderDailySummary(); renderMonthlyDeliveryAdmin(); }
+  if (name === 'summary')  { renderDailySummary(); renderMonthlyDeliveryAdmin(); renderAllDeliveriesList(); }
   closeSidebar();
 }
 
@@ -3405,7 +3405,40 @@ async function renderAttendance() {
 
 document.getElementById('refreshAttendanceBtn')?.addEventListener('click', () => renderAttendance());
 document.getElementById('refreshLeaveBtn')?.addEventListener('click', () => renderLeaveRequests());
-document.getElementById('btnRefreshDelivery')?.addEventListener('click', () => renderMonthlyDeliveryAdmin());
+document.getElementById('btnRefreshDelivery')?.addEventListener('click', () => { renderMonthlyDeliveryAdmin(); renderAllDeliveriesList(); });
+document.getElementById('deliveryListFilter')?.addEventListener('input', () => renderAllDeliveriesList());
+
+async function renderAllDeliveriesList() {
+  const wrap = document.getElementById('allDeliveriesList');
+  if (!wrap) return;
+  const q = (document.getElementById('deliveryListFilter')?.value || '').toLowerCase().trim();
+  let list = await dbGetAllDeliveriesForMonth();
+  if (q) {
+    list = list.filter(t =>
+      (t.title || '').toLowerCase().includes(q) ||
+      (t.assignedName || '').toLowerCase().includes(q) ||
+      (t.doneByBoss || '').toLowerCase().includes(q)
+    );
+  }
+  if (!list.length) {
+    wrap.innerHTML = '<div style="color:var(--grey-4);font-size:0.85rem;padding:14px 0;text-align:center;font-style:italic">No deliveries this month yet.</div>';
+    return;
+  }
+  const fmtDateShort = (ts) => ts ? new Date(ts).toLocaleDateString('en-NG', { month:'short', day:'numeric' }) : '';
+  wrap.innerHTML = list.map(t => {
+    const who = t.doneByBoss
+      ? `<span style="color:var(--gold);font-weight:600">${_escHtml(t.doneByBoss)}</span>`
+      : `<span style="color:var(--white);font-weight:600">${_escHtml(t.assignedName || 'Unassigned')}</span>`;
+    const statusColor = t.deliveryStatus==='approved' ? 'var(--green)' : t.deliveryStatus==='failed' ? 'var(--red)' : 'var(--grey-3)';
+    return `
+      <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:12px;align-items:center;padding:9px 12px;background:var(--bg-2);border:1px solid var(--border);border-radius:6px;font-size:0.78rem">
+        <div style="min-width:0;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(t.title)}</div>
+        <div style="font-size:0.74rem">${who}</div>
+        <div style="font-size:0.7rem;color:var(--grey-3);min-width:60px;text-align:right">${fmtDateShort(t.completedAt || t.completed_at)}</div>
+        <span style="font-size:0.6rem;font-weight:700;text-transform:uppercase;color:${statusColor};letter-spacing:0.05em">${t.deliveryStatus || 'pending'}</span>
+      </div>`;
+  }).join('');
+}
 
 async function renderMonthlyDeliveryAdmin() {
   const wrap = document.getElementById('monthlyDeliveryGrid');

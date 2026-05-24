@@ -590,6 +590,25 @@ async function dbGetMemberTotalDelivery(memberId) {
   return { totalCompleted: completed.length, approved, failed, unrated, byType };
 }
 
+// All completed tasks across the team for a given month (excluding Backup).
+async function dbGetAllDeliveriesForMonth(year, month) {
+  const now = new Date();
+  if (year  == null) year  = now.getFullYear();
+  if (month == null) month = now.getMonth();
+  const monthStart = new Date(year, month, 1).getTime();
+  const monthEnd   = new Date(year, month + 1, 1).getTime();
+  const all = (await dbGetTasks()).filter(t => !_isBackupTask(t));
+  return all.filter(t => {
+    if (t.status !== 'completed') return false;
+    const ts = t.completedAt || t.completed_at || 0;
+    return ts >= monthStart && ts < monthEnd;
+  }).sort((a, b) => {
+    const ta = a.completedAt || a.completed_at || 0;
+    const tb = b.completedAt || b.completed_at || 0;
+    return tb - ta;
+  });
+}
+
 // Tasks handled by admins (Boss 1 / Boss 2) — both lifetime and this-month, excluding Backup.
 async function dbGetBossDelivery() {
   const now = new Date();
