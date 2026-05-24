@@ -3460,7 +3460,10 @@ async function renderAttendance() {
 document.getElementById('refreshAttendanceBtn')?.addEventListener('click', () => renderAttendance());
 document.getElementById('refreshLeaveBtn')?.addEventListener('click', () => renderLeaveRequests());
 document.getElementById('btnRefreshDelivery')?.addEventListener('click', () => { renderMonthlyDeliveryAdmin(); renderAllDeliveriesList(); });
-document.getElementById('deliveryListFilter')?.addEventListener('input', () => renderAllDeliveriesList());
+document.getElementById('deliveryListFilter')?.addEventListener('input', () => { _deliveryListPage = 1; renderAllDeliveriesList(); });
+
+let _deliveryListPage = 1;
+const DELIVERY_PAGE_SIZE = 10;
 
 async function renderAllDeliveriesList() {
   const wrap = document.getElementById('allDeliveriesList');
@@ -3478,8 +3481,14 @@ async function renderAllDeliveriesList() {
     wrap.innerHTML = '<div style="color:var(--grey-4);font-size:0.85rem;padding:14px 0;text-align:center;font-style:italic">No deliveries this month yet.</div>';
     return;
   }
+
+  const totalPages = Math.max(1, Math.ceil(list.length / DELIVERY_PAGE_SIZE));
+  if (_deliveryListPage > totalPages) _deliveryListPage = totalPages;
+  const start = (_deliveryListPage - 1) * DELIVERY_PAGE_SIZE;
+  const pageItems = list.slice(start, start + DELIVERY_PAGE_SIZE);
+
   const fmtDateShort = (ts) => ts ? new Date(ts).toLocaleDateString('en-NG', { month:'short', day:'numeric' }) : '';
-  wrap.innerHTML = list.map(t => {
+  const rows = pageItems.map(t => {
     const who = t.doneByBoss
       ? `<span style="color:var(--gold);font-weight:600">${_escHtml(t.doneByBoss)}</span>`
       : `<span style="color:var(--white);font-weight:600">${_escHtml(t.assignedName || 'Unassigned')}</span>`;
@@ -3492,6 +3501,38 @@ async function renderAllDeliveriesList() {
         <span style="font-size:0.6rem;font-weight:700;text-transform:uppercase;color:${statusColor};letter-spacing:0.05em">${t.deliveryStatus || 'pending'}</span>
       </div>`;
   }).join('');
+
+  // Page number buttons (max 7 visible)
+  const pageBtns = [];
+  const addBtn = (label, page, active = false, disabled = false) => {
+    pageBtns.push(`<button data-delivery-page="${page}" ${disabled ? 'disabled' : ''} style="min-width:32px;padding:5px 9px;background:${active ? 'var(--gold)' : 'var(--bg-3)'};border:1px solid ${active ? 'var(--gold)' : 'var(--border)'};border-radius:5px;color:${active ? '#000' : 'var(--white)'};cursor:${disabled ? 'not-allowed' : 'pointer'};font-size:0.72rem;font-weight:${active ? '700' : '500'};opacity:${disabled ? '0.4' : '1'}">${label}</button>`);
+  };
+  addBtn('‹ Prev', Math.max(1, _deliveryListPage - 1), false, _deliveryListPage === 1);
+  const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
+  let pages = [];
+  if (totalPages <= 7) pages = range(1, totalPages);
+  else if (_deliveryListPage <= 4) pages = [...range(1, 5), '…', totalPages];
+  else if (_deliveryListPage >= totalPages - 3) pages = [1, '…', ...range(totalPages - 4, totalPages)];
+  else pages = [1, '…', _deliveryListPage - 1, _deliveryListPage, _deliveryListPage + 1, '…', totalPages];
+  pages.forEach(p => {
+    if (p === '…') pageBtns.push(`<span style="padding:5px 4px;color:var(--grey-3);font-size:0.72rem">…</span>`);
+    else addBtn(String(p), p, p === _deliveryListPage);
+  });
+  addBtn('Next ›', Math.min(totalPages, _deliveryListPage + 1), false, _deliveryListPage === totalPages);
+
+  wrap.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">${rows}</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;padding-top:10px;border-top:1px solid var(--border)">
+      <div style="font-size:0.72rem;color:var(--grey-3)">Showing ${start + 1}–${Math.min(start + DELIVERY_PAGE_SIZE, list.length)} of ${list.length}</div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">${pageBtns.join('')}</div>
+    </div>`;
+
+  wrap.querySelectorAll('[data-delivery-page]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      _deliveryListPage = parseInt(btn.dataset.deliveryPage, 10) || 1;
+      renderAllDeliveriesList();
+    });
+  });
 }
 
 async function renderMonthlyDeliveryAdmin() {
