@@ -2602,9 +2602,49 @@ document.querySelectorAll('[data-task-status]').forEach(btn => {
     document.querySelectorAll('[data-task-status]').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     activeTaskStatus = btn.dataset.taskStatus;
+    _tasksPage = 1;
     renderTasks();
   });
 });
+
+// Tasks pagination
+let _tasksPage = 1;
+const TASKS_PAGE_SIZE = 20;
+
+function renderTasksPager(total, totalPages, start) {
+  let pager = document.getElementById('tasksPager');
+  if (!pager) {
+    pager = document.createElement('div');
+    pager.id = 'tasksPager';
+    pager.style.cssText = 'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;padding:14px 0 0;margin-top:14px;border-top:1px solid var(--border)';
+    document.getElementById('tasksGrid')?.after(pager);
+  }
+  if (totalPages <= 1) { pager.innerHTML = `<div style="font-size:0.72rem;color:var(--grey-3)">Showing all ${total}</div><div></div>`; return; }
+  const btn = (label, page, active = false, disabled = false) =>
+    `<button data-tasks-page="${page}" ${disabled ? 'disabled' : ''} style="min-width:32px;padding:5px 10px;background:${active ? 'var(--gold)' : 'var(--bg-3)'};border:1px solid ${active ? 'var(--gold)' : 'var(--border)'};border-radius:5px;color:${active ? '#000' : 'var(--white)'};cursor:${disabled ? 'not-allowed' : 'pointer'};font-size:0.72rem;font-weight:${active ? '700' : '500'};opacity:${disabled ? '0.4' : '1'}">${label}</button>`;
+  const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
+  let pages = [];
+  if (totalPages <= 7) pages = range(1, totalPages);
+  else if (_tasksPage <= 4) pages = [...range(1, 5), '…', totalPages];
+  else if (_tasksPage >= totalPages - 3) pages = [1, '…', ...range(totalPages - 4, totalPages)];
+  else pages = [1, '…', _tasksPage - 1, _tasksPage, _tasksPage + 1, '…', totalPages];
+  const buttons = [
+    btn('‹ Prev', Math.max(1, _tasksPage - 1), false, _tasksPage === 1),
+    ...pages.map(p => p === '…'
+      ? '<span style="padding:5px 4px;color:var(--grey-3);font-size:0.72rem">…</span>'
+      : btn(String(p), p, p === _tasksPage)),
+    btn('Next ›', Math.min(totalPages, _tasksPage + 1), false, _tasksPage === totalPages),
+  ].join('');
+  pager.innerHTML = `
+    <div style="font-size:0.72rem;color:var(--grey-3)">Showing ${start + 1}–${Math.min(start + TASKS_PAGE_SIZE, total)} of ${total}</div>
+    <div style="display:flex;gap:4px;flex-wrap:wrap">${buttons}</div>`;
+  pager.querySelectorAll('[data-tasks-page]').forEach(b => {
+    b.addEventListener('click', () => {
+      _tasksPage = parseInt(b.dataset.tasksPage, 10) || 1;
+      renderTasks();
+    });
+  });
+}
 
 // Month helpers
 function _taskMonthKey(t) {
@@ -2638,6 +2678,7 @@ async function populateTasksMonthFilter() {
 
 document.getElementById('tasksMonthFilter')?.addEventListener('change', (e) => {
   activeTaskMonth = e.target.value || 'all';
+  _tasksPage = 1;
   renderTasks();
 });
 
@@ -2703,10 +2744,19 @@ async function renderTasks() {
   const grid = document.getElementById('tasksGrid');
   if (tasks.length === 0) {
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg><h3>No tasks yet</h3><p>Create a task above to get started.</p></div>`;
+    const pager = document.getElementById('tasksPager');
+    if (pager) pager.innerHTML = '';
     return;
   }
 
-  grid.innerHTML = tasks.map(t => buildTaskCard(t)).join('');
+  // Pagination: 20 per page
+  const totalPages = Math.max(1, Math.ceil(tasks.length / TASKS_PAGE_SIZE));
+  if (_tasksPage > totalPages) _tasksPage = totalPages;
+  const start = (_tasksPage - 1) * TASKS_PAGE_SIZE;
+  const pageTasks = tasks.slice(start, start + TASKS_PAGE_SIZE);
+
+  grid.innerHTML = pageTasks.map(t => buildTaskCard(t)).join('');
+  renderTasksPager(tasks.length, totalPages, start);
 
   // Card click → toggle selection if in select mode, otherwise open detail modal
   grid.querySelectorAll('.task-card').forEach(card => {
