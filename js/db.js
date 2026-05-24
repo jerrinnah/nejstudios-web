@@ -472,6 +472,9 @@ async function dbGetMonthlySalary(member) {
   };
 }
 
+// Backup tasks aren't counted in delivery stats — they're routine, not deliverables.
+const _isBackupTask = (t) => /^\s*backup\b/i.test(t.title || '');
+
 // Monthly delivery summary for a team member.
 // year/month optional — defaults to current month. month is 0-indexed (Jan=0).
 async function dbGetMemberMonthlyDelivery(memberId, year, month) {
@@ -481,7 +484,7 @@ async function dbGetMemberMonthlyDelivery(memberId, year, month) {
   const monthStart = new Date(year, month, 1).getTime();
   const monthEnd   = new Date(year, month + 1, 1).getTime();
 
-  const all = await dbGetTasks();
+  const all = (await dbGetTasks()).filter(t => !_isBackupTask(t));
   // All tasks created for this member during the month (any status)
   const created = all.filter(t => {
     if (t.assignedTo !== memberId) return false;
@@ -564,9 +567,9 @@ async function dbGetMemberMonthlyDelivery(memberId, year, month) {
   };
 }
 
-// Lifetime delivery stats for a team member (all completed tasks ever).
+// Lifetime delivery stats for a team member (all completed tasks ever, excluding Backup).
 async function dbGetMemberTotalDelivery(memberId) {
-  const all = await dbGetTasks();
+  const all = (await dbGetTasks()).filter(t => !_isBackupTask(t));
   const completed = all.filter(t => t.assignedTo === memberId && t.status === 'completed');
   const byType = {};
   let approved = 0, failed = 0, unrated = 0;
@@ -587,12 +590,12 @@ async function dbGetMemberTotalDelivery(memberId) {
   return { totalCompleted: completed.length, approved, failed, unrated, byType };
 }
 
-// Tasks handled by admins (Boss 1 / Boss 2) — both lifetime and this-month
+// Tasks handled by admins (Boss 1 / Boss 2) — both lifetime and this-month, excluding Backup.
 async function dbGetBossDelivery() {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
   const monthEnd   = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
-  const all = await dbGetTasks();
+  const all = (await dbGetTasks()).filter(t => !_isBackupTask(t));
 
   const stats = {
     'Boss 1': { total: 0, thisMonth: 0, byType: {} },
