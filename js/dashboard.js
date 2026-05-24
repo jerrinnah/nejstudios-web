@@ -664,7 +664,7 @@ function switchTab(name) {
   // Load panel content
   if (name === 'schedule') renderAdminSchedule();
   if (name === 'tasks')    renderTasks();
-  if (name === 'team')     { renderTeam(); renderAttendance(); renderCompletedTasksByMember(); renderLeaveRequests(); }
+  if (name === 'team')     { renderTeam(); renderAttendance(); renderLeaveRequests(); }
   if (name === 'calendar') renderBookingsCalendar();
   if (name === 'gallery')  renderGalleryPanel();
   if (name === 'summary')  { renderDailySummary(); renderMonthlyDeliveryAdmin(); renderAllDeliveriesList(); }
