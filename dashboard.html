@@ -1177,6 +1177,11 @@
             Tasks
             <span class="tab-badge zero" id="tabTasksBadge">0</span>
           </button>
+          <button class="tab-btn" data-tab="approvals">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            Approvals
+            <span class="tab-badge zero" id="tabApprovalsBadge">0</span>
+          </button>
           <button class="tab-btn" data-tab="team">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
             Team
@@ -1368,6 +1373,7 @@
                 <button class="tasks-filter-btn" data-task-status="pending">Pending</button>
                 <button class="tasks-filter-btn" data-task-status="in-progress">In Progress</button>
                 <button class="tasks-filter-btn" data-task-status="completed">Completed</button>
+                <select id="tasksMonthFilter" style="padding:6px 10px;background:var(--bg-3);border:1px solid var(--border);border-radius:6px;color:var(--white);font-size:0.74rem;font-family:var(--sans);cursor:pointer;margin-left:8px"></select>
               </div>
               <div style="display:flex;gap:8px;align-items:center">
                 <button id="tasksSelectModeBtn" type="button" style="font-size:0.72rem;padding:7px 14px;background:var(--bg-3);border:1px solid var(--gold);border-radius:6px;color:var(--gold);cursor:pointer;font-weight:600;letter-spacing:0.05em">☑ Select</button>
@@ -1379,6 +1385,28 @@
             </div>
 
             <div class="tasks-grid" id="tasksGrid"></div>
+          </div>
+
+          <!-- ══ APPROVALS PANEL ══ -->
+          <div id="panel-approvals" class="tab-panel">
+            <div class="panel-header">
+              <div>
+                <h2>Pending Approvals</h2>
+                <p>Tasks submitted by team that need your review · Completed tasks awaiting delivery rating</p>
+              </div>
+              <button id="refreshApprovalsBtn" type="button" style="font-size:0.72rem;color:var(--gold);background:none;border:1px solid rgba(201,168,76,.3);border-radius:6px;padding:6px 14px;cursor:pointer">Refresh</button>
+            </div>
+
+            <div style="margin-top:18px">
+              <h3 style="font-size:0.95rem;color:var(--white);margin:0 0 10px 0">Awaiting Approval (impromptu tasks)</h3>
+              <div id="awaitingApprovalGrid" class="tasks-grid"></div>
+            </div>
+
+            <div style="margin-top:32px">
+              <h3 style="font-size:0.95rem;color:var(--white);margin:0 0 10px 0">Completed — Awaiting Delivery Rating</h3>
+              <p style="font-size:0.78rem;color:var(--grey-3);margin:0 0 12px 0">Approve as delivered or mark as failed.</p>
+              <div id="unratedDeliveriesGrid" class="tasks-grid"></div>
+            </div>
           </div>
 
           <!-- ══ TEAM PANEL ══ -->
@@ -2117,7 +2145,7 @@
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/db.js?v=6.8"></script>
-    <script src="js/dashboard.js?v=6.8"></script>
+    <script src="js/db.js?v=6.9"></script>
+    <script src="js/dashboard.js?v=6.9"></script>
   </body>
 </html>

@@ -386,6 +386,7 @@ let activeType    = null;
 let activeEtype   = null;
 let searchQuery   = '';
 let activeTaskStatus = 'all';
+let activeTaskMonth  = 'all'; // 'all' or 'YYYY-MM'
 let editingMemberId  = null;
 
 /* ════════════════════════════════════════════
@@ -460,6 +461,7 @@ function showDash() {
     await autoCreateEventDayTasks().catch(e => console.warn('Auto-task generation failed:', e));
     renderBookings();
     renderTasksBadge();
+    renderApprovalsPanel().catch(() => {}); // keep approvals badge fresh
   });
   renderConfirmationsAlert();
   requestNotifPermission();
@@ -666,6 +668,7 @@ function switchTab(name) {
   if (name === 'calendar') renderBookingsCalendar();
   if (name === 'gallery')  renderGalleryPanel();
   if (name === 'summary')  { renderDailySummary(); renderMonthlyDeliveryAdmin(); renderAllDeliveriesList(); }
+  if (name === 'approvals') renderApprovalsPanel();
   closeSidebar();
 }
 
@@ -2603,6 +2606,41 @@ document.querySelectorAll('[data-task-status]').forEach(btn => {
   });
 });
 
+// Month helpers
+function _taskMonthKey(t) {
+  const ts = t.createdAt || 0;
+  if (!ts) return '';
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+function _taskInMonth(t, monthKey) {
+  return _taskMonthKey(t) === monthKey;
+}
+
+async function populateTasksMonthFilter() {
+  const sel = document.getElementById('tasksMonthFilter');
+  if (!sel) return;
+  const tasks = await dbGetTasks();
+  const months = new Set();
+  tasks.forEach(t => {
+    const k = _taskMonthKey(t);
+    if (k) months.add(k);
+  });
+  const sorted = Array.from(months).sort().reverse();
+  const opts = ['<option value="all">All months</option>'].concat(sorted.map(m => {
+    const [y, mm] = m.split('-');
+    const d = new Date(parseInt(y, 10), parseInt(mm, 10) - 1, 1);
+    const label = d.toLocaleDateString('en-NG', { month: 'long', year: 'numeric' });
+    return `<option value="${m}" ${m === activeTaskMonth ? 'selected' : ''}>${label}</option>`;
+  }));
+  if (sel.innerHTML !== opts.join('')) sel.innerHTML = opts.join('');
+}
+
+document.getElementById('tasksMonthFilter')?.addEventListener('change', (e) => {
+  activeTaskMonth = e.target.value || 'all';
+  renderTasks();
+});
+
 // Multi-select state for tasks
 let tasksSelectMode = false;
 const tasksSelectedIds = new Set();
@@ -2650,6 +2688,8 @@ document.getElementById('tasksBulkDeleteBtn')?.addEventListener('click', async (
 async function renderTasks() {
   let tasks = await dbGetTasks();
   if (activeTaskStatus !== 'all') tasks = tasks.filter(t => t.status === activeTaskStatus);
+  if (activeTaskMonth   !== 'all') tasks = tasks.filter(t => _taskInMonth(t, activeTaskMonth));
+  populateTasksMonthFilter(); // refresh available months
 
   // Awaiting approval at the top, then in-progress, pending, completed; newest first
   const statusOrder = { 'awaiting-approval': 0, 'in-progress': 1, 'pending': 2, 'completed': 3 };
@@ -3459,6 +3499,57 @@ async function renderAttendance() {
 
 document.getElementById('refreshAttendanceBtn')?.addEventListener('click', () => renderAttendance());
 document.getElementById('refreshLeaveBtn')?.addEventListener('click', () => renderLeaveRequests());
+document.getElementById('refreshApprovalsBtn')?.addEventListener('click', () => renderApprovalsPanel());
+
+async function renderApprovalsPanel() {
+  const awaitingGrid = document.getElementById('awaitingApprovalGrid');
+  const unratedGrid  = document.getElementById('unratedDeliveriesGrid');
+  if (!awaitingGrid || !unratedGrid) return;
+  const tasks = await dbGetTasks();
+  const awaiting = tasks.filter(t => t.status === 'awaiting-approval');
+  const unrated  = tasks.filter(t => t.status === 'completed' && !t.deliveryStatus);
+
+  if (!awaiting.length) {
+    awaitingGrid.innerHTML = '<div style="grid-column:1/-1;color:var(--grey-4);font-size:0.85rem;padding:14px 0;text-align:center;font-style:italic">Nothing awaiting approval.</div>';
+  } else {
+    awaiting.sort((a, b) => (b.submittedForApprovalAt || 0) - (a.submittedForApprovalAt || 0));
+    awaitingGrid.innerHTML = awaiting.map(t => buildTaskCard(t)).join('');
+    awaitingGrid.querySelectorAll('[data-task-action]').forEach(btn => {
+      btn.addEventListener('click', e => { e.stopPropagation(); handleTaskAction(btn.dataset.id, btn.dataset.taskAction); });
+    });
+    awaitingGrid.querySelectorAll('.task-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        if (!e.target.closest('[data-task-action]')) openTaskDetailModal(card.dataset.taskId);
+      });
+    });
+  }
+
+  if (!unrated.length) {
+    unratedGrid.innerHTML = '<div style="grid-column:1/-1;color:var(--grey-4);font-size:0.85rem;padding:14px 0;text-align:center;font-style:italic">All completed tasks have been rated.</div>';
+  } else {
+    unrated.sort((a, b) => (b.completedAt || b.completed_at || 0) - (a.completedAt || a.completed_at || 0));
+    unratedGrid.innerHTML = unrated.map(t => buildTaskCard(t)).join('');
+    unratedGrid.querySelectorAll('[data-task-action]').forEach(btn => {
+      btn.addEventListener('click', e => { e.stopPropagation(); handleTaskAction(btn.dataset.id, btn.dataset.taskAction); });
+    });
+    unratedGrid.querySelectorAll('.task-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        if (!e.target.closest('[data-task-action]')) openTaskDetailModal(card.dataset.taskId);
+      });
+    });
+  }
+
+  // Update tab badge
+  const badge = document.getElementById('tabApprovalsBadge');
+  if (badge) {
+    const count = awaiting.length + unrated.length;
+    badge.textContent = String(count);
+    badge.classList.toggle('zero', count === 0);
+  }
+}
+
+// Hook into renderTasksBadge so the Approvals badge also stays fresh
+const _origRenderTasksBadge = typeof renderTasksBadge === 'function' ? renderTasksBadge : null;
 document.getElementById('btnRefreshDelivery')?.addEventListener('click', () => { renderMonthlyDeliveryAdmin(); renderAllDeliveriesList(); });
 document.getElementById('deliveryListFilter')?.addEventListener('input', () => { _deliveryListPage = 1; renderAllDeliveriesList(); });
 
