@@ -401,6 +401,28 @@ function switchTab(name) {
   if (name === 'my-tasks')  renderMyTasks();
   if (name === 'signin')    renderSignIn();
   if (name === 'walkin')    { if (!_walkinInited) { initWalkinForm(); _walkinInited = true; } }
+  if (name === 'summary')   renderSummaryPanel();
+}
+
+async function renderSummaryPanel() {
+  if (!currentMember) return;
+  // Hide empty-state initially; show after renders if none of the cards display
+  const empty = document.getElementById('summaryEmptyState');
+  if (empty) empty.style.display = 'none';
+  await Promise.all([
+    renderMonthlyDelivery(),
+    renderSalaryCard(),
+    renderDeductionsCard(),
+  ]);
+  // Show empty-state if nothing rendered
+  if (empty) {
+    const anyVisible = ['monthlyDeliveryCard', 'salaryCard', 'deductionsSummary']
+      .some(id => {
+        const el = document.getElementById(id);
+        return el && el.style.display !== 'none';
+      });
+    empty.style.display = anyVisible ? 'none' : 'block';
+  }
 }
 
 document.querySelectorAll('.t-tab-btn').forEach(btn => {
@@ -754,7 +776,6 @@ async function renderMyTasks() {
     renderHelpWanted();
     renderBonusPoints();
     renderSharedTasks();
-    renderMonthlyDelivery();
     return;
   }
 
@@ -775,8 +796,6 @@ async function renderMyTasks() {
   renderBonusPoints();
   // Render shared tasks (any staff can claim)
   renderSharedTasks();
-  // Render monthly delivery summary
-  renderMonthlyDelivery();
 }
 
 async function renderMonthlyDelivery() {
@@ -2113,7 +2132,11 @@ async function renderSignIn() {
     }
   }
 
-  // Render expected salary card (only for the logged-in member, with show/hide toggle)
+  // Salary + deductions are now rendered by the Summary tab via renderSalaryCard/renderDeductionsCard.
+  // Keep them as separate functions so they can be invoked from there.
+}
+
+async function renderSalaryCard() {
   const salEl = document.getElementById('salaryCard');
   if (salEl && currentMember) {
     const sal = await dbGetMonthlySalary(currentMember);
@@ -2164,28 +2187,29 @@ async function renderSignIn() {
     }
   }
 
-  // Render deductions summary card
+}
+
+async function renderDeductionsCard() {
   const dedEl = document.getElementById('deductionsSummary');
-  if (dedEl) {
-    const ded = await dbGetMemberDeductions(currentMember.id, 30);
-    if (ded.total > 0) {
-      dedEl.style.display = 'block';
-      dedEl.innerHTML = `
-        <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--grey-3);margin-bottom:8px">Last 30 days</div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <span style="font-size:0.85rem;color:var(--grey-2)">Late deductions</span>
-          <strong style="color:var(--white)">₦${ded.lateTotal.toLocaleString()}</strong>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <span style="font-size:0.85rem;color:var(--grey-2)">Absent deductions</span>
-          <strong style="color:var(--white)">₦${ded.absentTotal.toLocaleString()}</strong>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;margin-top:6px;border-top:1px solid var(--border)">
-          <span style="font-size:0.9rem;font-weight:600;color:var(--white)">Total</span>
-          <strong style="color:var(--red);font-size:1rem">₦${ded.total.toLocaleString()}</strong>
-        </div>`;
-    } else {
-      dedEl.style.display = 'none';
-    }
+  if (!dedEl || !currentMember) return;
+  const ded = await dbGetMemberDeductions(currentMember.id, 30);
+  if (ded.total > 0) {
+    dedEl.style.display = 'block';
+    dedEl.innerHTML = `
+      <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--grey-3);margin-bottom:8px">Deductions — Last 30 days</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:0.85rem;color:var(--grey-2)">Late deductions</span>
+        <strong style="color:var(--white)">₦${ded.lateTotal.toLocaleString()}</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:0.85rem;color:var(--grey-2)">Absent deductions</span>
+        <strong style="color:var(--white)">₦${ded.absentTotal.toLocaleString()}</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;margin-top:6px;border-top:1px solid var(--border)">
+        <span style="font-size:0.9rem;font-weight:600;color:var(--white)">Total</span>
+        <strong style="color:var(--red);font-size:1rem">₦${ded.total.toLocaleString()}</strong>
+      </div>`;
+  } else {
+    dedEl.style.display = 'none';
   }
 }
