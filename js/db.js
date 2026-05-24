@@ -509,13 +509,16 @@ async function openAllDeliveriesModal() {
     return ts >= monthStart && ts < monthEnd;
   });
 
-  // Merge aliases — Boss 1 / Nej and Boss 2 / Nej 2 are the same people respectively.
-  // Returns { key, label } for grouping.
+  // Merge aliases — Boss 1 / Nej and Boss 2 / Nej 2 (aka Nej002) are the same people respectively.
+  // normalize: lowercase, strip whitespace, strip leading zeros after 'nej'
+  const norm = (s) => (s || '').trim().toLowerCase().replace(/\s+/g, '').replace(/^nej0*(\d+)/, 'nej$1');
   const resolveGroup = (t) => {
-    const boss = (t.doneByBoss || '').trim().toLowerCase();
-    const name = (t.assignedName || '').trim().toLowerCase();
-    if (boss === 'boss 1' || name === 'nej') return { key: 'boss1-nej', label: 'Nej / Boss 1' };
-    if (boss === 'boss 2' || name === 'nej 2' || name === 'nej2') return { key: 'boss2-nej2', label: 'Nej 2 / Boss 2' };
+    const boss = norm(t.doneByBoss);
+    const name = norm(t.assignedName);
+    const isNej1 = name === 'nej' || name === 'nej1';
+    const isNej2 = name === 'nej2';
+    if (boss === 'boss1' || isNej1) return { key: 'boss1-nej', label: 'Nej / Boss 1' };
+    if (boss === 'boss2' || isNej2) return { key: 'boss2-nej2', label: 'Nej 2 / Boss 2' };
     if (t.doneByBoss) return { key: 'admin-' + boss, label: t.doneByBoss };
     return { key: t.assignedTo || 'unassigned', label: t.assignedName || 'Unassigned' };
   };
@@ -739,12 +742,13 @@ async function dbGetBossDelivery() {
     'Boss 2': { total: 0, thisMonth: 0, byType: {} },
   };
 
-  // Map task -> Boss bucket, merging Nej into Boss 1 and Nej 2 into Boss 2.
+  // Map task -> Boss bucket, merging Nej/Nej1 into Boss 1 and Nej2/Nej002 into Boss 2.
+  const norm = (s) => (s || '').trim().toLowerCase().replace(/\s+/g, '').replace(/^nej0*(\d+)/, 'nej$1');
   const bucketFor = (t) => {
-    const boss = (t.doneByBoss || '').toLowerCase();
-    const name = (t.assignedName || '').toLowerCase();
-    if (boss === 'boss 1' || name === 'nej') return 'Boss 1';
-    if (boss === 'boss 2' || name === 'nej 2' || name === 'nej2') return 'Boss 2';
+    const boss = norm(t.doneByBoss);
+    const name = norm(t.assignedName);
+    if (boss === 'boss1' || name === 'nej' || name === 'nej1') return 'Boss 1';
+    if (boss === 'boss2' || name === 'nej2') return 'Boss 2';
     return null;
   };
 

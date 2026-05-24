@@ -3454,10 +3454,11 @@ async function renderMonthlyDeliveryAdmin() {
   if (!wrap) return;
   const team = getTeam().filter(m => {
     if (m.role === 'admin') return false;
-    const n = (m.name || '').toLowerCase();
-    const u = (m.username || '').toLowerCase();
-    // Hide Nej / Nej 2 from per-member rows — they're consolidated into Boss 1/2 cards
-    return !(n === 'nej' || n === 'nej 2' || n === 'nej2' || u === 'nej' || u === 'nej2');
+    const norm = (s) => (s || '').trim().toLowerCase().replace(/\s+/g, '').replace(/^nej0*(\d+)/, 'nej$1');
+    const n = norm(m.name);
+    const u = norm(m.username);
+    // Hide Nej / Nej1 / Nej2 / Nej002 — they're consolidated into the Boss 1/2 cards
+    return !(n === 'nej' || n === 'nej1' || n === 'nej2' || u === 'nej' || u === 'nej1' || u === 'nej2');
   });
   if (!team.length) { wrap.innerHTML = '<div style="color:var(--grey-4);font-size:0.85rem;padding:12px 0">No team members yet.</div>'; return; }
   wrap.innerHTML = '<div style="color:var(--grey-3);font-size:0.85rem;padding:12px 0">Loading…</div>';
