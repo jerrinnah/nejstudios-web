@@ -710,6 +710,20 @@ async function dbGetMemberTotalDelivery(memberId) {
   return { totalCompleted: completed.length, approved, failed, unrated, byType };
 }
 
+// Total tasks created across the whole team for a given month (excluding Backup).
+async function dbGetTotalTasksForMonth(year, month) {
+  const now = new Date();
+  if (year  == null) year  = now.getFullYear();
+  if (month == null) month = now.getMonth();
+  const monthStart = new Date(year, month, 1).getTime();
+  const monthEnd   = new Date(year, month + 1, 1).getTime();
+  const all = (await dbGetTasks()).filter(t => !_isBackupTask(t));
+  return all.filter(t => {
+    const ts = t.createdAt || 0;
+    return ts >= monthStart && ts < monthEnd;
+  }).length;
+}
+
 // Approved-only completed tasks across the team for a given month (excluding Backup).
 async function dbGetAllDeliveriesForMonth(year, month) {
   const now = new Date();

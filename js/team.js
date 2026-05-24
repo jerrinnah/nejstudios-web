@@ -801,7 +801,10 @@ async function renderMyTasks() {
 async function renderMonthlyDelivery() {
   const el = document.getElementById('monthlyDeliveryCard');
   if (!el || !currentMember) return;
-  const d = await dbGetMemberMonthlyDelivery(currentMember.id);
+  const [d, teamMonthTotal] = await Promise.all([
+    dbGetMemberMonthlyDelivery(currentMember.id),
+    dbGetTotalTasksForMonth(),
+  ]);
   if (d.totalCreated === 0 && d.totalCompleted === 0 && d.bonusPoints === 0) { el.style.display = 'none'; return; }
   el.style.display = '';
   const monthName = new Date().toLocaleDateString('en-NG', { month: 'long', year: 'numeric' });
@@ -847,8 +850,8 @@ async function renderMonthlyDelivery() {
         <div style="font-size:0.58rem;color:var(--grey-3);text-transform:uppercase">Failed</div>
       </div>
       <div id="unratedTile" style="padding:8px;background:var(--bg-2);border:1px solid var(--gold);border-radius:6px;text-align:center;cursor:pointer" title="Click to see all team deliveries this month">
-        <div style="font-size:1rem;color:var(--gold);font-weight:700">${d.totalCompleted} <span style="color:var(--grey-4);font-weight:400">/ ${d.totalCreated}</span></div>
-        <div style="font-size:0.58rem;color:var(--gold);text-transform:uppercase">Delivered / Assigned · View All</div>
+        <div style="font-size:1rem;color:var(--gold);font-weight:700">${d.totalCompleted} <span style="color:var(--grey-4);font-weight:400">/ ${teamMonthTotal}</span></div>
+        <div style="font-size:0.58rem;color:var(--gold);text-transform:uppercase">My Delivered / Team Tasks · View All</div>
       </div>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:var(--grey-2);padding:4px 0">
