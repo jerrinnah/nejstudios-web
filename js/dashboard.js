@@ -2782,6 +2782,8 @@ async function handleTaskAction(id, action) {
       completed_at: Date.now(),
       doneByBoss: boss,
       doneByBossAt: Date.now(),
+      deliveryStatus: 'approved',
+      deliveryStatusAt: Date.now(),
     });
     if (task.assignedTo) {
       pushTeamNotification(task.assignedTo, {
@@ -2799,7 +2801,14 @@ async function handleTaskAction(id, action) {
   if (action === 'approve-impromptu') {
     const task = await dbGetTask(id);
     if (!task) return;
-    await dbUpdateTask(id, { status: 'completed', completed_at: Date.now(), approvedBy: 'admin', approvedAt: Date.now() });
+    await dbUpdateTask(id, {
+      status: 'completed',
+      completed_at: Date.now(),
+      approvedBy: 'admin',
+      approvedAt: Date.now(),
+      deliveryStatus: 'approved',
+      deliveryStatusAt: Date.now(),
+    });
     pushTeamNotification(task.assignedTo, {
       type: 'task-completed',
       title: 'Task Approved',

@@ -504,6 +504,7 @@ async function openAllDeliveriesModal() {
 
   const completedThisMonth = tasks.filter(t => {
     if (t.status !== 'completed') return false;
+    if (t.deliveryStatus !== 'approved') return false;
     const ts = t.completedAt || t.completed_at || 0;
     return ts >= monthStart && ts < monthEnd;
   });
@@ -605,10 +606,12 @@ async function dbGetMemberMonthlyDelivery(memberId, year, month) {
     const ts = t.createdAt || 0;
     return ts >= monthStart && ts < monthEnd;
   });
-  // Tasks completed (delivered) by this member during the month
+  // Tasks delivered (= completed AND admin-approved) by this member during the month.
+  // Pending (unrated) and failed deliveries no longer count toward the summary.
   const completed = all.filter(t => {
     if (t.assignedTo !== memberId) return false;
     if (t.status !== 'completed') return false;
+    if (t.deliveryStatus !== 'approved') return false;
     const ts = t.completedAt || t.completed_at || 0;
     return ts >= monthStart && ts < monthEnd;
   });
@@ -681,10 +684,10 @@ async function dbGetMemberMonthlyDelivery(memberId, year, month) {
   };
 }
 
-// Lifetime delivery stats for a team member (all completed tasks ever, excluding Backup).
+// Lifetime delivery stats for a team member (approved completed tasks only, excluding Backup).
 async function dbGetMemberTotalDelivery(memberId) {
   const all = (await dbGetTasks()).filter(t => !_isBackupTask(t));
-  const completed = all.filter(t => t.assignedTo === memberId && t.status === 'completed');
+  const completed = all.filter(t => t.assignedTo === memberId && t.status === 'completed' && t.deliveryStatus === 'approved');
   const byType = {};
   let approved = 0, failed = 0, unrated = 0;
   completed.forEach(t => {
@@ -704,7 +707,7 @@ async function dbGetMemberTotalDelivery(memberId) {
   return { totalCompleted: completed.length, approved, failed, unrated, byType };
 }
 
-// All completed tasks across the team for a given month (excluding Backup).
+// Approved-only completed tasks across the team for a given month (excluding Backup).
 async function dbGetAllDeliveriesForMonth(year, month) {
   const now = new Date();
   if (year  == null) year  = now.getFullYear();
@@ -714,6 +717,7 @@ async function dbGetAllDeliveriesForMonth(year, month) {
   const all = (await dbGetTasks()).filter(t => !_isBackupTask(t));
   return all.filter(t => {
     if (t.status !== 'completed') return false;
+    if (t.deliveryStatus !== 'approved') return false;
     const ts = t.completedAt || t.completed_at || 0;
     return ts >= monthStart && ts < monthEnd;
   }).sort((a, b) => {
@@ -747,8 +751,8 @@ async function dbGetBossDelivery() {
   all.forEach(t => {
     const key = bucketFor(t);
     if (!key) return;
-    // Only count completed tasks toward lifetime/this-month delivery
-    if (t.status !== 'completed' && !t.doneByBoss) return;
+    // Only approved deliveries count
+    if (t.status !== 'completed' || t.deliveryStatus !== 'approved') return;
     stats[key].total++;
     const ts = t.doneByBossAt || t.completedAt || t.completed_at || 0;
     if (ts >= monthStart && ts < monthEnd) stats[key].thisMonth++;
