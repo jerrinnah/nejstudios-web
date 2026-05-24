@@ -3476,7 +3476,7 @@ async function renderMonthlyDeliveryAdmin() {
             <div style="font-size:0.7rem;color:var(--grey-3)">@${_escHtml(m.username)}</div>
           </div>
           <div style="text-align:right">
-            <div style="font-size:0.62rem;color:var(--grey-3);text-transform:uppercase">Delivered / Created</div>
+            <div style="font-size:0.62rem;color:var(--grey-3);text-transform:uppercase">Delivered / Assigned</div>
             <div><strong style="color:var(--gold);font-size:1.2rem">${d.totalCompleted}</strong> <span style="color:var(--grey-4)">/</span> <strong style="color:var(--white);font-size:1.2rem">${d.totalCreated}</strong></div>
           </div>
         </div>
@@ -3487,7 +3487,7 @@ async function renderMonthlyDeliveryAdmin() {
           <span style="margin-left:auto"><strong style="color:var(--green)">${d.onTime}</strong> on-time · <strong style="color:var(--red)">${d.late}</strong> late</span>
           ${d.bonusPoints ? `<span><strong style="color:var(--gold)">+${d.bonusPoints}</strong> bonus pts</span>` : ''}
         </div>
-        ${typeChips ? `<div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--grey-3);margin:6px 0 4px">Categories — delivered / created</div><div>${typeChips}</div>` : ''}
+        ${typeChips ? `<div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--grey-3);margin:6px 0 4px">Categories — delivered / assigned</div><div>${typeChips}</div>` : ''}
         ${deliveredList}
       </div>`;
   }).join('');

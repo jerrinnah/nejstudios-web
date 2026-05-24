@@ -811,11 +811,11 @@ async function renderMonthlyDelivery() {
     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px">
       <div style="padding:12px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;text-align:center">
         <div style="font-size:1.5rem;color:var(--white);font-weight:700">${d.totalCreated}</div>
-        <div style="font-size:0.65rem;color:var(--grey-3);text-transform:uppercase;letter-spacing:0.06em">Created This Month</div>
+        <div style="font-size:0.65rem;color:var(--grey-3);text-transform:uppercase;letter-spacing:0.06em">Assigned/Created</div>
       </div>
       <div style="padding:12px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;text-align:center">
         <div style="font-size:1.5rem;color:var(--gold);font-weight:700">${d.totalCompleted}</div>
-        <div style="font-size:0.65rem;color:var(--grey-3);text-transform:uppercase;letter-spacing:0.06em">Delivered This Month</div>
+        <div style="font-size:0.65rem;color:var(--grey-3);text-transform:uppercase;letter-spacing:0.06em">Delivered</div>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px">
@@ -838,7 +838,7 @@ async function renderMonthlyDelivery() {
     <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:var(--grey-2);padding:4px 0;border-bottom:1px solid var(--border);margin-bottom:8px">
       <span>Late</span><strong style="color:var(--red)">${d.late}</strong>
     </div>
-    <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--grey-3);margin-bottom:4px">By Category (Delivered / Created)</div>
+    <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--grey-3);margin-bottom:4px">By Category (Delivered / Assigned)</div>
     ${typeRows || '<div style="font-size:0.75rem;color:var(--grey-4);font-style:italic">No tasks yet</div>'}
     <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--grey-3);margin:14px 0 4px">Delivered Tasks This Month</div>
     ${deliveredList}
