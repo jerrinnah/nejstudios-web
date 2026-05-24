@@ -1771,6 +1771,58 @@
     </div>
 
     <!-- Reports Modal -->
+    <!-- ══ EDIT TASK MODAL ══ -->
+    <div id="taskEditModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;padding:20px">
+      <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:14px;width:100%;max-width:520px;padding:24px;position:relative;max-height:88vh;overflow:auto">
+        <button id="taskEditCloseBtn" type="button" style="position:absolute;top:14px;right:14px;background:none;border:none;color:var(--grey-3);font-size:1.3rem;cursor:pointer">✕</button>
+        <h3 style="margin:0 0 16px 0;color:var(--white)">Edit Task</h3>
+        <input type="hidden" id="taskEditId" />
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div>
+            <label style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--grey-3);display:block;margin-bottom:5px">Title *</label>
+            <input id="taskEditTitle" type="text" style="width:100%;padding:10px 12px;background:var(--bg-3);border:1px solid var(--border);border-radius:8px;color:var(--white);font-family:var(--sans);font-size:0.9rem" />
+          </div>
+          <div>
+            <label style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--grey-3);display:block;margin-bottom:5px">Description</label>
+            <textarea id="taskEditDesc" rows="3" style="width:100%;padding:10px 12px;background:var(--bg-3);border:1px solid var(--border);border-radius:8px;color:var(--white);font-family:var(--sans);font-size:0.88rem;resize:vertical"></textarea>
+          </div>
+          <div style="display:flex;gap:10px">
+            <div style="flex:1">
+              <label style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--grey-3);display:block;margin-bottom:5px">Assignee</label>
+              <select id="taskEditAssignee" style="width:100%;padding:10px 12px;background:var(--bg-3);border:1px solid var(--border);border-radius:8px;color:var(--white);font-family:var(--sans);font-size:0.9rem"></select>
+            </div>
+            <div style="flex:1">
+              <label style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--grey-3);display:block;margin-bottom:5px">Priority</label>
+              <select id="taskEditPriority" style="width:100%;padding:10px 12px;background:var(--bg-3);border:1px solid var(--border);border-radius:8px;color:var(--white);font-family:var(--sans);font-size:0.9rem">
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px">
+            <div style="flex:1">
+              <label style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--grey-3);display:block;margin-bottom:5px">Deadline</label>
+              <input id="taskEditDeadline" type="date" style="width:100%;padding:10px 12px;background:var(--bg-3);border:1px solid var(--border);border-radius:8px;color:var(--white);font-family:var(--sans);font-size:0.9rem" />
+            </div>
+            <div style="flex:1">
+              <label style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--grey-3);display:block;margin-bottom:5px">Status</label>
+              <select id="taskEditStatus" style="width:100%;padding:10px 12px;background:var(--bg-3);border:1px solid var(--border);border-radius:8px;color:var(--white);font-family:var(--sans);font-size:0.9rem">
+                <option value="pending">Pending</option>
+                <option value="in-progress">In Progress</option>
+                <option value="awaiting-approval">Awaiting Approval</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+            <button id="taskEditCancelBtn" type="button" style="padding:9px 16px;background:var(--bg-3);border:1px solid var(--border);border-radius:7px;color:var(--white);cursor:pointer;font-size:0.8rem">Cancel</button>
+            <button id="taskEditSaveBtn" type="button" style="padding:9px 18px;background:var(--gold);border:1px solid var(--gold);border-radius:7px;color:#000;cursor:pointer;font-size:0.8rem;font-weight:600">Save Changes</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ══ ALL DELIVERIES MODAL ══ -->
     <div id="allDeliveriesModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;padding:20px">
       <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:14px;width:100%;max-width:720px;max-height:88vh;padding:24px;position:relative;overflow:auto">
@@ -2065,7 +2117,7 @@
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/db.js?v=6.6"></script>
-    <script src="js/dashboard.js?v=6.6"></script>
+    <script src="js/db.js?v=6.7"></script>
+    <script src="js/dashboard.js?v=6.7"></script>
   </body>
 </html>

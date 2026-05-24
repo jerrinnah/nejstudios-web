@@ -2763,6 +2763,7 @@ function buildTaskCard(t) {
         ${t.status !== 'completed' ? `<button class="task-action-btn task-action-btn--approve" data-id="${t.id}" data-task-action="done-by-boss-1" style="border-color:var(--gold);color:var(--gold)">Done by Boss 1</button>` : ''}
         ${t.status !== 'completed' ? `<button class="task-action-btn task-action-btn--approve" data-id="${t.id}" data-task-action="done-by-boss-2" style="border-color:var(--gold);color:var(--gold)">Done by Boss 2</button>` : ''}
         <button class="task-action-btn task-action-btn--reports" data-id="${t.id}" data-task-action="reports">Reports (${reportCount})</button>
+        <button class="task-action-btn task-action-btn--reassign" data-id="${t.id}" data-task-action="edit" style="border-color:var(--gold);color:var(--gold)">✎ Edit</button>
         <button class="task-action-btn task-action-btn--reassign" data-id="${t.id}" data-task-action="reassign">Reassign</button>
         ${t.status === 'completed' && t.deliveryStatus !== 'approved' ? `<button class="task-action-btn task-action-btn--approve" data-id="${t.id}" data-task-action="approve-delivery">✓ Approve Delivery</button>` : ''}
         ${t.status === 'completed' && t.deliveryStatus !== 'failed'   ? `<button class="task-action-btn task-action-btn--fail" data-id="${t.id}" data-task-action="fail-delivery">✗ Failed to Deliver</button>` : ''}
@@ -2771,7 +2772,51 @@ function buildTaskCard(t) {
     </div>`;
 }
 
+async function openTaskEditModal(id) {
+  const task = await dbGetTask(id);
+  if (!task) return;
+  const modal = document.getElementById('taskEditModal');
+  if (!modal) return;
+  document.getElementById('taskEditId').value = id;
+  document.getElementById('taskEditTitle').value = task.title || '';
+  document.getElementById('taskEditDesc').value = task.desc || '';
+  document.getElementById('taskEditPriority').value = task.priority || 'medium';
+  document.getElementById('taskEditDeadline').value = task.deadline || '';
+  document.getElementById('taskEditStatus').value = task.status || 'pending';
+  const sel = document.getElementById('taskEditAssignee');
+  sel.innerHTML = '<option value="">Unassigned</option>' + getTeam()
+    .filter(m => m.role !== 'admin')
+    .map(m => `<option value="${m.id}" ${m.id === task.assignedTo ? 'selected' : ''}>${_escHtml(m.name)}</option>`)
+    .join('');
+  modal.style.display = 'flex';
+}
+
+document.getElementById('taskEditCloseBtn')?.addEventListener('click', () => { document.getElementById('taskEditModal').style.display = 'none'; });
+document.getElementById('taskEditCancelBtn')?.addEventListener('click', () => { document.getElementById('taskEditModal').style.display = 'none'; });
+document.getElementById('taskEditModal')?.addEventListener('click', (e) => { if (e.target.id === 'taskEditModal') document.getElementById('taskEditModal').style.display = 'none'; });
+document.getElementById('taskEditSaveBtn')?.addEventListener('click', async () => {
+  const id = document.getElementById('taskEditId').value;
+  if (!id) return;
+  const assigneeId = document.getElementById('taskEditAssignee').value;
+  const assignee = getTeam().find(m => m.id === assigneeId);
+  const updates = {
+    title: document.getElementById('taskEditTitle').value.trim(),
+    desc: document.getElementById('taskEditDesc').value.trim(),
+    priority: document.getElementById('taskEditPriority').value,
+    deadline: document.getElementById('taskEditDeadline').value || null,
+    status: document.getElementById('taskEditStatus').value,
+    assignedTo: assigneeId || null,
+    assignedName: assignee ? assignee.name : null,
+  };
+  if (!updates.title) { showToast('Title is required', 'err'); return; }
+  await dbUpdateTask(id, updates);
+  document.getElementById('taskEditModal').style.display = 'none';
+  showToast('Task updated ✓');
+  await renderTasks();
+});
+
 async function handleTaskAction(id, action) {
+  if (action === 'edit') { openTaskEditModal(id); return; }
   if (action === 'done-by-boss-1' || action === 'done-by-boss-2') {
     const boss = action === 'done-by-boss-1' ? 'Boss 1' : 'Boss 2';
     const task = await dbGetTask(id);
@@ -3532,7 +3577,7 @@ async function renderMonthlyDeliveryAdmin() {
         <div style="display:flex;gap:14px;font-size:0.72rem;color:var(--grey-2);flex-wrap:wrap;margin-bottom:8px">
           <span><strong style="color:var(--green)">${d.approved}</strong> approved</span>
           <span><strong style="color:var(--red)">${d.failed}</strong> failed</span>
-          <span class="open-all-deliveries" style="cursor:pointer;border-bottom:1px dotted var(--gold);color:var(--gold)" title="Click to see all team deliveries this month"><strong>${d.unrated}</strong> unrated · view all</span>
+          <span class="open-all-deliveries" style="cursor:pointer;border-bottom:1px dotted var(--gold);color:var(--gold)" title="Click to see all team deliveries this month"><strong>${d.totalCompleted}</strong> total delivered · view all</span>
           <span style="margin-left:auto"><strong style="color:var(--green)">${d.onTime}</strong> on-time · <strong style="color:var(--red)">${d.late}</strong> late</span>
           ${d.bonusPoints ? `<span><strong style="color:var(--gold)">+${d.bonusPoints}</strong> bonus pts</span>` : ''}
         </div>
