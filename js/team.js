@@ -847,8 +847,8 @@ async function renderMonthlyDelivery() {
         <div style="font-size:0.58rem;color:var(--grey-3);text-transform:uppercase">Failed</div>
       </div>
       <div id="unratedTile" style="padding:8px;background:var(--bg-2);border:1px solid var(--gold);border-radius:6px;text-align:center;cursor:pointer" title="Click to see all team deliveries this month">
-        <div style="font-size:1rem;color:var(--gold);font-weight:700">${d.totalCompleted}</div>
-        <div style="font-size:0.58rem;color:var(--gold);text-transform:uppercase">Total Delivered · View All</div>
+        <div style="font-size:1rem;color:var(--gold);font-weight:700">${d.totalCompleted} <span style="color:var(--grey-4);font-weight:400">/ ${d.totalCreated}</span></div>
+        <div style="font-size:0.58rem;color:var(--gold);text-transform:uppercase">Delivered / Assigned · View All</div>
       </div>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:var(--grey-2);padding:4px 0">
