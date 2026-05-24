@@ -3443,7 +3443,13 @@ async function renderAllDeliveriesList() {
 async function renderMonthlyDeliveryAdmin() {
   const wrap = document.getElementById('monthlyDeliveryGrid');
   if (!wrap) return;
-  const team = getTeam().filter(m => m.role !== 'admin');
+  const team = getTeam().filter(m => {
+    if (m.role === 'admin') return false;
+    const n = (m.name || '').toLowerCase();
+    const u = (m.username || '').toLowerCase();
+    // Hide Nej / Nej 2 from per-member rows — they're consolidated into Boss 1/2 cards
+    return !(n === 'nej' || n === 'nej 2' || n === 'nej2' || u === 'nej' || u === 'nej2');
+  });
   if (!team.length) { wrap.innerHTML = '<div style="color:var(--grey-4);font-size:0.85rem;padding:12px 0">No team members yet.</div>'; return; }
   wrap.innerHTML = '<div style="color:var(--grey-3);font-size:0.85rem;padding:12px 0">Loading…</div>';
 
@@ -3477,8 +3483,8 @@ async function renderMonthlyDeliveryAdmin() {
 
   const bossSection = `
     <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px">
-      ${bossCard('Boss 1', boss['Boss 1'], 'var(--gold)')}
-      ${bossCard('Boss 2', boss['Boss 2'], '#9b8cd4')}
+      ${bossCard('Nej / Boss 1', boss['Boss 1'], 'var(--gold)')}
+      ${bossCard('Nej 2 / Boss 2', boss['Boss 2'], '#9b8cd4')}
     </div>`;
 
   const memberCards = rows.map(({ m, d }) => {

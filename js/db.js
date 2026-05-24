@@ -481,6 +481,16 @@ async function openAllDeliveriesModal() {
   const modal = document.getElementById('allDeliveriesModal');
   const body  = document.getElementById('allDeliveriesModalBody');
   if (!modal || !body) return;
+  // Ensure close handlers are wired (in case DOMContentLoaded already fired before HTML was injected)
+  const closeBtn = document.getElementById('allDeliveriesCloseBtn');
+  if (closeBtn && !closeBtn._wired) {
+    closeBtn.addEventListener('click', closeAllDeliveriesModal);
+    closeBtn._wired = true;
+  }
+  if (!modal._wired) {
+    modal.addEventListener('click', (e) => { if (e.target.id === 'allDeliveriesModal') closeAllDeliveriesModal(); });
+    modal._wired = true;
+  }
   modal.style.display = 'flex';
   body.innerHTML = '<div style="color:var(--grey-3);font-size:0.85rem;padding:20px;text-align:center">Loading…</div>';
 
@@ -498,15 +508,20 @@ async function openAllDeliveriesModal() {
     return ts >= monthStart && ts < monthEnd;
   });
 
-  // Group by performer: doneByBoss takes priority, else assignedName/assignedTo
+  // Merge aliases — Boss 1 / Nej and Boss 2 / Nej 2 are the same people respectively.
+  // Returns { key, label } for grouping.
+  const resolveGroup = (t) => {
+    const boss = (t.doneByBoss || '').trim().toLowerCase();
+    const name = (t.assignedName || '').trim().toLowerCase();
+    if (boss === 'boss 1' || name === 'nej') return { key: 'boss1-nej', label: 'Nej / Boss 1' };
+    if (boss === 'boss 2' || name === 'nej 2' || name === 'nej2') return { key: 'boss2-nej2', label: 'Nej 2 / Boss 2' };
+    if (t.doneByBoss) return { key: 'admin-' + boss, label: t.doneByBoss };
+    return { key: t.assignedTo || 'unassigned', label: t.assignedName || 'Unassigned' };
+  };
+
   const groups = {};
   completedThisMonth.forEach(t => {
-    let key, label;
-    if (t.doneByBoss) { key = t.doneByBoss; label = t.doneByBoss; }
-    else {
-      key = t.assignedTo || 'unassigned';
-      label = t.assignedName || 'Unassigned';
-    }
+    const { key, label } = resolveGroup(t);
     if (!groups[key]) groups[key] = { label, items: [] };
     groups[key].items.push(t);
   });
@@ -525,10 +540,11 @@ async function openAllDeliveriesModal() {
 
   body.innerHTML = rows.map((r, idx) => {
     const initials = (r.label || '?').split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
-    const isBoss = r.label === 'Boss 1' || r.label === 'Boss 2';
+    const isB1 = /boss 1|nej \/ boss/i.test(r.label);
+    const isB2 = /boss 2|nej 2 \/ boss/i.test(r.label);
     const ranking = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
-    const avatarColor = isBoss
-      ? (r.label === 'Boss 1' ? 'var(--gold)' : '#9b8cd4')
+    const avatarColor = isB1 ? 'var(--gold)'
+      : isB2 ? '#9b8cd4'
       : 'linear-gradient(135deg,var(--gold),#a98c43)';
     const taskItems = r.items
       .sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0))
@@ -719,22 +735,32 @@ async function dbGetBossDelivery() {
     'Boss 2': { total: 0, thisMonth: 0, byType: {} },
   };
 
+  // Map task -> Boss bucket, merging Nej into Boss 1 and Nej 2 into Boss 2.
+  const bucketFor = (t) => {
+    const boss = (t.doneByBoss || '').toLowerCase();
+    const name = (t.assignedName || '').toLowerCase();
+    if (boss === 'boss 1' || name === 'nej') return 'Boss 1';
+    if (boss === 'boss 2' || name === 'nej 2' || name === 'nej2') return 'Boss 2';
+    return null;
+  };
+
   all.forEach(t => {
-    if (!t.doneByBoss) return;
-    const key = t.doneByBoss === 'Boss 1' ? 'Boss 1' : t.doneByBoss === 'Boss 2' ? 'Boss 2' : null;
+    const key = bucketFor(t);
     if (!key) return;
+    // Only count completed tasks toward lifetime/this-month delivery
+    if (t.status !== 'completed' && !t.doneByBoss) return;
     stats[key].total++;
     const ts = t.doneByBossAt || t.completedAt || t.completed_at || 0;
     if (ts >= monthStart && ts < monthEnd) stats[key].thisMonth++;
     const title = (t.title || '').toLowerCase();
-    let bucket = 'Other';
-    if (title.includes('backup'))         bucket = 'Backup';
-    else if (title.includes('lightroom')) bucket = 'Lightroom';
-    else if (title.includes('retouch'))   bucket = 'Retouching';
-    else if (title.includes('thriller'))  bucket = 'Thriller';
-    else if (title.includes('full video')) bucket = 'Full Video';
-    else if (title.includes('photobook')) bucket = 'Photobook';
-    stats[key].byType[bucket] = (stats[key].byType[bucket] || 0) + 1;
+    let typeBucket = 'Other';
+    if (title.includes('backup'))         typeBucket = 'Backup';
+    else if (title.includes('lightroom')) typeBucket = 'Lightroom';
+    else if (title.includes('retouch'))   typeBucket = 'Retouching';
+    else if (title.includes('thriller'))  typeBucket = 'Thriller';
+    else if (title.includes('full video')) typeBucket = 'Full Video';
+    else if (title.includes('photobook')) typeBucket = 'Photobook';
+    stats[key].byType[typeBucket] = (stats[key].byType[typeBucket] || 0) + 1;
   });
   return stats;
 }
