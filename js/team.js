@@ -827,9 +827,9 @@ async function renderMonthlyDelivery() {
         <div style="font-size:1rem;color:var(--red);font-weight:700">${d.failed}</div>
         <div style="font-size:0.58rem;color:var(--grey-3);text-transform:uppercase">Failed</div>
       </div>
-      <div style="padding:8px;background:var(--bg-2);border:1px solid var(--border);border-radius:6px;text-align:center">
-        <div style="font-size:1rem;color:var(--grey-2);font-weight:700">${d.unrated}</div>
-        <div style="font-size:0.58rem;color:var(--grey-3);text-transform:uppercase">Unrated</div>
+      <div id="unratedTile" style="padding:8px;background:var(--bg-2);border:1px solid var(--gold);border-radius:6px;text-align:center;cursor:pointer" title="Click to see all team deliveries this month">
+        <div style="font-size:1rem;color:var(--gold);font-weight:700">${d.unrated}</div>
+        <div style="font-size:0.58rem;color:var(--gold);text-transform:uppercase">Unrated · View All</div>
       </div>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:var(--grey-2);padding:4px 0">
@@ -844,6 +844,7 @@ async function renderMonthlyDelivery() {
     ${deliveredList}
     ${d.bonusPoints ? `<div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;margin-top:8px;border-top:1px solid var(--border)"><span style="font-size:0.85rem;color:var(--gold);font-weight:600">Bonus points earned this month</span><strong style="color:var(--gold);font-size:1rem">+${d.bonusPoints}</strong></div>` : ''}
   `;
+  document.getElementById('unratedTile')?.addEventListener('click', () => openAllDeliveriesModal());
 }
 
 async function renderSharedTasks() {

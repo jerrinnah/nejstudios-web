@@ -475,6 +475,104 @@ async function dbGetMonthlySalary(member) {
 // Backup tasks aren't counted in delivery stats — they're routine, not deliverables.
 const _isBackupTask = (t) => /^\s*backup\b/i.test(t.title || '');
 
+// Show "All Deliveries This Month" modal — leaderboard of every member's deliveries.
+// Available to both team and admin pages (modal HTML is included in both).
+async function openAllDeliveriesModal() {
+  const modal = document.getElementById('allDeliveriesModal');
+  const body  = document.getElementById('allDeliveriesModalBody');
+  if (!modal || !body) return;
+  modal.style.display = 'flex';
+  body.innerHTML = '<div style="color:var(--grey-3);font-size:0.85rem;padding:20px;text-align:center">Loading…</div>';
+
+  // Gather: all team members (incl admin? include admin so Boss-handled tasks show)
+  const team  = (typeof getTeam === 'function') ? getTeam() : [];
+  const tasks = (await dbGetTasks()).filter(t => !_isBackupTask(t));
+
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+  const monthEnd   = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
+
+  const completedThisMonth = tasks.filter(t => {
+    if (t.status !== 'completed') return false;
+    const ts = t.completedAt || t.completed_at || 0;
+    return ts >= monthStart && ts < monthEnd;
+  });
+
+  // Group by performer: doneByBoss takes priority, else assignedName/assignedTo
+  const groups = {};
+  completedThisMonth.forEach(t => {
+    let key, label;
+    if (t.doneByBoss) { key = t.doneByBoss; label = t.doneByBoss; }
+    else {
+      key = t.assignedTo || 'unassigned';
+      label = t.assignedName || 'Unassigned';
+    }
+    if (!groups[key]) groups[key] = { label, items: [] };
+    groups[key].items.push(t);
+  });
+
+  const rows = Object.entries(groups)
+    .map(([key, g]) => ({ key, label: g.label, items: g.items, count: g.items.length }))
+    .sort((a, b) => b.count - a.count);
+
+  if (!rows.length) {
+    body.innerHTML = '<div style="color:var(--grey-4);font-size:0.85rem;padding:24px;text-align:center;font-style:italic">No deliveries yet this month.</div>';
+    return;
+  }
+
+  const _esc = (s) => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const fmtDate = (ts) => ts ? new Date(ts).toLocaleDateString('en-NG', { month:'short', day:'numeric' }) : '';
+
+  body.innerHTML = rows.map((r, idx) => {
+    const initials = (r.label || '?').split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
+    const isBoss = r.label === 'Boss 1' || r.label === 'Boss 2';
+    const ranking = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
+    const avatarColor = isBoss
+      ? (r.label === 'Boss 1' ? 'var(--gold)' : '#9b8cd4')
+      : 'linear-gradient(135deg,var(--gold),#a98c43)';
+    const taskItems = r.items
+      .sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0))
+      .map(t => {
+        const statusColor = t.deliveryStatus === 'approved' ? 'var(--green)'
+          : t.deliveryStatus === 'failed' ? 'var(--red)' : 'var(--grey-3)';
+        return `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 10px;background:var(--bg-3);border:1px solid var(--border);border-radius:5px;margin-bottom:4px;font-size:0.74rem">
+            <div style="min-width:0;flex:1;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_esc(t.title)}</div>
+            <span style="font-size:0.66rem;color:var(--grey-3);margin-left:8px;flex-shrink:0">${fmtDate(t.completedAt || t.completed_at)}</span>
+            <span style="font-size:0.58rem;font-weight:700;text-transform:uppercase;color:${statusColor};margin-left:8px;flex-shrink:0">${t.deliveryStatus || 'pending'}</span>
+          </div>`;
+      }).join('');
+    return `
+      <div style="margin-bottom:18px;padding:14px;background:var(--bg-3);border:1px solid var(--border);border-radius:8px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <div style="font-size:1.2rem;width:32px;text-align:center">${ranking}</div>
+          <div style="width:34px;height:34px;border-radius:50%;background:${avatarColor};display:flex;align-items:center;justify-content:center;font-size:0.74rem;font-weight:700;color:#000;flex-shrink:0">${initials}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:0.92rem;font-weight:600;color:var(--white)">${_esc(r.label)}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:1.4rem;font-weight:700;color:var(--gold)">${r.count}</div>
+            <div style="font-size:0.6rem;color:var(--grey-3);text-transform:uppercase;letter-spacing:0.06em">Delivered</div>
+          </div>
+        </div>
+        ${taskItems}
+      </div>`;
+  }).join('');
+}
+
+function closeAllDeliveriesModal() {
+  const modal = document.getElementById('allDeliveriesModal');
+  if (modal) modal.style.display = 'none';
+}
+
+// Wire up close handlers on first call
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('allDeliveriesCloseBtn')?.addEventListener('click', closeAllDeliveriesModal);
+  document.getElementById('allDeliveriesModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'allDeliveriesModal') closeAllDeliveriesModal();
+  });
+});
+
 // Monthly delivery summary for a team member.
 // year/month optional — defaults to current month. month is 0-indexed (Jan=0).
 async function dbGetMemberMonthlyDelivery(memberId, year, month) {

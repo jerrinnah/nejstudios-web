@@ -1771,6 +1771,16 @@
     </div>
 
     <!-- Reports Modal -->
+    <!-- ══ ALL DELIVERIES MODAL ══ -->
+    <div id="allDeliveriesModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;padding:20px">
+      <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:14px;width:100%;max-width:720px;max-height:88vh;padding:24px;position:relative;overflow:auto">
+        <button id="allDeliveriesCloseBtn" type="button" style="position:absolute;top:14px;right:14px;background:none;border:none;color:var(--grey-3);font-size:1.3rem;cursor:pointer">✕</button>
+        <h3 id="allDeliveriesTitle" style="margin:0 0 4px 0;color:var(--white)">All Deliveries This Month</h3>
+        <p style="font-size:0.78rem;color:var(--grey-3);margin-bottom:18px">Every team member's completed tasks, ranked by who delivered most.</p>
+        <div id="allDeliveriesModalBody"></div>
+      </div>
+    </div>
+
     <!-- ══ BROADCAST PUSH NOTIFICATION MODAL ══ -->
     <div class="modal-overlay" id="broadcastModal">
       <div class="modal-backdrop" id="broadcastModalBackdrop"></div>
@@ -2055,7 +2065,7 @@
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/db.js?v=6.1"></script>
-    <script src="js/dashboard.js?v=6.1"></script>
+    <script src="js/db.js?v=6.2"></script>
+    <script src="js/dashboard.js?v=6.2"></script>
   </body>
 </html>

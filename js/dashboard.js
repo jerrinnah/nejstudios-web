@@ -3516,7 +3516,7 @@ async function renderMonthlyDeliveryAdmin() {
         <div style="display:flex;gap:14px;font-size:0.72rem;color:var(--grey-2);flex-wrap:wrap;margin-bottom:8px">
           <span><strong style="color:var(--green)">${d.approved}</strong> approved</span>
           <span><strong style="color:var(--red)">${d.failed}</strong> failed</span>
-          <span><strong style="color:var(--grey-3)">${d.unrated}</strong> unrated</span>
+          <span class="open-all-deliveries" style="cursor:pointer;border-bottom:1px dotted var(--gold);color:var(--gold)" title="Click to see all team deliveries this month"><strong>${d.unrated}</strong> unrated · view all</span>
           <span style="margin-left:auto"><strong style="color:var(--green)">${d.onTime}</strong> on-time · <strong style="color:var(--red)">${d.late}</strong> late</span>
           ${d.bonusPoints ? `<span><strong style="color:var(--gold)">+${d.bonusPoints}</strong> bonus pts</span>` : ''}
         </div>
@@ -3526,6 +3526,9 @@ async function renderMonthlyDeliveryAdmin() {
   }).join('');
 
   wrap.innerHTML = bossSection + memberCards;
+  wrap.querySelectorAll('.open-all-deliveries').forEach(el => {
+    el.addEventListener('click', () => openAllDeliveriesModal());
+  });
 }
 
 /* ════════════════════════════════════════════
