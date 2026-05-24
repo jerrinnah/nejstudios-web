@@ -4493,7 +4493,9 @@ function renderCalDayDetail(dateStr, list) {
   }
 
   // Wire up Add Event / Add Task buttons
-  wrap.querySelectorAll('[data-cal-add]').forEach(btn => {
+  const addBtns = wrap.querySelectorAll('[data-cal-add]');
+  console.log('[Calendar] Day detail rendered for', dateStr, '— Add buttons found:', addBtns.length);
+  addBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       const kind = btn.dataset.calAdd;
       const date = btn.dataset.calDate;
