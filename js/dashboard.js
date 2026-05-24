@@ -3414,14 +3414,49 @@ async function renderMonthlyDeliveryAdmin() {
   if (!team.length) { wrap.innerHTML = '<div style="color:var(--grey-4);font-size:0.85rem;padding:12px 0">No team members yet.</div>'; return; }
   wrap.innerHTML = '<div style="color:var(--grey-3);font-size:0.85rem;padding:12px 0">Loading…</div>';
 
-  const rows = await Promise.all(team.map(async m => ({ m, d: await dbGetMemberMonthlyDelivery(m.id) })));
+  const boss = await dbGetBossDelivery();
+  const rows = await Promise.all(team.map(async m => ({
+    m,
+    d:     await dbGetMemberMonthlyDelivery(m.id),
+    total: await dbGetMemberTotalDelivery(m.id),
+  })));
   rows.sort((a, b) => b.d.totalCompleted - a.d.totalCompleted);
 
-  wrap.innerHTML = rows.map(({ m, d }) => {
-    const initials = (m.name || '').split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
-    const typeRows = Object.entries(d.byType).map(([k, v]) =>
-      `<span style="display:inline-block;padding:2px 8px;background:var(--bg-3);border:1px solid var(--border);border-radius:12px;font-size:0.66rem;color:var(--grey-2);margin:2px 4px 0 0">${k}: <strong style="color:var(--white)">${v}</strong></span>`
+  // Boss 1/2 summary at top
+  const bossCard = (label, s, color) => {
+    const types = Object.entries(s.byType).map(([k, v]) =>
+      `<span style="display:inline-block;padding:2px 8px;background:var(--bg-2);border:1px solid var(--border);border-radius:12px;font-size:0.66rem;color:var(--grey-2);margin:2px 4px 0 0">${k}: <strong style="color:var(--white)">${v}</strong></span>`
     ).join('');
+    return `
+      <div style="flex:1;min-width:240px;padding:14px;background:var(--bg-3);border:1px solid ${color};border-radius:8px">
+        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:10px">
+          <div>
+            <div style="font-size:0.95rem;color:${color};font-weight:700">${label}</div>
+            <div style="font-size:0.7rem;color:var(--grey-3);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px">Tasks handled directly</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:0.62rem;color:var(--grey-3);text-transform:uppercase">This month / Total</div>
+            <div><strong style="color:${color};font-size:1.2rem">${s.thisMonth}</strong> <span style="color:var(--grey-4)">/</span> <strong style="color:var(--white);font-size:1.2rem">${s.total}</strong></div>
+          </div>
+        </div>
+        ${types || '<div style="font-size:0.72rem;color:var(--grey-4);font-style:italic">No tasks handled yet</div>'}
+      </div>`;
+  };
+
+  const bossSection = `
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px">
+      ${bossCard('Boss 1', boss['Boss 1'], 'var(--gold)')}
+      ${bossCard('Boss 2', boss['Boss 2'], '#9b8cd4')}
+    </div>`;
+
+  const memberCards = rows.map(({ m, d, total }) => {
+    const initials = (m.name || '').split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
+    const allTypes = new Set([...Object.keys(d.byType), ...Object.keys(total.byType)]);
+    const typeChips = Array.from(allTypes).map(k => {
+      const mo  = d.byType[k]    || 0;
+      const tot = total.byType[k] || 0;
+      return `<span style="display:inline-block;padding:2px 8px;background:var(--bg-3);border:1px solid var(--border);border-radius:12px;font-size:0.66rem;color:var(--grey-2);margin:2px 4px 0 0">${k}: <strong style="color:var(--white)">${mo}</strong><span style="color:var(--grey-4)"> / ${tot}</span></span>`;
+    }).join('');
     return `
       <div style="padding:14px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
@@ -3431,8 +3466,8 @@ async function renderMonthlyDeliveryAdmin() {
             <div style="font-size:0.7rem;color:var(--grey-3)">@${_escHtml(m.username)}</div>
           </div>
           <div style="text-align:right">
-            <div style="font-size:1.2rem;font-weight:700;color:var(--white)">${d.totalCompleted}</div>
-            <div style="font-size:0.62rem;color:var(--grey-3);text-transform:uppercase;letter-spacing:0.06em">Completed</div>
+            <div style="font-size:0.62rem;color:var(--grey-3);text-transform:uppercase">This month / Total</div>
+            <div><strong style="color:var(--gold);font-size:1.2rem">${d.totalCompleted}</strong> <span style="color:var(--grey-4)">/</span> <strong style="color:var(--white);font-size:1.2rem">${total.totalCompleted}</strong></div>
           </div>
         </div>
         <div style="display:flex;gap:14px;font-size:0.72rem;color:var(--grey-2);flex-wrap:wrap;margin-bottom:8px">
@@ -3442,9 +3477,11 @@ async function renderMonthlyDeliveryAdmin() {
           <span style="margin-left:auto"><strong style="color:var(--green)">${d.onTime}</strong> on-time · <strong style="color:var(--red)">${d.late}</strong> late</span>
           ${d.bonusPoints ? `<span><strong style="color:var(--gold)">+${d.bonusPoints}</strong> bonus pts</span>` : ''}
         </div>
-        ${typeRows ? `<div>${typeRows}</div>` : ''}
+        ${typeChips ? `<div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--grey-3);margin:6px 0 4px">Categories — this month / all-time</div><div>${typeChips}</div>` : ''}
       </div>`;
   }).join('');
+
+  wrap.innerHTML = bossSection + memberCards;
 }
 
 /* ════════════════════════════════════════════

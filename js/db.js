@@ -540,6 +540,61 @@ async function dbGetMemberMonthlyDelivery(memberId, year, month) {
   };
 }
 
+// Lifetime delivery stats for a team member (all completed tasks ever).
+async function dbGetMemberTotalDelivery(memberId) {
+  const all = await dbGetTasks();
+  const completed = all.filter(t => t.assignedTo === memberId && t.status === 'completed');
+  const byType = {};
+  let approved = 0, failed = 0, unrated = 0;
+  completed.forEach(t => {
+    if (t.deliveryStatus === 'approved') approved++;
+    else if (t.deliveryStatus === 'failed') failed++;
+    else unrated++;
+    const title = (t.title || '').toLowerCase();
+    let bucket = 'Other';
+    if (title.includes('backup'))         bucket = 'Backup';
+    else if (title.includes('lightroom')) bucket = 'Lightroom';
+    else if (title.includes('retouch'))   bucket = 'Retouching';
+    else if (title.includes('thriller'))  bucket = 'Thriller';
+    else if (title.includes('full video')) bucket = 'Full Video';
+    else if (title.includes('photobook')) bucket = 'Photobook';
+    byType[bucket] = (byType[bucket] || 0) + 1;
+  });
+  return { totalCompleted: completed.length, approved, failed, unrated, byType };
+}
+
+// Tasks handled by admins (Boss 1 / Boss 2) — both lifetime and this-month
+async function dbGetBossDelivery() {
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+  const monthEnd   = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
+  const all = await dbGetTasks();
+
+  const stats = {
+    'Boss 1': { total: 0, thisMonth: 0, byType: {} },
+    'Boss 2': { total: 0, thisMonth: 0, byType: {} },
+  };
+
+  all.forEach(t => {
+    if (!t.doneByBoss) return;
+    const key = t.doneByBoss === 'Boss 1' ? 'Boss 1' : t.doneByBoss === 'Boss 2' ? 'Boss 2' : null;
+    if (!key) return;
+    stats[key].total++;
+    const ts = t.doneByBossAt || t.completedAt || t.completed_at || 0;
+    if (ts >= monthStart && ts < monthEnd) stats[key].thisMonth++;
+    const title = (t.title || '').toLowerCase();
+    let bucket = 'Other';
+    if (title.includes('backup'))         bucket = 'Backup';
+    else if (title.includes('lightroom')) bucket = 'Lightroom';
+    else if (title.includes('retouch'))   bucket = 'Retouching';
+    else if (title.includes('thriller'))  bucket = 'Thriller';
+    else if (title.includes('full video')) bucket = 'Full Video';
+    else if (title.includes('photobook')) bucket = 'Photobook';
+    stats[key].byType[bucket] = (stats[key].byType[bucket] || 0) + 1;
+  });
+  return stats;
+}
+
 async function dbGetMemberPoints(memberId) {
   try {
     const r = await fetch('/api/sync.php?resource=team_points', { cache: 'no-store' });
