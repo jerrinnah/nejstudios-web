@@ -495,10 +495,8 @@
       }
     }
 
-    // Auto-unlock if already admin in session OR if this tab unlocked before
-    if (isAdminSession() || sessionStorage.getItem('nej_invoice_admin') === '1') {
-      showApp();
-    }
+    // Note: auto-unlock moved to the very end of the script so all const
+    // declarations (esc, fmt, invoice, render fns) are initialized first.
 
     loginBtn.addEventListener('click', () => {
       const pin = (pinInput.value || '').trim();
@@ -925,6 +923,11 @@
     document.getElementById('btnPrint').addEventListener('click', () => {
       window.print();
     });
+
+    // Auto-unlock — runs AFTER all const helpers and renders are defined
+    if (isAdminSession() || sessionStorage.getItem('nej_invoice_admin') === '1') {
+      showApp();
+    }
   </script>
 </body>
 </html>
