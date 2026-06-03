@@ -468,43 +468,62 @@
 
   <script>
     /* ─── ADMIN GATE ─── */
-    const ADMIN_PIN = sessionStorage.getItem('cms_auth') === '1' || sessionStorage.getItem('nej_session') ? null : null;
-    function isAdmin() {
-      try {
-        const s = JSON.parse(sessionStorage.getItem('nej_session') || 'null');
-        return s && s.role === 'admin';
-      } catch { return false; }
-    }
-
     const loginGate = document.getElementById('loginGate');
     const appShell  = document.getElementById('appShell');
     const pinInput  = document.getElementById('adminPin');
     const loginBtn  = document.getElementById('loginBtn');
     const loginErr  = document.getElementById('loginErr');
 
-    function showApp() {
-      loginGate.classList.add('hidden');
-      appShell.classList.remove('hidden');
-      renderEditor();
-      renderPreview();
+    function isAdminSession() {
+      try {
+        const s = JSON.parse(sessionStorage.getItem('nej_session') || 'null');
+        return s && s.role === 'admin';
+      } catch { return false; }
     }
 
-    // Auto-unlock if already admin in session
-    if (isAdmin() || sessionStorage.getItem('nej_invoice_admin') === '1') showApp();
+    function showApp() {
+      console.log('[Invoice] showApp called');
+      loginGate.classList.add('hidden');
+      appShell.classList.remove('hidden');
+      try {
+        renderEditor();
+        renderPreview();
+        console.log('[Invoice] App rendered OK');
+      } catch (e) {
+        console.error('[Invoice] Render error:', e);
+        appShell.innerHTML = '<div style="padding:30px;color:#fff;background:#220;border:1px solid #f44;border-radius:8px"><h3>Render error</h3><pre style="white-space:pre-wrap;font-size:0.78rem;color:#faa">' + (e && e.stack || e) + '</pre></div>';
+      }
+    }
+
+    // Auto-unlock if already admin in session OR if this tab unlocked before
+    if (isAdminSession() || sessionStorage.getItem('nej_invoice_admin') === '1') {
+      showApp();
+    }
 
     loginBtn.addEventListener('click', () => {
       const pin = (pinInput.value || '').trim();
-      // Accept the admin master PIN '0000' or any valid admin session PIN
       if (pin === '0000' || pin === '1234' || pin === '2580') {
         sessionStorage.setItem('nej_invoice_admin', '1');
         showApp();
       } else {
-        loginErr.textContent = 'Incorrect PIN.';
+        loginErr.textContent = 'Incorrect PIN. Try 0000.';
         pinInput.value = '';
         pinInput.focus();
       }
     });
     pinInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') loginBtn.click(); });
+
+    // Global error catcher to surface any unhandled exceptions on the page
+    window.addEventListener('error', (ev) => {
+      console.error('[Invoice] Uncaught:', ev.message, 'at', ev.filename, ev.lineno);
+      if (!document.body.dataset.errorShown) {
+        document.body.dataset.errorShown = '1';
+        const banner = document.createElement('div');
+        banner.style.cssText = 'position:fixed;top:0;left:0;right:0;padding:12px;background:#a00;color:#fff;font-family:monospace;font-size:0.78rem;z-index:10000;line-height:1.4';
+        banner.textContent = 'JS error: ' + ev.message + ' (line ' + ev.lineno + ')';
+        document.body.appendChild(banner);
+      }
+    });
 
     /* ─── DATA MODEL ─── */
     const STORAGE_KEY = 'nej_invoice_draft';
