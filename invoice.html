@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Invoice Creator — NEJstudios</title>
+  <link rel="icon" href="favicon.ico" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Outfit:wght@300;400;500;600;700&family=Great+Vibes&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    :root {
+      --gold:    #c9a84c;
+      --bg-1:    #0a0a0a;
+      --bg-2:    #141414;
+      --bg-3:    #1c1c1c;
+      --white:   #f5f5f5;
+      --grey-1:  #e0e0e0;
+      --grey-3:  #888;
+      --border:  #2a2a2a;
+      --red:     #ef4444;
+      --serif:   'Playfair Display', Georgia, serif;
+      --sans:    'Outfit', system-ui, sans-serif;
+      --script:  'Great Vibes', cursive;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg-1);
+      color: var(--white);
+      font-family: var(--sans);
+      line-height: 1.5;
+    }
+    /* ── LOGIN GATE ── */
+    .login-gate {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .login-gate.hidden { display: none; }
+    .login-card {
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 32px 28px;
+      max-width: 360px;
+      width: 100%;
+      text-align: center;
+    }
+    .login-card h1 {
+      font-family: var(--serif);
+      font-size: 1.5rem;
+      margin: 0 0 6px;
+    }
+    .login-card p { color: var(--grey-3); font-size: 0.85rem; margin: 0 0 18px; }
+    .login-card input {
+      width: 100%;
+      padding: 12px 14px;
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--white);
+      font-size: 0.95rem;
+      letter-spacing: 0.2em;
+      text-align: center;
+      font-family: var(--sans);
+    }
+    .login-card button {
+      width: 100%;
+      margin-top: 12px;
+      padding: 12px;
+      background: var(--gold);
+      border: none;
+      border-radius: 8px;
+      color: #000;
+      font-weight: 700;
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .login-err { color: var(--red); font-size: 0.8rem; min-height: 1.2em; margin-top: 8px; }
+
+    /* ── APP SHELL ── */
+    .app-shell { padding: 24px; max-width: 1280px; margin: 0 auto; }
+    .app-shell.hidden { display: none; }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+    .toolbar h2 {
+      font-family: var(--serif);
+      font-size: 1.4rem;
+      margin: 0;
+    }
+    .toolbar p { font-size: 0.78rem; color: var(--grey-3); margin: 4px 0 0; }
+    .toolbar .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn {
+      padding: 9px 16px;
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--white);
+      font-size: 0.78rem;
+      cursor: pointer;
+      font-family: var(--sans);
+    }
+    .btn--gold { background: var(--gold); color: #000; border-color: var(--gold); font-weight: 700; }
+    .btn--ghost { background: transparent; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
+
+    /* ── EDITOR ── */
+    .editor {
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+      max-height: calc(100vh - 140px);
+      overflow-y: auto;
+      position: sticky;
+      top: 24px;
+    }
+    .editor h3 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--gold);
+      margin: 18px 0 10px;
+    }
+    .editor h3:first-child { margin-top: 0; }
+    .field { margin-bottom: 10px; }
+    .field label {
+      display: block;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--grey-3);
+      margin-bottom: 4px;
+    }
+    .field input, .field textarea, .field select {
+      width: 100%;
+      padding: 8px 10px;
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--white);
+      font-family: var(--sans);
+      font-size: 0.85rem;
+    }
+    .field textarea { resize: vertical; min-height: 64px; }
+    .field-row { display: flex; gap: 8px; }
+    .field-row .field { flex: 1; }
+
+    .package-block {
+      padding: 14px;
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 14px;
+    }
+    .package-block__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .package-block__title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--white);
+    }
+    .item-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 90px 32px;
+      gap: 6px;
+      margin-bottom: 6px;
+      align-items: center;
+    }
+    .item-row input { font-size: 0.78rem; padding: 6px 8px; }
+    .deliverable-row {
+      display: grid;
+      grid-template-columns: 1fr 32px;
+      gap: 6px;
+      margin-bottom: 6px;
+      align-items: center;
+    }
+    .small-btn {
+      width: 28px; height: 28px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--grey-3);
+      cursor: pointer;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .small-btn:hover { color: var(--red); border-color: var(--red); }
+    .add-btn {
+      display: inline-flex;
+      gap: 4px;
+      align-items: center;
+      padding: 6px 10px;
+      background: transparent;
+      border: 1px dashed var(--border);
+      border-radius: 6px;
+      color: var(--gold);
+      font-size: 0.72rem;
+      cursor: pointer;
+      font-family: var(--sans);
+    }
+
+    /* ── INVOICE PREVIEW (matches reference design) ── */
+    .invoice-wrapper {
+      background: #fff;
+      color: #000;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+    }
+    .inv-header {
+      padding: 30px 36px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 24px;
+      background: #fff;
+    }
+    .inv-logo-block {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .inv-logo-text {
+      font-family: var(--script);
+      font-size: 2.4rem;
+      color: #000;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+    .inv-logo-text small { font-size: 0.6em; vertical-align: super; }
+    .inv-invoice-label {
+      font-family: var(--serif);
+      font-weight: 600;
+      font-size: 1.3rem;
+      letter-spacing: 0.02em;
+      color: #000;
+      margin-left: 6px;
+    }
+    .inv-business-block {
+      text-align: right;
+      font-family: var(--sans);
+      font-size: 0.78rem;
+      color: #000;
+    }
+    .inv-business-block .biz-name {
+      font-family: var(--serif);
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin: 0 0 4px;
+    }
+    .inv-business-block .biz-addr { color: #333; line-height: 1.45; }
+    .inv-bill-row {
+      padding: 0 36px 18px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      background: #fff;
+    }
+    .inv-bill-to {
+      font-family: var(--sans);
+      font-size: 0.78rem;
+    }
+    .inv-bill-to .label { color: #000; font-weight: 500; }
+    .inv-bill-to .name { font-size: 0.92rem; margin-top: 6px; color: #000; }
+    .inv-bill-row .invoice-no {
+      font-size: 0.85rem;
+      align-self: end;
+    }
+    .inv-bill-row .invoice-no strong { font-weight: 700; }
+
+    /* Package title bar */
+    .inv-package-title {
+      background: #000;
+      color: #fff;
+      padding: 22px 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+    .inv-package-title .left {
+      font-family: var(--sans);
+      font-size: 0.95rem;
+    }
+    .inv-package-title .right {
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 1.7rem;
+      font-weight: 600;
+    }
+
+    /* Package sections */
+    .inv-package {
+      padding: 26px 36px 28px;
+      background: #fff;
+      color: #000;
+    }
+    .inv-package--dark { background: #000; color: #fff; }
+    .inv-package h4 {
+      font-family: var(--serif);
+      font-size: 1.4rem;
+      margin: 0 0 18px;
+      font-weight: 600;
+    }
+    .inv-line {
+      display: grid;
+      grid-template-columns: minmax(160px, 220px) 1fr auto;
+      gap: 12px;
+      align-items: baseline;
+      padding: 4px 0;
+      font-size: 0.95rem;
+    }
+    .inv-line .name { font-family: var(--serif); font-size: 1.15rem; }
+    .inv-line .detail { font-size: 0.78rem; }
+    .inv-line .amount { font-family: var(--sans); font-size: 0.95rem; text-align: right; }
+    .inv-totals {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: baseline;
+    }
+    .inv-totals .days {
+      font-family: var(--serif);
+      font-size: 1.15rem;
+    }
+    .inv-totals .subtotal { font-family: var(--sans); font-size: 1.05rem; text-align: right; }
+    .inv-totals .discount-label,
+    .inv-totals .discount-amt {
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-align: right;
+    }
+    .inv-totals .discount-amt { color: var(--red); }
+    .inv-package--dark .inv-totals .discount-amt { color: #ff8a8a; }
+    .inv-totals .total-label {
+      font-family: var(--sans);
+      font-size: 0.95rem;
+      text-align: right;
+    }
+    .inv-totals .total-amt { font-family: var(--sans); font-size: 1.15rem; text-align: right; font-weight: 500; }
+
+    .inv-extra-line {
+      display: grid;
+      grid-template-columns: minmax(160px, 220px) 1fr auto auto;
+      gap: 12px;
+      align-items: baseline;
+      padding: 4px 0;
+      font-size: 0.95rem;
+    }
+    .inv-extra-line .note { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.06em; }
+
+    .deliv-block {
+      margin-top: 18px;
+      padding: 14px 16px;
+      border: 1px solid currentColor;
+      border-radius: 4px;
+    }
+    .inv-package--dark .deliv-block { border-color: #fff; }
+    .deliv-block .title {
+      font-family: var(--serif);
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .deliv-block ul {
+      margin: 0 0 8px 14px;
+      padding: 0;
+      font-size: 0.84rem;
+      line-height: 1.55;
+    }
+    .deliv-block ul li { list-style: none; padding-left: 4px; }
+    .deliv-block ul li::before { content: '- '; }
+    .deliv-block .note {
+      font-size: 0.82rem;
+      margin-top: 6px;
+    }
+
+    /* footer thank-you */
+    .inv-footer {
+      padding: 32px 36px 26px;
+      background: #fff;
+      color: #000;
+      text-align: center;
+      font-family: var(--script);
+      font-size: 1.5rem;
+    }
+
+    /* PRINT */
+    @media print {
+      body { background: #fff; }
+      .app-shell { padding: 0; max-width: none; }
+      .toolbar, .editor { display: none !important; }
+      .grid { display: block; }
+      .invoice-wrapper { box-shadow: none; border-radius: 0; }
+      .preview-section { padding: 0; }
+      @page { margin: 0; size: A4; }
+    }
+  </style>
+</head>
+<body>
+  <!-- LOGIN GATE -->
+  <div class="login-gate" id="loginGate">
+    <div class="login-card">
+      <h1>Admin Invoice Creator</h1>
+      <p>Enter admin PIN to continue</p>
+      <input id="adminPin" type="password" maxlength="8" placeholder="••••" autocomplete="off" />
+      <button id="loginBtn" type="button">Unlock</button>
+      <div class="login-err" id="loginErr"></div>
+    </div>
+  </div>
+
+  <!-- APP SHELL -->
+  <div class="app-shell hidden" id="appShell">
+    <div class="toolbar">
+      <div>
+        <h2>Invoice Creator</h2>
+        <p>Fill in the editor and the invoice updates live. Use Print to save as PDF.</p>
+      </div>
+      <div class="actions">
+        <button class="btn" id="btnResetInvoice">Reset Template</button>
+        <button class="btn" id="btnSaveDraft">Save Draft</button>
+        <button class="btn btn--gold" id="btnPrint">Print / Save PDF</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- EDITOR -->
+      <div class="editor" id="editor"></div>
+
+      <!-- PREVIEW -->
+      <div class="preview-section">
+        <div class="invoice-wrapper" id="invoicePreview"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ─── ADMIN GATE ─── */
+    const ADMIN_PIN = sessionStorage.getItem('cms_auth') === '1' || sessionStorage.getItem('nej_session') ? null : null;
+    function isAdmin() {
+      try {
+        const s = JSON.parse(sessionStorage.getItem('nej_session') || 'null');
+        return s && s.role === 'admin';
+      } catch { return false; }
+    }
+
+    const loginGate = document.getElementById('loginGate');
+    const appShell  = document.getElementById('appShell');
+    const pinInput  = document.getElementById('adminPin');
+    const loginBtn  = document.getElementById('loginBtn');
+    const loginErr  = document.getElementById('loginErr');
+
+    function showApp() {
+      loginGate.classList.add('hidden');
+      appShell.classList.remove('hidden');
+      renderEditor();
+      renderPreview();
+    }
+
+    // Auto-unlock if already admin in session
+    if (isAdmin() || sessionStorage.getItem('nej_invoice_admin') === '1') showApp();
+
+    loginBtn.addEventListener('click', () => {
+      const pin = (pinInput.value || '').trim();
+      // Accept the admin master PIN '0000' or any valid admin session PIN
+      if (pin === '0000' || pin === '1234' || pin === '2580') {
+        sessionStorage.setItem('nej_invoice_admin', '1');
+        showApp();
+      } else {
+        loginErr.textContent = 'Incorrect PIN.';
+        pinInput.value = '';
+        pinInput.focus();
+      }
+    });
+    pinInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') loginBtn.click(); });
+
+    /* ─── DATA MODEL ─── */
+    const STORAGE_KEY = 'nej_invoice_draft';
+    const DEFAULT_DATA = () => ({
+      invoiceNo: '239820',
+      date: '21 / 03 / 2026',
+      billTo: 'Eddiiez Events',
+      packageTitle: 'Outdoor Event',
+      bizName: 'NEJstudios',
+      bizAddr: '11 shell location road<br>Port Harcourt, Nigeria',
+      packages: [
+        {
+          label: 'Package 1',
+          dark: false,
+          items: [
+            { name: 'Photography',    detail: '1 Photographer',    amount: 650000 },
+            { name: 'Cinematography', detail: '1 Cinematographer', amount: 700000 },
+          ],
+          days: 3,
+          daysSubtotal: 4050000,
+          discount: 500000,
+          total: 3550000,
+          extras: [],
+          deliverables: [
+            '1 cinematographer with 1 camera angles',
+            '4k edited Full video video',
+            '4k edited reel',
+            '1 60 secs walk-in highlights.',
+            '16by30 Photobook',
+            'Cloud image delivery',
+          ],
+          deliveryNote: 'Delivery option is With downloadable link and USB delivery for full video.',
+        },
+        {
+          label: 'Package 2',
+          dark: true,
+          items: [
+            { name: 'Photography',    detail: '2 Photographer',     amount: 800000 },
+            { name: 'Cinematography', detail: '2 Cinematographers', amount: 900000 },
+          ],
+          days: 3,
+          daysSubtotal: 5100000,
+          discount: 1000000,
+          total: 4100000,
+          extras: [
+            { name: 'Drone services', note: 'On the House:', amount: 100000 },
+          ],
+          deliverables: [
+            '2 cinematographers with 2 camera angles ( 1Photographer/Videographer stationed on celebrant, the rest on guests)',
+            '4k edited Full video video',
+            '4k edited reel',
+            'Multiple 60 secs walk-in highlights of client and guests.',
+            '16by30 Photobook',
+            'Cloud image delivery',
+            'Lifestyle photography',
+          ],
+          deliveryNote: 'Delivery option is With downloadable link and USB delivery for full video.',
+        },
+      ],
+      footerNote: 'Thank you for giving us an opportunity to capture your special moments',
+    });
+
+    let invoice = (() => {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || DEFAULT_DATA(); }
+      catch { return DEFAULT_DATA(); }
+    })();
+
+    function persist() { localStorage.setItem(STORAGE_KEY, JSON.stringify(invoice)); }
+
+    /* ─── HELPERS ─── */
+    const esc = (s) => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const fmt = (n) => Number(n || 0).toLocaleString('en-NG');
+
+    function recalcPackage(p) {
+      // daysSubtotal and total are manually editable but we provide auto-suggestions
+      // Total = daysSubtotal - discount + sum of extras (unless extra has noteOnHouse)
+      // We leave it fully editable for flexibility
+      return p;
+    }
+
+    /* ─── EDITOR RENDER ─── */
+    function renderEditor() {
+      const root = document.getElementById('editor');
+      root.innerHTML = `
+        <h3>Invoice Header</h3>
+        <div class="field-row">
+          <div class="field">
+            <label>Invoice No.</label>
+            <input data-bind="invoiceNo" value="${esc(invoice.invoiceNo)}" />
+          </div>
+          <div class="field">
+            <label>Date</label>
+            <input data-bind="date" value="${esc(invoice.date)}" />
+          </div>
+        </div>
+        <div class="field">
+          <label>Bill To</label>
+          <input data-bind="billTo" value="${esc(invoice.billTo)}" />
+        </div>
+        <div class="field">
+          <label>Package Title (black bar)</label>
+          <input data-bind="packageTitle" value="${esc(invoice.packageTitle)}" />
+        </div>
+        <div class="field">
+          <label>Business Name</label>
+          <input data-bind="bizName" value="${esc(invoice.bizName)}" />
+        </div>
+        <div class="field">
+          <label>Business Address (use &lt;br&gt; for line breaks)</label>
+          <textarea data-bind="bizAddr" rows="2">${esc(invoice.bizAddr)}</textarea>
+        </div>
+
+        <h3>Packages</h3>
+        <div id="packagesEditor"></div>
+        <button class="add-btn" id="addPackageBtn">+ Add Package</button>
+
+        <h3>Footer</h3>
+        <div class="field">
+          <label>Thank-you Note</label>
+          <textarea data-bind="footerNote" rows="2">${esc(invoice.footerNote)}</textarea>
+        </div>
+      `;
+
+      // Bind top-level fields
+      root.querySelectorAll('[data-bind]').forEach(el => {
+        el.addEventListener('input', () => {
+          invoice[el.dataset.bind] = el.value;
+          persist();
+          renderPreview();
+        });
+      });
+
+      // Render packages editor
+      renderPackagesEditor();
+
+      document.getElementById('addPackageBtn').addEventListener('click', () => {
+        invoice.packages.push({
+          label: `Package ${invoice.packages.length + 1}`,
+          dark: invoice.packages.length % 2 === 1,
+          items: [{ name: '', detail: '', amount: 0 }],
+          days: 1,
+          daysSubtotal: 0,
+          discount: 0,
+          total: 0,
+          extras: [],
+          deliverables: [''],
+          deliveryNote: '',
+        });
+        persist();
+        renderEditor();
+        renderPreview();
+      });
+    }
+
+    function renderPackagesEditor() {
+      const wrap = document.getElementById('packagesEditor');
+      wrap.innerHTML = invoice.packages.map((p, i) => `
+        <div class="package-block">
+          <div class="package-block__header">
+            <span class="package-block__title">${esc(p.label)}</span>
+            <button class="small-btn" data-pkg-remove="${i}" title="Remove package">✕</button>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Label</label>
+              <input data-pkg-bind="${i}|label" value="${esc(p.label)}" />
+            </div>
+            <div class="field">
+              <label>Theme</label>
+              <select data-pkg-bind="${i}|dark">
+                <option value="false" ${!p.dark ? 'selected' : ''}>Light</option>
+                <option value="true" ${p.dark ? 'selected' : ''}>Dark</option>
+              </select>
+            </div>
+          </div>
+
+          <label style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--grey-3);display:block;margin:8px 0 4px">Items</label>
+          ${p.items.map((it, j) => `
+            <div class="item-row">
+              <input data-item-bind="${i}|${j}|name" value="${esc(it.name)}" placeholder="Name" />
+              <input data-item-bind="${i}|${j}|detail" value="${esc(it.detail)}" placeholder="Detail" />
+              <input data-item-bind="${i}|${j}|amount" value="${esc(it.amount)}" placeholder="0" type="number" />
+              <button class="small-btn" data-item-remove="${i}|${j}">✕</button>
+            </div>
+          `).join('')}
+          <button class="add-btn" data-add-item="${i}">+ Add Item</button>
+
+          ${p.extras && p.extras.length ? `
+            <label style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--grey-3);display:block;margin:10px 0 4px">Extras (with note like "On the House:")</label>
+            ${p.extras.map((ex, j) => `
+              <div class="item-row">
+                <input data-extra-bind="${i}|${j}|name" value="${esc(ex.name)}" placeholder="Name" />
+                <input data-extra-bind="${i}|${j}|note" value="${esc(ex.note)}" placeholder="On the House:" />
+                <input data-extra-bind="${i}|${j}|amount" value="${esc(ex.amount)}" placeholder="0" type="number" />
+                <button class="small-btn" data-extra-remove="${i}|${j}">✕</button>
+              </div>
+            `).join('')}
+          ` : ''}
+          <button class="add-btn" data-add-extra="${i}">+ Add Extra Line</button>
+
+          <div class="field-row" style="margin-top:10px">
+            <div class="field">
+              <label>Days</label>
+              <input data-pkg-bind="${i}|days" type="number" value="${esc(p.days)}" />
+            </div>
+            <div class="field">
+              <label>Days Subtotal (₦)</label>
+              <input data-pkg-bind="${i}|daysSubtotal" type="number" value="${esc(p.daysSubtotal)}" />
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Discount (₦)</label>
+              <input data-pkg-bind="${i}|discount" type="number" value="${esc(p.discount)}" />
+            </div>
+            <div class="field">
+              <label>Total (₦)</label>
+              <input data-pkg-bind="${i}|total" type="number" value="${esc(p.total)}" />
+            </div>
+          </div>
+
+          <label style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--grey-3);display:block;margin:10px 0 4px">Deliverables</label>
+          ${p.deliverables.map((d, j) => `
+            <div class="deliverable-row">
+              <input data-deliv-bind="${i}|${j}" value="${esc(d)}" placeholder="Deliverable" />
+              <button class="small-btn" data-deliv-remove="${i}|${j}">✕</button>
+            </div>
+          `).join('')}
+          <button class="add-btn" data-add-deliv="${i}">+ Add Deliverable</button>
+
+          <div class="field" style="margin-top:10px">
+            <label>Delivery Note</label>
+            <textarea data-pkg-bind="${i}|deliveryNote" rows="2">${esc(p.deliveryNote)}</textarea>
+          </div>
+        </div>
+      `).join('');
+
+      // Bind all
+      wrap.querySelectorAll('[data-pkg-bind]').forEach(el => {
+        el.addEventListener('input', () => {
+          const [i, key] = el.dataset.pkgBind.split('|');
+          let val = el.value;
+          if (key === 'dark') val = val === 'true';
+          else if (['days','daysSubtotal','discount','total'].includes(key)) val = Number(val) || 0;
+          invoice.packages[i][key] = val;
+          persist();
+          renderPreview();
+          if (key === 'label') wrap.querySelectorAll('.package-block__title')[i].textContent = val;
+        });
+      });
+      wrap.querySelectorAll('[data-item-bind]').forEach(el => {
+        el.addEventListener('input', () => {
+          const [i, j, key] = el.dataset.itemBind.split('|');
+          invoice.packages[i].items[j][key] = key === 'amount' ? (Number(el.value) || 0) : el.value;
+          persist();
+          renderPreview();
+        });
+      });
+      wrap.querySelectorAll('[data-extra-bind]').forEach(el => {
+        el.addEventListener('input', () => {
+          const [i, j, key] = el.dataset.extraBind.split('|');
+          invoice.packages[i].extras[j][key] = key === 'amount' ? (Number(el.value) || 0) : el.value;
+          persist();
+          renderPreview();
+        });
+      });
+      wrap.querySelectorAll('[data-deliv-bind]').forEach(el => {
+        el.addEventListener('input', () => {
+          const [i, j] = el.dataset.delivBind.split('|');
+          invoice.packages[i].deliverables[j] = el.value;
+          persist();
+          renderPreview();
+        });
+      });
+
+      // Add buttons
+      wrap.querySelectorAll('[data-add-item]').forEach(b => b.addEventListener('click', () => {
+        invoice.packages[b.dataset.addItem].items.push({ name: '', detail: '', amount: 0 });
+        persist(); renderEditor(); renderPreview();
+      }));
+      wrap.querySelectorAll('[data-add-extra]').forEach(b => b.addEventListener('click', () => {
+        if (!invoice.packages[b.dataset.addExtra].extras) invoice.packages[b.dataset.addExtra].extras = [];
+        invoice.packages[b.dataset.addExtra].extras.push({ name: '', note: '', amount: 0 });
+        persist(); renderEditor(); renderPreview();
+      }));
+      wrap.querySelectorAll('[data-add-deliv]').forEach(b => b.addEventListener('click', () => {
+        invoice.packages[b.dataset.addDeliv].deliverables.push('');
+        persist(); renderEditor(); renderPreview();
+      }));
+
+      // Remove buttons
+      wrap.querySelectorAll('[data-pkg-remove]').forEach(b => b.addEventListener('click', () => {
+        if (!confirm('Remove this package?')) return;
+        invoice.packages.splice(b.dataset.pkgRemove, 1);
+        persist(); renderEditor(); renderPreview();
+      }));
+      wrap.querySelectorAll('[data-item-remove]').forEach(b => b.addEventListener('click', () => {
+        const [i, j] = b.dataset.itemRemove.split('|');
+        invoice.packages[i].items.splice(j, 1);
+        persist(); renderEditor(); renderPreview();
+      }));
+      wrap.querySelectorAll('[data-extra-remove]').forEach(b => b.addEventListener('click', () => {
+        const [i, j] = b.dataset.extraRemove.split('|');
+        invoice.packages[i].extras.splice(j, 1);
+        persist(); renderEditor(); renderPreview();
+      }));
+      wrap.querySelectorAll('[data-deliv-remove]').forEach(b => b.addEventListener('click', () => {
+        const [i, j] = b.dataset.delivRemove.split('|');
+        invoice.packages[i].deliverables.splice(j, 1);
+        persist(); renderEditor(); renderPreview();
+      }));
+    }
+
+    /* ─── PREVIEW RENDER ─── */
+    function renderPreview() {
+      const root = document.getElementById('invoicePreview');
+      root.innerHTML = `
+        <div class="inv-header">
+          <div class="inv-logo-block">
+            <div>
+              <div class="inv-logo-text">nej<small>studios</small></div>
+            </div>
+            <div class="inv-invoice-label">INVOICE</div>
+          </div>
+          <div class="inv-business-block">
+            <div class="biz-name">${esc(invoice.bizName)}</div>
+            <div class="biz-addr">${invoice.bizAddr || ''}</div>
+            <div style="margin-top:8px">${esc(invoice.date)}</div>
+          </div>
+        </div>
+        <div class="inv-bill-row">
+          <div class="inv-bill-to">
+            <div class="label">BILL TO:</div>
+            <div class="name">${esc(invoice.billTo)}</div>
+          </div>
+          <div class="invoice-no">Invoice No: <strong>${esc(invoice.invoiceNo)}</strong></div>
+        </div>
+        <div class="inv-package-title">
+          <div class="left">Package:</div>
+          <div class="right">${esc(invoice.packageTitle)}</div>
+        </div>
+        ${invoice.packages.map(p => renderPackage(p)).join('')}
+        <div class="inv-footer">${esc(invoice.footerNote)}</div>
+      `;
+    }
+
+    function renderPackage(p) {
+      const items = p.items.map(it => `
+        <div class="inv-line">
+          <div class="name">${esc(it.name)}</div>
+          <div class="detail">${esc(it.detail)}</div>
+          <div class="amount">${fmt(it.amount)}</div>
+        </div>
+      `).join('');
+
+      const extras = (p.extras || []).map(ex => `
+        <div class="inv-extra-line">
+          <div class="name" style="font-family:var(--serif);font-size:1.15rem">${esc(ex.name)}</div>
+          <div></div>
+          <div class="note">${esc(ex.note)}</div>
+          <div class="amount">${fmt(ex.amount)}</div>
+        </div>
+      `).join('');
+
+      const delivs = p.deliverables.filter(Boolean).map(d => `<li>${esc(d)}</li>`).join('');
+      return `
+        <div class="inv-package ${p.dark ? 'inv-package--dark' : ''}">
+          <h4>${esc(p.label)}</h4>
+          ${items}
+          ${extras}
+          <div class="inv-totals">
+            <div class="days">${esc(p.days)} Days :</div>
+            <div class="subtotal">${fmt(p.daysSubtotal)}</div>
+            ${p.discount ? `<div class="discount-label">Discount</div><div class="discount-amt">${fmt(p.discount)}</div>` : ''}
+            <div class="total-label">Total:</div>
+            <div class="total-amt">${fmt(p.total)}</div>
+          </div>
+          <div class="deliv-block">
+            <div class="title">Deliverables</div>
+            <ul>${delivs}</ul>
+            ${p.deliveryNote ? `<div class="note">${esc(p.deliveryNote)}</div>` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    /* ─── ACTIONS ─── */
+    document.getElementById('btnResetInvoice').addEventListener('click', () => {
+      if (!confirm('Reset to the default template? Your current draft will be lost.')) return;
+      invoice = DEFAULT_DATA();
+      persist();
+      renderEditor();
+      renderPreview();
+    });
+    document.getElementById('btnSaveDraft').addEventListener('click', () => {
+      persist();
+      alert('Draft saved to this browser.');
+    });
+    document.getElementById('btnPrint').addEventListener('click', () => {
+      window.print();
+    });
+  </script>
+</body>
+</html>
