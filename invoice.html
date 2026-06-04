@@ -248,20 +248,25 @@
     .inv-logo-block {
       display: flex;
       align-items: center;
-      gap: 14px;
     }
     .inv-logo-img {
-      width: 90px;
-      height: 90px;
+      width: 130px;
+      height: 130px;
       object-fit: contain;
       display: block;
     }
-    .inv-invoice-label {
-      font-family: var(--serif);
-      font-weight: 600;
-      font-size: 1.7rem;
-      letter-spacing: 0.04em;
-      color: #000;
+    .inv-logo-fallback {
+      display: none;
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      background: #000;
+      color: #fff;
+      font-family: var(--script);
+      font-size: 3rem;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
     }
     .inv-business-block {
       text-align: right;
@@ -838,8 +843,8 @@
       root.innerHTML = `
         <div class="inv-header">
           <div class="inv-logo-block">
-            <img class="inv-logo-img" src="images/nej-logo.png" alt="NEJstudios" onerror="this.style.display='none'" />
-            <div class="inv-invoice-label">INVOICE</div>
+            <img class="inv-logo-img" src="images/nej-logo.png" alt="NEJstudios" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+            <div class="inv-logo-fallback">Nej</div>
           </div>
           <div class="inv-business-block">
             <div class="biz-name">${esc(invoice.bizName)}</div>
