@@ -248,23 +248,20 @@
     .inv-logo-block {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 14px;
     }
-    .inv-logo-text {
-      font-family: var(--script);
-      font-size: 2.4rem;
-      color: #000;
-      line-height: 1;
-      letter-spacing: -0.02em;
+    .inv-logo-img {
+      width: 90px;
+      height: 90px;
+      object-fit: contain;
+      display: block;
     }
-    .inv-logo-text small { font-size: 0.6em; vertical-align: super; }
     .inv-invoice-label {
       font-family: var(--serif);
       font-weight: 600;
-      font-size: 1.3rem;
-      letter-spacing: 0.02em;
+      font-size: 1.7rem;
+      letter-spacing: 0.04em;
       color: #000;
-      margin-left: 6px;
     }
     .inv-business-block {
       text-align: right;
@@ -841,9 +838,7 @@
       root.innerHTML = `
         <div class="inv-header">
           <div class="inv-logo-block">
-            <div>
-              <div class="inv-logo-text">nej<small>studios</small></div>
-            </div>
+            <img class="inv-logo-img" src="images/nej-logo.png" alt="NEJstudios" onerror="this.style.display='none'" />
             <div class="inv-invoice-label">INVOICE</div>
           </div>
           <div class="inv-business-block">
