@@ -464,6 +464,7 @@ function showDash() {
     renderApprovalsPanel().catch(() => {}); // keep approvals badge fresh
   });
   renderConfirmationsAlert();
+  renderLeaveAlert();
   requestNotifPermission();
   // Register this device as 'admin' with OneSignal for push notifications
   if (window.OneSignalDeferred) {
@@ -3549,6 +3550,56 @@ async function renderAttendance() {
 
 document.getElementById('refreshAttendanceBtn')?.addEventListener('click', () => renderAttendance());
 document.getElementById('refreshLeaveBtn')?.addEventListener('click', () => renderLeaveRequests());
+
+/* ════════════════════════════════════════════
+   LEAVE REQUEST ALERT (dashboard banner + tab badge + new-request toast)
+   ════════════════════════════════════════════ */
+let _lastSeenLeaveIds = null; // Set of IDs seen on last poll
+
+async function renderLeaveAlert() {
+  const banner = document.getElementById('leaveRequestsAlert');
+  const body   = document.getElementById('leaveRequestsAlertBody');
+  const btn    = document.getElementById('leaveRequestsAlertBtn');
+  const badge  = document.getElementById('tabTeamBadge');
+  if (!banner || !badge) return;
+
+  let pending = [];
+  try {
+    const all = await dbGetLeaveRequests();
+    pending = all.filter(e => e.status === 'pending');
+  } catch { return; }
+
+  // Detect new requests since last poll → toast
+  const currentIds = new Set(pending.map(e => e.id));
+  if (_lastSeenLeaveIds !== null) {
+    pending.forEach(e => {
+      if (!_lastSeenLeaveIds.has(e.id)) {
+        showToast(`📅 New leave request from ${e.memberName}: ${e.startDate} → ${e.endDate}`);
+      }
+    });
+  }
+  _lastSeenLeaveIds = currentIds;
+
+  // Update badge
+  badge.textContent = String(pending.length);
+  badge.classList.toggle('zero', pending.length === 0);
+
+  // Banner
+  if (!pending.length) {
+    banner.style.display = 'none';
+    return;
+  }
+  banner.style.display = 'block';
+  const preview = pending.slice(0, 3).map(e =>
+    `<strong>${_escHtml(e.memberName)}</strong> · ${_escHtml(e.startDate)} → ${_escHtml(e.endDate)}`
+  ).join(' &nbsp;·&nbsp; ');
+  const moreText = pending.length > 3 ? ` <span style="color:var(--grey-3)">+${pending.length - 3} more</span>` : '';
+  body.innerHTML = `<strong style="color:var(--gold)">${pending.length}</strong> pending · ${preview}${moreText}`;
+  btn.onclick = () => switchTab('team');
+}
+
+// Poll every 30s while admin dashboard is open
+setInterval(() => renderLeaveAlert(), 30000);
 document.getElementById('refreshApprovalsBtn')?.addEventListener('click', () => renderApprovalsPanel());
 
 async function renderApprovalsPanel() {
@@ -3827,6 +3878,7 @@ async function renderLeaveRequests() {
           : 'Leave approved ✓');
         renderLeaveRequests();
         renderAttendance();
+        renderLeaveAlert();
       }
     });
   });
@@ -3843,6 +3895,7 @@ async function renderLeaveRequests() {
         });
         showToast('Leave rejected');
         renderLeaveRequests();
+        renderLeaveAlert();
       }
     });
   });
