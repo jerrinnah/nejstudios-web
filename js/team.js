@@ -1280,11 +1280,13 @@ async function renderMyLeaveRequests() {
   if (!mine.length) { wrap.innerHTML = '<div style="font-size:0.78rem;color:var(--grey-4);padding:6px 0">No leave requests yet</div>'; return; }
   wrap.innerHTML = mine.map(e => {
     const color = e.status === 'approved' ? 'var(--green)' : e.status === 'rejected' ? 'var(--red)' : 'var(--gold)';
+    const refundTotal = e.refunded && e.refunded.total > 0 ? e.refunded.total : 0;
     return `
       <div style="padding:10px 12px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;margin-top:8px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
         <div style="flex:1;min-width:0">
           <div style="font-size:0.82rem;color:var(--white)">${esc(e.startDate)} → ${esc(e.endDate)}</div>
           ${e.reason ? `<div style="font-size:0.72rem;color:var(--grey-3);margin-top:2px">"${esc(e.reason)}"</div>` : ''}
+          ${refundTotal ? `<div style="font-size:0.7rem;color:var(--green);margin-top:3px;font-weight:600">+₦${refundTotal.toLocaleString()} refunded to salary</div>` : ''}
         </div>
         <span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;color:${color};letter-spacing:0.08em">${esc(e.status)}</span>
       </div>`;
@@ -2107,10 +2109,11 @@ async function renderSignIn() {
                 <div class="signin-row__date">
                   ${fmt}${isToday ? ' <span style="font-size:0.68rem;color:var(--gold);font-weight:700">TODAY</span>' : ''}
                   <span style="font-size:0.68rem;font-weight:700;color:var(--red);margin-left:6px;text-transform:uppercase">ABSENT</span>
-                  ${r.authorised ? '<span style="font-size:0.68rem;font-weight:700;color:var(--green);margin-left:6px;text-transform:uppercase">AUTHORISED</span>' : ''}
+                  ${r.onLeave ? '<span style="font-size:0.68rem;font-weight:700;color:var(--green);margin-left:6px;text-transform:uppercase">ON LEAVE</span>' : (r.authorised ? '<span style="font-size:0.68rem;font-weight:700;color:var(--green);margin-left:6px;text-transform:uppercase">AUTHORISED</span>' : '')}
                 </div>
                 <div class="signin-row__times" style="color:var(--red);opacity:0.7">Did not sign in before 12:00 PM</div>
                 ${absentDed ? `<div class="signin-row__summary" style="color:var(--red)">Deduction: ₦${absentDed.toLocaleString()}</div>` : ''}
+                ${r.absentRefunded ? `<div class="signin-row__summary" style="color:var(--green)">Refunded: +₦${r.absentRefunded.toLocaleString()}</div>` : ''}
               </div>
             </div>`;
         }
@@ -2122,12 +2125,14 @@ async function renderSignIn() {
               <div class="signin-row__date">
                 ${fmt}${isToday ? ' <span style="font-size:0.68rem;color:var(--gold);font-weight:700">TODAY</span>' : ''}
                 ${lateStr ? `<span class="signin-row__late">${lateStr}</span>` : ''}
+                ${r.onLeave ? '<span style="font-size:0.68rem;font-weight:700;color:var(--green);margin-left:6px;text-transform:uppercase">ON LEAVE</span>' : ''}
               </div>
               <div class="signin-row__times">
                 <span class="signin-row__time">In: ${signInTime}</span>
                 ${r.signOutTime ? `<span class="signin-row__outtime">Out: ${r.signOutTime}</span>` : ''}
               </div>
               ${lateDed ? `<div class="signin-row__summary" style="color:var(--red)">Late deduction: ₦${lateDed.toLocaleString()}</div>` : ''}
+              ${r.lateRefunded ? `<div class="signin-row__summary" style="color:var(--green)">Refunded: +₦${r.lateRefunded.toLocaleString()}</div>` : ''}
               ${r.daySummary ? `<div class="signin-row__summary">"${r.daySummary}"</div>` : ''}
             </div>
           </div>`;

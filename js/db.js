@@ -944,22 +944,43 @@ async function dbDecideLeaveRequest(id, decision) {
   if (!entry) return null;
   entry.status    = decision; // 'approved' or 'rejected'
   entry.decidedAt = Date.now();
-  await fetch('/api/sync.php?resource=leave_requests', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(all),
-  });
-  // If approved, retroactively clear deductions for any existing records in that date range
+
+  // If approved, retroactively refund deductions for any existing records in that date range.
+  let refunded = { lateRefund: 0, absentRefund: 0, total: 0, days: 0 };
   if (decision === 'approved') {
     const data = await dbGetAttendance();
     const list = data[entry.memberId] || [];
     let changed = false;
     list.forEach(r => {
-      if (r.date >= entry.startDate && r.date <= entry.endDate) {
-        if (r.absent) { r.authorised = true; r.absentDeduction = 0; r.onLeave = true; changed = true; }
-        if (r.lateDeduction) { r.lateDeduction = 0; r.onLeave = true; changed = true; }
+      if (r.date < entry.startDate || r.date > entry.endDate) return;
+      let touched = false;
+      if (r.lateDeduction) {
+        refunded.lateRefund += r.lateDeduction;
+        r.lateRefunded     = (r.lateRefunded || 0) + r.lateDeduction;
+        r.lateDeduction    = 0;
+        touched = true;
       }
+      if (r.absent && r.absentDeduction) {
+        refunded.absentRefund += r.absentDeduction;
+        r.absentRefunded     = (r.absentRefunded || 0) + r.absentDeduction;
+        r.absentDeduction    = 0;
+        r.authorised         = true;
+        touched = true;
+      } else if (r.absent && !r.authorised) {
+        r.authorised = true; touched = true;
+      }
+      if (touched) { r.onLeave = true; r.refundedAt = Date.now(); refunded.days++; changed = true; }
     });
+    refunded.total = refunded.lateRefund + refunded.absentRefund;
+    entry.refunded = refunded;
     if (changed) await _saveAttendance(data);
   }
+
+  // Save the updated leave request (with refund info if applicable)
+  await fetch('/api/sync.php?resource=leave_requests', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(all),
+  });
+
   return entry;
 }
 

@@ -3812,13 +3812,19 @@ async function renderLeaveRequests() {
     btn.addEventListener('click', async () => {
       const entry = await dbDecideLeaveRequest(btn.dataset.leaveApprove, 'approved');
       if (entry) {
+        const refund = entry.refunded && entry.refunded.total > 0;
+        const refundText = refund
+          ? ` ₦${entry.refunded.total.toLocaleString()} previously deducted has been refunded to your salary.`
+          : '';
         pushTeamNotification(entry.memberId, {
           type: 'leave-approved',
           title: 'Leave Approved',
-          message: `Your leave ${entry.startDate} → ${entry.endDate} was approved.`,
+          message: `Your leave ${entry.startDate} → ${entry.endDate} was approved.${refundText}`,
           ts: Date.now(),
         });
-        showToast('Leave approved ✓');
+        showToast(refund
+          ? `Leave approved ✓ ₦${entry.refunded.total.toLocaleString()} refunded`
+          : 'Leave approved ✓');
         renderLeaveRequests();
         renderAttendance();
       }
