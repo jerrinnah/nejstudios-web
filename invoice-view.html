@@ -171,6 +171,96 @@
 
     #loadingState, #errorState { text-align: center; padding: 60px 20px; color: #666; }
     #errorState { color: #b03030; }
+
+    /* Payment CTA */
+    .pay-cta {
+      max-width: 820px;
+      margin: 0 auto 14px;
+      background: #fff;
+      border: 2px solid #1a7a4a;
+      border-radius: 12px;
+      padding: 20px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .pay-cta .text { flex: 1; min-width: 200px; }
+    .pay-cta .text h3 { margin: 0 0 3px; font-family: var(--serif); font-size: 1.15rem; color: #000; }
+    .pay-cta .text p { margin: 0; font-size: 0.82rem; color: #444; }
+    .pay-cta button {
+      padding: 12px 24px;
+      background: #1a7a4a;
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      font-family: var(--sans);
+      letter-spacing: 0.04em;
+    }
+    .pay-cta button:hover { background: #145d38; }
+
+    .paid-banner {
+      max-width: 820px;
+      margin: 0 auto 14px;
+      padding: 18px 22px;
+      background: linear-gradient(135deg, #d4f4dd, #a8e5bc);
+      border: 1px solid #4caf7a;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .paid-banner .text { flex: 1; min-width: 200px; }
+    .paid-banner .text h3 { margin: 0; font-family: var(--serif); font-size: 1.05rem; color: #0a3d1f; }
+    .paid-banner .text p { margin: 4px 0 0; font-size: 0.82rem; color: #245b3a; }
+    .paid-banner a {
+      padding: 10px 20px;
+      background: #f5c400;
+      color: #000;
+      font-weight: 700;
+      font-size: 0.85rem;
+      text-decoration: none;
+      border-radius: 8px;
+    }
+
+    /* Payment modal */
+    .p-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .p-modal.open { display: flex; }
+    .p-modal__box {
+      background: #fff;
+      border-radius: 12px;
+      padding: 26px 24px 22px;
+      max-width: 440px;
+      width: 100%;
+    }
+    .p-modal__box h3 { margin: 0 0 6px; font-family: var(--serif); font-size: 1.35rem; }
+    .p-modal__box p { margin: 0 0 16px; font-size: 0.85rem; color: #555; }
+    .p-modal__box label { display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: #666; margin-bottom: 4px; }
+    .p-modal__box input, .p-modal__box select {
+      width: 100%; padding: 10px 12px; margin-bottom: 14px;
+      border: 1px solid #ccc; border-radius: 8px; font-size: 0.9rem; font-family: var(--sans);
+    }
+    .p-modal__box .btn-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 6px; }
+    .p-modal__box button {
+      padding: 10px 18px; border: 1px solid #ccc; background: #fff; color: #000;
+      border-radius: 8px; font-size: 0.85rem; cursor: pointer;
+    }
+    .p-modal__box button.primary { background: #1a7a4a; color: #fff; border-color: #1a7a4a; font-weight: 700; }
   </style>
 </head>
 <body>
@@ -181,8 +271,35 @@
     </div>
   </div>
 
+  <!-- Payment CTA (shown for unpaid invoices) / Paid banner (shown once paid) -->
+  <div id="payArea"></div>
+
   <div class="page" id="pageWrap">
     <div id="loadingState">Loading invoice…</div>
+  </div>
+
+  <!-- Payment confirmation modal -->
+  <div class="p-modal" id="payModal">
+    <div class="p-modal__box">
+      <h3>Confirm Your Payment</h3>
+      <p>Only click confirm after you've completed the transfer. NEJstudios will verify and issue your receipt.</p>
+      <label>Payment Reference / Transaction ID (optional)</label>
+      <input id="payRef" type="text" placeholder="e.g. TXN-9218374" />
+      <label>Payment Method</label>
+      <select id="payMethod">
+        <option value="Bank Transfer">Bank Transfer</option>
+        <option value="Cash">Cash</option>
+        <option value="POS">POS</option>
+        <option value="Card">Card</option>
+        <option value="Other">Other</option>
+      </select>
+      <label>Amount Paid (₦)</label>
+      <input id="payAmount" type="number" placeholder="e.g. 500000" />
+      <div class="btn-row">
+        <button onclick="closePayModal()">Cancel</button>
+        <button class="primary" onclick="submitPayment()">Confirm Payment</button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -193,15 +310,138 @@
     if (!urlNo) { document.getElementById('pageWrap').innerHTML = '<div id="errorState">No invoice number in URL.</div>'; }
     else load();
 
+    let currentInvoice = null;
+
     async function load() {
       try {
         const r = await fetch('/api/sync.php?resource=invoices', { cache: 'no-store' });
         const list = r.ok ? await r.json() : [];
         const inv = Array.isArray(list) ? list.find(x => x.invoiceNo === urlNo) : null;
         if (!inv) { document.getElementById('pageWrap').innerHTML = `<div id="errorState">Invoice ${esc(urlNo)} not found.</div>`; return; }
+        currentInvoice = inv;
+        renderPayArea(inv);
         renderInvoice(inv);
       } catch (e) {
         document.getElementById('pageWrap').innerHTML = '<div id="errorState">Could not load invoice.</div>';
+      }
+    }
+
+    function renderPayArea(inv) {
+      const el = document.getElementById('payArea');
+      const total = (inv.packages || []).reduce((s, p) => s + Number(p.total || 0), 0);
+      const paid = Number(inv.depositPaid || 0) + Number(inv.balancePaid || 0);
+      const isPaid = inv.status === 'paid' || (total && paid >= total);
+      if (isPaid) {
+        el.innerHTML = `
+          <div class="paid-banner">
+            <div class="text">
+              <h3>✓ Payment Received — Thank You!</h3>
+              <p>Your receipt is ready. Click the button to view or download it.</p>
+            </div>
+            <a href="receipt.html?no=${encodeURIComponent(inv.invoiceNo)}" target="_blank">📄 View Receipt</a>
+          </div>`;
+      } else {
+        const outstanding = Math.max(0, total - paid);
+        el.innerHTML = `
+          <div class="pay-cta">
+            <div class="text">
+              <h3>💰 Make Payment</h3>
+              <p>${outstanding ? '₦' + fmt(outstanding) + ' outstanding on this invoice.' : 'Confirm your payment to receive your receipt.'}</p>
+            </div>
+            <button onclick="openPayModal()">I've Paid</button>
+          </div>`;
+      }
+    }
+
+    function openPayModal() {
+      if (!currentInvoice) return;
+      const total = (currentInvoice.packages || []).reduce((s, p) => s + Number(p.total || 0), 0);
+      const paid = Number(currentInvoice.depositPaid || 0) + Number(currentInvoice.balancePaid || 0);
+      const outstanding = Math.max(0, total - paid);
+      const amtEl = document.getElementById('payAmount');
+      if (amtEl) amtEl.value = outstanding || total || '';
+      document.getElementById('payModal').classList.add('open');
+    }
+    function closePayModal() { document.getElementById('payModal').classList.remove('open'); }
+
+    async function submitPayment() {
+      if (!currentInvoice) return;
+      const ref    = (document.getElementById('payRef').value || '').trim();
+      const method = document.getElementById('payMethod').value;
+      const amt    = Number(document.getElementById('payAmount').value) || 0;
+      if (!amt) { alert('Please enter the amount paid.'); return; }
+      if (!confirm('Confirm you have completed this payment? NEJstudios will verify it.')) return;
+
+      // Fetch fresh list, update invoice, save
+      try {
+        const r = await fetch('/api/sync.php?resource=invoices', { cache: 'no-store' });
+        const list = r.ok ? await r.json() : [];
+        if (!Array.isArray(list)) return;
+        const idx = list.findIndex(x => x.invoiceNo === currentInvoice.invoiceNo);
+        if (idx === -1) { alert('Could not find invoice on server.'); return; }
+        const inv = list[idx];
+
+        // Split the payment: first fill any missing deposit, remainder → balance
+        const total = (inv.packages || []).reduce((s, p) => s + Number(p.total || 0), 0);
+        const existingDep = Number(inv.depositPaid || 0);
+        const existingBal = Number(inv.balancePaid || 0);
+        const targetDeposit = Math.round(total * 0.5); // treat deposit as ~50% baseline
+        let remaining = amt;
+
+        // Top up deposit toward baseline first
+        if (existingDep < targetDeposit && remaining > 0) {
+          const topUp = Math.min(remaining, targetDeposit - existingDep);
+          inv.depositPaid = existingDep + topUp;
+          remaining -= topUp;
+        }
+        if (remaining > 0) inv.balancePaid = existingBal + remaining;
+
+        // Payment log
+        if (!Array.isArray(inv.paymentLog)) inv.paymentLog = [];
+        inv.paymentLog.push({
+          ts: Date.now(),
+          amount: amt,
+          method,
+          reference: ref,
+          confirmedByClient: true,
+        });
+
+        // Update status
+        const totalPaid = Number(inv.depositPaid || 0) + Number(inv.balancePaid || 0);
+        if (total && totalPaid >= total) inv.status = 'paid';
+        else if (inv.status !== 'paid') inv.status = 'partial-paid';
+
+        list[idx] = inv;
+        await fetch('/api/sync.php?resource=invoices', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(list),
+        });
+
+        // Notify admin via push
+        try {
+          await fetch('/api/notify.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              target: 'admin',
+              title: '💰 Payment Confirmed',
+              message: `${inv.billTo} confirmed payment of ₦${fmt(amt)} on invoice #${inv.invoiceNo}${ref ? ' (ref: ' + ref + ')' : ''}. Please verify.`,
+            }),
+          });
+        } catch {}
+
+        currentInvoice = inv;
+        closePayModal();
+        renderPayArea(inv);
+        renderInvoice(inv);
+        // Auto-open receipt in a new tab
+        setTimeout(() => {
+          window.open('receipt.html?no=' + encodeURIComponent(inv.invoiceNo), '_blank');
+        }, 400);
+      } catch (e) {
+        alert('Something went wrong. Please try again or contact NEJstudios.');
+        console.error(e);
       }
     }
 

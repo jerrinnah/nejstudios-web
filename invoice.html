@@ -890,6 +890,7 @@
             <label>Status</label>
             <select data-bind="status">
               <option value="sent" ${(invoice.status || 'sent') === 'sent' ? 'selected' : ''}>Sent</option>
+              <option value="partial-paid" ${invoice.status === 'partial-paid' ? 'selected' : ''}>Partial-Paid</option>
               <option value="paid" ${invoice.status === 'paid' ? 'selected' : ''}>Paid</option>
               <option value="overdue" ${invoice.status === 'overdue' ? 'selected' : ''}>Overdue</option>
             </select>
@@ -1350,12 +1351,15 @@
         const dep = Number(inv.depositPaid || 0), bal = Number(inv.balancePaid || 0);
         const paid = dep + bal;
         const outstanding = Math.max(0, total - paid);
-        const statusColor = inv.status === 'paid' ? 'var(--green)' : inv.status === 'overdue' ? 'var(--red)' : 'var(--gold)';
+        const statusColor = inv.status === 'paid' ? 'var(--green)' : inv.status === 'overdue' ? 'var(--red)' : inv.status === 'partial-paid' ? 'var(--orange, #f59e0b)' : 'var(--gold)';
+        const clientLog = Array.isArray(inv.paymentLog) ? inv.paymentLog.filter(p => p.confirmedByClient) : [];
+        const pendingVerify = clientLog.length > 0 && inv.status !== 'paid';
         return `
-          <div style="padding:12px;background:var(--bg-3);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+          <div style="padding:12px;background:var(--bg-3);border:1px solid ${pendingVerify ? '#f59e0b' : 'var(--border)'};border-radius:8px;margin-bottom:8px;display:flex;flex-wrap:wrap;gap:10px;align-items:center">
             <div style="flex:1;min-width:0">
-              <div style="font-size:0.9rem;color:var(--white);font-weight:600">${esc(inv.billTo)} · #${esc(inv.invoiceNo)}</div>
+              <div style="font-size:0.9rem;color:var(--white);font-weight:600">${esc(inv.billTo)} · #${esc(inv.invoiceNo)} ${pendingVerify ? '<span style="color:#f59e0b;font-size:0.68rem;padding:2px 6px;background:rgba(245,158,11,0.15);border-radius:10px;margin-left:4px">⚠ CLIENT CONFIRMED — VERIFY</span>' : ''}</div>
               <div style="font-size:0.72rem;color:var(--grey-3);margin-top:2px">${esc(inv.packageTitle || '')} · Total ₦${total.toLocaleString('en-NG')}${paid ? ' · Paid ₦' + paid.toLocaleString('en-NG') : ''}${outstanding ? ' · Outstanding ₦' + outstanding.toLocaleString('en-NG') : ''}</div>
+              ${clientLog.length ? `<div style="font-size:0.68rem;color:#f59e0b;margin-top:3px">Latest client confirmation: ₦${Number(clientLog[clientLog.length-1].amount).toLocaleString('en-NG')} via ${esc(clientLog[clientLog.length-1].method)}${clientLog[clientLog.length-1].reference ? ' · ref ' + esc(clientLog[clientLog.length-1].reference) : ''}</div>` : ''}
             </div>
             <span style="font-size:0.66rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:${statusColor}">${esc(inv.status || 'draft')}</span>
             <div style="display:flex;gap:5px">
