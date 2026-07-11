@@ -547,6 +547,52 @@
       margin-top: 6px;
     }
 
+    /* Payment / account block */
+    .inv-payment {
+      padding: 22px 36px;
+      background: #f8f4e8;
+      border-top: 1px solid #e2d9bc;
+      border-bottom: 1px solid #e2d9bc;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 8px 22px;
+      font-family: var(--sans);
+      font-size: 0.85rem;
+      color: #000;
+    }
+    .inv-payment .title {
+      grid-column: 1 / -1;
+      font-family: var(--serif);
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #7a6420;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .inv-payment .k {
+      color: #666;
+      text-transform: uppercase;
+      font-size: 0.68rem;
+      letter-spacing: 0.06em;
+      align-self: center;
+    }
+    .inv-payment .v {
+      color: #000;
+      font-weight: 600;
+      font-size: 0.98rem;
+      letter-spacing: 0.02em;
+    }
+    .inv-payment .acct {
+      font-family: monospace;
+      font-size: 1.1rem;
+      color: #000;
+    }
+    @media (max-width: 720px) {
+      .inv-payment { padding: 18px 20px; grid-template-columns: 1fr; gap: 4px 0; }
+      .inv-payment .k { margin-top: 8px; }
+    }
+
     /* footer thank-you */
     .inv-footer {
       padding: 32px 36px 26px;
@@ -623,6 +669,7 @@
         <button class="btn" id="btnResetInvoice">New / Reset</button>
         <button class="btn" id="btnSaveDraft">💾 Save Draft</button>
         <button class="btn" id="btnSaveServer">☁️ Save & Get Link</button>
+        <button class="btn" id="btnReceipt" style="border-color:#25D366;color:#25D366">🧾 Generate Receipt</button>
         <button class="btn btn--gold" id="btnPrint">🖨 Print / PDF</button>
       </div>
     </div>
@@ -720,6 +767,9 @@
       packageTitle: 'Outdoor Event',
       bizName: 'NEJstudios',
       bizAddr: '11 shell location road<br>Port Harcourt, Nigeria',
+      bankName: 'GTBank',
+      accountName: 'NEJstudios',
+      accountNumber: '0123456789',
       packages: [
         {
           label: 'Package 1',
@@ -862,6 +912,21 @@
 
         <!-- FOOTER SECTION -->
         <div class="editor-section ${activeEditorTab === 'footer' ? 'active' : ''}" data-section="footer">
+          <h3 style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--gold);margin:0 0 10px">Payment Details</h3>
+          <div class="field">
+            <label>Bank Name</label>
+            <input data-bind="bankName" value="${esc(invoice.bankName || '')}" placeholder="e.g. GTBank" />
+          </div>
+          <div class="field">
+            <label>Account Name</label>
+            <input data-bind="accountName" value="${esc(invoice.accountName || '')}" placeholder="e.g. NEJstudios Ltd" />
+          </div>
+          <div class="field">
+            <label>Account Number</label>
+            <input data-bind="accountNumber" value="${esc(invoice.accountNumber || '')}" placeholder="0123456789" />
+          </div>
+
+          <h3 style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--gold);margin:16px 0 10px">Footer</h3>
           <div class="field">
             <label>Thank-you Note</label>
             <textarea data-bind="footerNote" rows="3">${esc(invoice.footerNote)}</textarea>
@@ -1139,8 +1204,20 @@
           <div class="right">${esc(invoice.packageTitle)}</div>
         </div>
         ${invoice.packages.map(p => renderPackage(p)).join('')}
+        ${renderPaymentBlock(invoice)}
         <div class="inv-footer">${esc(invoice.footerNote)}</div>
       `;
+    }
+
+    function renderPaymentBlock(inv) {
+      if (!inv.bankName && !inv.accountName && !inv.accountNumber) return '';
+      return `
+        <div class="inv-payment">
+          <div class="title">Payment Details</div>
+          ${inv.bankName ?      `<div class="k">Bank</div><div class="v">${esc(inv.bankName)}</div>` : ''}
+          ${inv.accountName ?   `<div class="k">Account Name</div><div class="v">${esc(inv.accountName)}</div>` : ''}
+          ${inv.accountNumber ? `<div class="k">Account No.</div><div class="v acct">${esc(inv.accountNumber)}</div>` : ''}
+        </div>`;
     }
 
     function renderPackage(p) {
@@ -1197,6 +1274,15 @@
     });
     document.getElementById('btnPrint').addEventListener('click', () => {
       window.print();
+    });
+
+    document.getElementById('btnReceipt').addEventListener('click', async () => {
+      if (!invoice.invoiceNo) { alert('Enter an invoice number first.'); return; }
+      // Ensure invoice is saved so receipt.html can load it
+      const record = { ...invoice, savedAt: Date.now(), status: invoice.status || 'sent' };
+      await saveInvoiceToServer(record);
+      const url = 'receipt.html?no=' + encodeURIComponent(record.invoiceNo);
+      window.open(url, '_blank');
     });
 
     /* ─── SERVER-SIDE SAVE + LIST ─── */

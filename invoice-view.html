@@ -126,6 +126,18 @@
       padding: 32px 36px 26px; background: #fff; color: #000; text-align: center;
       font-family: var(--script); font-size: 1.5rem;
     }
+    .inv-payment {
+      padding: 22px 36px; background: #f8f4e8; border-top: 1px solid #e2d9bc;
+      border-bottom: 1px solid #e2d9bc;
+      display: grid; grid-template-columns: auto 1fr; gap: 8px 22px;
+      font-family: var(--sans); font-size: 0.85rem; color: #000;
+    }
+    .inv-payment .title { grid-column: 1 / -1; font-family: var(--serif); font-size: 1.05rem; font-weight: 600; color: #7a6420; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.08em; }
+    .inv-payment .k { color: #666; text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.06em; align-self: center; }
+    .inv-payment .v { color: #000; font-weight: 600; font-size: 0.98rem; }
+    .inv-payment .acct { font-family: monospace; font-size: 1.1rem; }
+    @media (max-width: 720px) { .inv-payment { padding: 18px 20px; grid-template-columns: 1fr; gap: 4px 0; } .inv-payment .k { margin-top: 8px; } }
+
     .payment-summary {
       padding: 20px 36px; background: #f8f4e8; border-top: 1px solid #ddd;
       display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
@@ -236,9 +248,21 @@
           <div class="right">${esc(inv.packageTitle || '')}</div>
         </div>
         ${packages}
+        ${renderAccountBlock(inv)}
         ${paymentBlock}
         <div class="inv-footer">${esc(inv.footerNote || 'Thank you.')}</div>
       `;
+    }
+
+    function renderAccountBlock(inv) {
+      if (!inv.bankName && !inv.accountName && !inv.accountNumber) return '';
+      return `
+        <div class="inv-payment">
+          <div class="title">Payment Details</div>
+          ${inv.bankName ?      `<div class="k">Bank</div><div class="v">${esc(inv.bankName)}</div>` : ''}
+          ${inv.accountName ?   `<div class="k">Account Name</div><div class="v">${esc(inv.accountName)}</div>` : ''}
+          ${inv.accountNumber ? `<div class="k">Account No.</div><div class="v acct">${esc(inv.accountNumber)}</div>` : ''}
+        </div>`;
     }
 
     function renderPackage(p) {
