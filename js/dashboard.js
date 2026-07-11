@@ -3662,6 +3662,117 @@ async function renderLeaveAlert() {
 
 // Poll every 30s while admin dashboard is open
 setInterval(() => renderLeaveAlert(), 30000);
+
+/* ════════════════════════════════════════════
+   UPCOMING SHOOTS / EVENTS REMINDERS
+   Fires push notifications to every staff + admin at:
+     - 48 hours before   (once)
+     - 24 hours before   (once)
+     - Day of the shoot  (once, in the morning)
+   Also shows a persistent banner + toast when new ones cross a window.
+   ════════════════════════════════════════════ */
+const REMINDER_WINDOWS = [
+  { key: 'reminder48h',    hoursFrom: 40, hoursTo: 50, label: '2 days',  emoji: '📅', prefix: 'In 2 days' },
+  { key: 'reminder24h',    hoursFrom: 18, hoursTo: 28, label: '1 day',   emoji: '⏰', prefix: 'Tomorrow' },
+  { key: 'reminderDayOf',  hoursFrom: -2, hoursTo: 14, label: 'today',   emoji: '🎬', prefix: 'TODAY' },
+];
+
+function _bookingDateStr(b) {
+  return b.bookingKind === 'studio' ? (b.shootDate || b.preferredDate) : b.eventDate;
+}
+function _bookingLabel(b) {
+  const kind = b.bookingKind === 'studio' ? (b.sessionType || 'Studio Session')
+    : (EVENT_TYPE_LABELS[b.eventType] || b.eventType || 'Event');
+  return `${b.clientName || 'Client'} — ${kind}`;
+}
+
+async function checkAndSendBookingReminders() {
+  try {
+    const bookings = (await dbFetchBookings()).filter(b =>
+      !b.deletedAt && b.status !== 'cancelled' && b.status !== 'completed' && _bookingDateStr(b)
+    );
+    const now = Date.now();
+    const upcomingSummaries = [];
+    let changedList = false;
+    const localBookings = getBookings();
+
+    for (const b of bookings) {
+      const dateStr = _bookingDateStr(b);
+      const eventTs = new Date(dateStr + 'T09:00:00').getTime();
+      const hoursUntil = (eventTs - now) / 3_600_000;
+      if (hoursUntil > 60) continue; // out of any reminder window
+
+      // Track for the banner
+      if (hoursUntil <= 50 && hoursUntil >= -2) {
+        upcomingSummaries.push({ b, hoursUntil, dateStr });
+      }
+
+      // Fire each window at most once
+      for (const win of REMINDER_WINDOWS) {
+        if (hoursUntil >= win.hoursFrom && hoursUntil <= win.hoursTo && !b[win.key]) {
+          const message = `${win.emoji} ${win.prefix}: ${_bookingLabel(b)} on ${dateStr}${b.location ? ' · ' + b.location : ''}`;
+          // Push to every staff (skip admins to avoid double-hit) + admin external_id
+          const team = getTeam();
+          const recipients = team.filter(m => m.role !== 'admin').map(m => m.id);
+          recipients.push('admin');
+          for (const rid of recipients) {
+            fetch('/api/notify.php', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                memberId: rid === 'admin' ? undefined : rid,
+                target:   rid === 'admin' ? 'admin' : undefined,
+                title:    'Shoot Reminder',
+                message,
+              }),
+            }).catch(() => {});
+          }
+          // Also send in-app notification via existing pipeline
+          team.filter(m => m.role !== 'admin').forEach(m => {
+            pushTeamNotification(m.id, { type: 'booking-reminder', title: 'Shoot Reminder', message, ts: Date.now() });
+          });
+          // Mark on the booking so we don't resend
+          const idx = localBookings.findIndex(x => x.id === b.id);
+          if (idx !== -1) {
+            localBookings[idx][win.key] = Date.now();
+            changedList = true;
+          }
+          // Show a toast for admin viewing right now
+          if (typeof showToast === 'function') showToast(message);
+        }
+      }
+    }
+
+    if (changedList) saveBookings(localBookings);
+
+    renderUpcomingShootsBanner(upcomingSummaries);
+  } catch (e) {
+    console.warn('booking reminder check failed', e);
+  }
+}
+
+function renderUpcomingShootsBanner(items) {
+  const banner = document.getElementById('upcomingShootsAlert');
+  const body   = document.getElementById('upcomingShootsBody');
+  const btn    = document.getElementById('upcomingShootsBtn');
+  if (!banner || !body) return;
+  if (!items.length) { banner.style.display = 'none'; return; }
+  banner.style.display = 'block';
+  items.sort((a, b) => a.hoursUntil - b.hoursUntil);
+  const preview = items.slice(0, 3).map(({ b, hoursUntil, dateStr }) => {
+    const when = hoursUntil <= 6 ? '<strong style="color:#f87171">TODAY</strong>'
+      : hoursUntil <= 30 ? '<strong style="color:#fbbf24">Tomorrow</strong>'
+      : `<strong style="color:var(--gold)">${Math.ceil(hoursUntil / 24)}d</strong>`;
+    return `${when} · <strong>${_escHtml(b.clientName)}</strong> (${_escHtml(dateStr)})`;
+  }).join(' &nbsp;·&nbsp; ');
+  const moreText = items.length > 3 ? ` <span style="color:var(--grey-3)">+${items.length - 3} more</span>` : '';
+  body.innerHTML = preview + moreText;
+  btn.onclick = () => switchTab('bookings');
+}
+
+// Kick off on dashboard init + every 20 minutes
+setTimeout(() => checkAndSendBookingReminders(), 3000);
+setInterval(() => checkAndSendBookingReminders(), 20 * 60 * 1000);
 document.getElementById('refreshApprovalsBtn')?.addEventListener('click', () => renderApprovalsPanel());
 
 async function renderApprovalsPanel() {

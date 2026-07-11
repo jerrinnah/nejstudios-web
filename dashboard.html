@@ -1210,6 +1210,18 @@
           <!-- ══ BOOKINGS PANEL ══ -->
           <div id="panel-bookings" class="tab-panel active">
             <!-- Client confirmations alert -->
+            <!-- Upcoming shoots / events alert (48h, 24h, day-of) -->
+            <div id="upcomingShootsAlert" style="display:none;margin-bottom:18px;background:linear-gradient(90deg,rgba(248,113,113,0.12),rgba(201,168,76,0.10));border:1px solid rgba(248,113,113,0.35);border-radius:10px;padding:14px 18px;animation:leaveAlertPulse 2s ease-in-out infinite">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" style="width:18px;height:18px;flex-shrink:0"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  <span style="font-size:0.85rem;font-weight:600;color:#f87171">Upcoming Shoots &amp; Events</span>
+                </div>
+                <div id="upcomingShootsBody" style="font-size:0.82rem;color:var(--white);flex:1;min-width:220px"></div>
+                <button id="upcomingShootsBtn" style="font-size:0.72rem;padding:6px 14px;background:#f87171;border:none;border-radius:6px;color:#000;cursor:pointer;font-weight:700;letter-spacing:0.04em">View →</button>
+              </div>
+            </div>
+
             <!-- Pending leave requests alert -->
             <div id="leaveRequestsAlert" style="display:none;margin-bottom:18px;background:rgba(201,168,76,.10);border:1px solid rgba(201,168,76,.35);border-radius:10px;padding:14px 18px;animation:leaveAlertPulse 2s ease-in-out infinite">
               <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
@@ -2183,7 +2195,7 @@
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/db.js?v=7.7"></script>
-    <script src="js/dashboard.js?v=7.7"></script>
+    <script src="js/db.js?v=7.8"></script>
+    <script src="js/dashboard.js?v=7.8"></script>
   </body>
 </html>
