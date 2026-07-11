@@ -426,6 +426,12 @@
     }
     .inv-bill-to .label { color: #000; font-weight: 500; }
     .inv-bill-to .name { font-size: 0.92rem; margin-top: 6px; color: #000; }
+    .inv-bill-to .addr {
+      font-size: 0.78rem;
+      color: #333;
+      margin-top: 3px;
+      line-height: 1.45;
+    }
     .inv-bill-row .invoice-no {
       font-size: 0.85rem;
       align-self: end;
@@ -699,6 +705,7 @@
       invoiceNo: '239820',
       date: '21 / 03 / 2026',
       billTo: 'Eddiiez Events',
+      billToAddress: '',
       packageTitle: 'Outdoor Event',
       bizName: 'NEJstudios',
       bizAddr: '11 shell location road<br>Port Harcourt, Nigeria',
@@ -799,6 +806,10 @@
           <div class="field">
             <label>Bill To</label>
             <input data-bind="billTo" value="${esc(invoice.billTo)}" />
+          </div>
+          <div class="field">
+            <label>Address (use &lt;br&gt; for new lines)</label>
+            <textarea data-bind="billToAddress" rows="2" placeholder="e.g. 12 Ojike Street&lt;br&gt;GRA Phase 2, Port Harcourt">${esc(invoice.billToAddress || '')}</textarea>
           </div>
           <div class="field">
             <label>Package Title (black bar)</label>
@@ -1090,6 +1101,7 @@
           <div class="inv-bill-to">
             <div class="label">BILL TO:</div>
             <div class="name">${esc(invoice.billTo)}</div>
+            ${invoice.billToAddress ? `<div class="addr">${invoice.billToAddress}</div>` : ''}
           </div>
           <div class="invoice-no">Invoice No: <strong>${esc(invoice.invoiceNo)}</strong></div>
         </div>
