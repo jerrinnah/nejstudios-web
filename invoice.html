@@ -1362,7 +1362,8 @@
               ${clientLog.length ? `<div style="font-size:0.68rem;color:#f59e0b;margin-top:3px">Latest client confirmation: ₦${Number(clientLog[clientLog.length-1].amount).toLocaleString('en-NG')} via ${esc(clientLog[clientLog.length-1].method)}${clientLog[clientLog.length-1].reference ? ' · ref ' + esc(clientLog[clientLog.length-1].reference) : ''}</div>` : ''}
             </div>
             <span style="font-size:0.66rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:${statusColor}">${esc(inv.status || 'draft')}</span>
-            <div style="display:flex;gap:5px">
+            <div style="display:flex;gap:5px;flex-wrap:wrap">
+              ${pendingVerify ? `<button class="btn" data-inv-verify="${esc(inv.invoiceNo)}" style="font-size:0.68rem;padding:6px 10px;background:#f5c400;border-color:#f5c400;color:#000;font-weight:700">✓ Verify Payment</button>` : ''}
               <button class="btn" data-inv-load="${esc(inv.invoiceNo)}" style="font-size:0.68rem;padding:6px 10px">Load</button>
               <button class="btn" data-inv-link="${esc(inv.invoiceNo)}" style="font-size:0.68rem;padding:6px 10px">Copy Link</button>
               <button class="btn" data-inv-delete="${esc(inv.invoiceNo)}" style="font-size:0.68rem;padding:6px 10px">Delete</button>
@@ -1390,6 +1391,25 @@
         await fetch('/api/sync.php?resource=invoices', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(filtered),
         });
+        await renderInvoicesList();
+      }));
+
+      el.querySelectorAll('[data-inv-verify]').forEach(b => b.addEventListener('click', async () => {
+        const all = await fetchAllInvoices();
+        const inv = all.find(x => x.invoiceNo === b.dataset.invVerify);
+        if (!inv) return;
+        const total = (inv.packages || []).reduce((s, p) => s + Number(p.total || 0), 0);
+        const paid  = Number(inv.depositPaid || 0) + Number(inv.balancePaid || 0);
+        const outstanding = Math.max(0, total - paid);
+        const msg = `Verify this payment?\n\nClient: ${inv.billTo}\nInvoice: #${inv.invoiceNo}\nTotal: ₦${total.toLocaleString('en-NG')}\nPaid so far: ₦${paid.toLocaleString('en-NG')}\nOutstanding: ₦${outstanding.toLocaleString('en-NG')}\n\nSet status to ${outstanding > 0 ? '"partial-paid"' : '"paid"'}?`;
+        if (!confirm(msg)) return;
+        inv.status = outstanding > 0 ? 'partial-paid' : 'paid';
+        // Mark log entries as verified
+        (inv.paymentLog || []).forEach(p => { if (p.confirmedByClient && !p.adminVerifiedAt) p.adminVerifiedAt = Date.now(); });
+        await fetch('/api/sync.php?resource=invoices', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(all),
+        });
+        alert(`Payment verified. Invoice #${inv.invoiceNo} is now ${inv.status}. The client can now access their receipt.`);
         await renderInvoicesList();
       }));
     }
