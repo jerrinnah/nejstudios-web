@@ -127,16 +127,18 @@
       font-family: var(--script); font-size: 1.5rem;
     }
     .inv-payment {
-      padding: 22px 36px; background: #f8f4e8; border-top: 1px solid #e2d9bc;
-      border-bottom: 1px solid #e2d9bc;
-      display: grid; grid-template-columns: auto 1fr; gap: 8px 22px;
-      font-family: var(--sans); font-size: 0.85rem; color: #000;
+      padding: 22px 36px 24px; background: #fff; border-top: 2px solid #000; color: #000;
     }
-    .inv-payment .title { grid-column: 1 / -1; font-family: var(--serif); font-size: 1.05rem; font-weight: 600; color: #7a6420; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.08em; }
-    .inv-payment .k { color: #666; text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.06em; align-self: center; }
-    .inv-payment .v { color: #000; font-weight: 600; font-size: 0.98rem; }
-    .inv-payment .acct { font-family: monospace; font-size: 1.1rem; }
-    @media (max-width: 720px) { .inv-payment { padding: 18px 20px; grid-template-columns: 1fr; gap: 4px 0; } .inv-payment .k { margin-top: 8px; } }
+    .inv-payment .title { font-family: var(--serif); font-size: 1.15rem; font-weight: 700; color: #000; margin: 0 0 12px; letter-spacing: 0.02em; }
+    .inv-payment .row { display: grid; grid-template-columns: 130px 1fr; gap: 6px 20px; align-items: baseline; padding: 4px 0; font-family: var(--sans); font-size: 0.9rem; }
+    .inv-payment .k { color: #555; text-transform: uppercase; font-size: 0.66rem; letter-spacing: 0.08em; font-weight: 600; }
+    .inv-payment .v { color: #000; font-weight: 600; font-size: 0.95rem; }
+    .inv-payment .acct { font-family: monospace; font-size: 1.15rem; letter-spacing: 0.06em; }
+    @media (max-width: 720px) {
+      .inv-payment { padding: 18px 20px; }
+      .inv-payment .row { grid-template-columns: 1fr; gap: 2px; padding: 6px 0; }
+      .inv-payment .k { color: #888; }
+    }
 
     .payment-summary {
       padding: 20px 36px; background: #f8f4e8; border-top: 1px solid #ddd;
@@ -259,9 +261,9 @@
       return `
         <div class="inv-payment">
           <div class="title">Payment Details</div>
-          ${inv.bankName ?      `<div class="k">Bank</div><div class="v">${esc(inv.bankName)}</div>` : ''}
-          ${inv.accountName ?   `<div class="k">Account Name</div><div class="v">${esc(inv.accountName)}</div>` : ''}
-          ${inv.accountNumber ? `<div class="k">Account No.</div><div class="v acct">${esc(inv.accountNumber)}</div>` : ''}
+          ${inv.bankName ?      `<div class="row"><div class="k">Bank</div><div class="v">${esc(inv.bankName)}</div></div>` : ''}
+          ${inv.accountName ?   `<div class="row"><div class="k">Account Name</div><div class="v">${esc(inv.accountName)}</div></div>` : ''}
+          ${inv.accountNumber ? `<div class="row"><div class="k">Account No.</div><div class="v acct">${esc(inv.accountNumber)}</div></div>` : ''}
         </div>`;
     }
 

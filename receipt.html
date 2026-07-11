@@ -15,14 +15,13 @@
       --serif:  'Playfair Display', Georgia, serif;
       --sans:   'Outfit', system-ui, sans-serif;
       --script: 'Great Vibes', cursive;
-      --gold:   #c9a84c;
-      --red:    #ef4444;
-      --green:  #1a7a4a;
+      --yellow: #f5c400;
+      --black:  #1a1a1a;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      background: #eaeaea;
+      background: #e8e8e8;
       color: #000;
       font-family: var(--sans);
       padding: 20px;
@@ -34,6 +33,7 @@
       box-shadow: 0 6px 30px rgba(0,0,0,0.2);
       border-radius: 6px;
       overflow: hidden;
+      position: relative;
     }
     .toolbar-top {
       max-width: 820px;
@@ -46,205 +46,174 @@
     }
     .toolbar-top button {
       padding: 9px 14px;
-      background: var(--gold);
-      border: 1px solid var(--gold);
+      background: var(--yellow);
+      border: 1px solid var(--yellow);
       border-radius: 6px;
-      color: #000;
+      color: var(--black);
       font-weight: 700;
       font-size: 0.8rem;
       cursor: pointer;
       font-family: var(--sans);
     }
 
-    /* Header */
+    /* ── HEADER ── */
     .r-header {
-      padding: 30px 36px 24px;
+      padding: 34px 60px 0;
       display: flex;
-      justify-content: space-between;
+      justify-content: center;
       align-items: flex-start;
-      gap: 24px;
-      background: #fff;
+      gap: 22px;
     }
-    .r-logo-block { display: flex; align-items: center; }
-    .r-logo-img { width: 130px; height: 130px; object-fit: contain; display: block; }
+    .r-logo-img {
+      width: 90px;
+      height: 90px;
+      object-fit: contain;
+      display: block;
+      flex-shrink: 0;
+    }
     .r-logo-fallback {
-      display: none; width: 130px; height: 130px; border-radius: 50%;
-      background: #000; color: #fff; font-family: var(--script); font-size: 3rem;
+      display: none;
+      width: 90px; height: 90px; border-radius: 50%;
+      background: var(--black); color: #fff; font-family: var(--script); font-size: 2.2rem;
       align-items: center; justify-content: center; line-height: 1;
     }
-    .r-business { text-align: right; font-family: var(--sans); font-size: 0.78rem; color: #000; }
-    .r-business .name { font-family: var(--serif); font-size: 1.6rem; font-weight: 700; margin: 0 0 4px; }
-    .r-business .addr { color: #333; line-height: 1.45; }
-
-    /* Title bar */
-    .r-title-bar {
-      background: var(--green);
-      color: #fff;
-      padding: 22px 36px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-    }
-    .r-title-bar .left {
-      font-family: var(--serif);
-      font-style: italic;
-      font-size: 1.9rem;
-      font-weight: 600;
-    }
-    .r-title-bar .right {
+    .r-business {
       font-family: var(--sans);
-      font-size: 0.82rem;
-      opacity: 0.9;
-    }
-    .r-title-bar .right strong { font-size: 1.05rem; }
-
-    /* Bill row */
-    .r-bill-row {
-      padding: 20px 36px;
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 16px;
-      background: #fff;
-      border-bottom: 1px solid #eee;
-    }
-    .r-bill-to .label { font-weight: 500; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: #666; }
-    .r-bill-to .name { font-size: 1rem; margin-top: 4px; }
-    .r-bill-to .addr { font-size: 0.78rem; color: #444; margin-top: 3px; }
-    .r-invoice-ref {
-      align-self: end;
-      text-align: right;
-      font-size: 0.85rem;
-    }
-    .r-invoice-ref .k { color: #666; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; }
-    .r-invoice-ref .v { font-weight: 700; }
-
-    /* Body */
-    .r-body { padding: 26px 36px; }
-    .r-amount-box {
-      padding: 26px;
-      background: linear-gradient(135deg, #f8f4e8, #f3e9c9);
-      border: 1px solid #d4c380;
-      border-radius: 10px;
-      text-align: center;
-      margin-bottom: 26px;
-    }
-    .r-amount-box .k {
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: #7a6420;
-      font-weight: 600;
-      margin-bottom: 8px;
-    }
-    .r-amount-box .amount {
-      font-family: var(--serif);
-      font-size: 3rem;
-      color: #000;
-      font-weight: 700;
-      line-height: 1;
-    }
-    .r-amount-box .in-words {
-      font-family: var(--sans);
-      font-size: 0.8rem;
-      color: #7a6420;
-      font-style: italic;
-      margin-top: 8px;
-    }
-
-    .r-payment-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-    .r-payment-cell {
-      padding: 14px 16px;
-      background: #f8f8f8;
-      border: 1px solid #e4e4e4;
-      border-radius: 8px;
-    }
-    .r-payment-cell .k {
-      font-size: 0.65rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #666;
-      margin-bottom: 6px;
-    }
-    .r-payment-cell .v {
-      font-size: 1rem;
-      font-weight: 600;
-      color: #000;
-    }
-
-    .r-summary {
-      background: #fafafa;
-      border: 1px solid #eee;
-      border-radius: 8px;
-      padding: 18px 20px;
-      margin-bottom: 20px;
-    }
-    .r-summary h4 {
-      font-family: var(--serif);
-      margin: 0 0 12px;
-      font-size: 1.05rem;
-    }
-    .r-summary-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 5px 0;
       font-size: 0.86rem;
+      color: #4a4a4a;
+      line-height: 1.55;
+      flex: 1;
+      max-width: 300px;
     }
-    .r-summary-row.total {
-      border-top: 1px solid #ddd;
-      margin-top: 8px;
-      padding-top: 10px;
-      font-weight: 700;
-      font-size: 1rem;
-    }
-    .r-summary-row .amt.outstanding { color: var(--red); }
 
-    /* Footer */
-    .r-footer {
-      padding: 26px 36px 24px;
-      background: #fff;
+    /* ── DIAGONAL ACCENT BAR ── */
+    .r-accent {
+      margin: 30px 0 0;
+      display: flex;
+      height: 22px;
+      position: relative;
+    }
+    .r-accent::before {
+      content: '';
+      flex: 1;
+      background: var(--yellow);
+      clip-path: polygon(0 0, 100% 0, calc(100% - 22px) 100%, 0 100%);
+    }
+    .r-accent::after {
+      content: '';
+      flex: 1;
+      background: var(--black);
+      clip-path: polygon(22px 0, 100% 0, 100% 100%, 0 100%);
+    }
+
+    /* ── TITLE ── */
+    .r-title-block {
+      padding: 46px 60px 32px;
+      text-align: center;
+    }
+    .r-title-block h1 {
+      font-family: var(--serif);
+      font-size: 2.6rem;
+      font-weight: 700;
+      color: var(--black);
+      margin: 0 0 22px;
+      letter-spacing: -0.01em;
+    }
+    .r-meta {
+      font-size: 0.95rem;
+      color: #333;
+      padding-bottom: 24px;
+      border-bottom: 1px solid #d0d0d0;
+    }
+    .r-meta strong { font-weight: 600; }
+    .r-meta .sep { margin: 0 12px; color: #999; }
+
+    /* ── PARTIES TABLE ── */
+    .r-section {
+      padding: 30px 60px;
+    }
+    .r-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+    }
+    .r-table th {
+      background: #f5f5f5;
+      color: #3a3a3a;
+      font-weight: 400;
+      text-align: center;
+      padding: 14px 18px;
+      border-bottom: 1px solid #e0e0e0;
+      font-size: 0.9rem;
+    }
+    .r-table td {
+      padding: 14px 18px;
+      vertical-align: top;
       color: #000;
+      font-size: 0.9rem;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .r-table td strong { font-weight: 700; display: block; margin-bottom: 3px; }
+    .r-table .col-half { width: 50%; }
+    .r-table .col-half + .col-half { border-left: 1px solid #f0f0f0; }
+
+    /* ── TRANSACTION DETAILS ── */
+    .r-txn-title {
+      font-family: var(--sans);
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--black);
+      margin: 30px 60px 14px;
+    }
+    .r-txn-table {
+      width: calc(100% - 120px);
+      margin: 0 60px 30px;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+    }
+    .r-txn-table th {
+      background: #f5f5f5;
+      color: #3a3a3a;
+      font-weight: 400;
       text-align: center;
-      font-family: var(--script);
-      font-size: 1.5rem;
-      border-top: 1px solid #eee;
+      padding: 14px 16px;
+      border-bottom: 1px solid #e0e0e0;
     }
-    .r-sign-line {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-      padding: 24px 36px 32px;
-      background: #fff;
+    .r-txn-table td {
+      padding: 16px 16px;
+      color: #000;
+      border-bottom: 1px solid #f0f0f0;
     }
-    .r-sign-line .cell {
-      text-align: center;
+    .r-txn-table .amt { text-align: center; font-variant-numeric: tabular-nums; }
+    .r-txn-table .method { text-align: center; }
+    .r-txn-table tr.total td {
+      font-weight: 700;
+      background: #fafafa;
+      font-size: 0.98rem;
+      border-bottom: none;
     }
-    .r-sign-line .line {
-      border-top: 1px solid #333;
-      padding-top: 6px;
-      font-size: 0.72rem;
-      color: #666;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
+
+    /* ── FOOTER ── */
+    .r-footer-note {
+      padding: 4px 60px 46px;
+      font-size: 0.92rem;
+      color: #333;
+      line-height: 1.6;
     }
+    .r-footer-note strong { font-weight: 700; }
 
     @media (max-width: 720px) {
       body { padding: 10px; }
-      .r-header { padding: 20px 20px 16px; flex-direction: column; gap: 14px; }
-      .r-business { text-align: left; }
-      .r-title-bar { padding: 18px 20px; flex-direction: column; align-items: flex-start; gap: 6px; }
-      .r-title-bar .left { font-size: 1.6rem; }
-      .r-bill-row { padding: 18px 20px; grid-template-columns: 1fr; }
-      .r-body { padding: 20px; }
-      .r-amount-box .amount { font-size: 2.2rem; }
-      .r-payment-grid { grid-template-columns: 1fr; }
-      .r-sign-line { grid-template-columns: 1fr; padding: 16px 20px 22px; }
-      .r-footer { padding: 22px 20px 18px; font-size: 1.25rem; }
+      .r-header { padding: 24px 24px 0; flex-direction: column; align-items: center; text-align: center; gap: 16px; }
+      .r-business { text-align: center; max-width: none; }
+      .r-title-block { padding: 30px 24px 22px; }
+      .r-title-block h1 { font-size: 1.9rem; }
+      .r-section { padding: 22px 24px; }
+      .r-table th, .r-table td { padding: 10px 12px; font-size: 0.82rem; }
+      .r-txn-title { margin: 22px 24px 12px; font-size: 1rem; }
+      .r-txn-table { width: calc(100% - 48px); margin: 0 24px 22px; }
+      .r-txn-table th, .r-txn-table td { padding: 10px 8px; font-size: 0.78rem; }
+      .r-footer-note { padding: 0 24px 32px; font-size: 0.85rem; }
     }
     @media print {
       body { background: #fff; padding: 0; }
@@ -259,7 +228,7 @@
 </head>
 <body>
   <div class="toolbar-top">
-    <div style="font-size:0.85rem;color:#333">Match this receipt against invoice <strong id="invRefTop">—</strong></div>
+    <div style="font-size:0.85rem;color:#333">Receipt for invoice <strong id="invRefTop">—</strong></div>
     <div>
       <button onclick="window.print()">🖨 Print / Save PDF</button>
     </div>
@@ -289,29 +258,6 @@
       }
     }
 
-    // Convert a number to English words (simple, ceiling at billions - enough for invoices)
-    function numToWords(n) {
-      const ones = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
-                    'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen',
-                    'seventeen', 'eighteen', 'nineteen'];
-      const tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
-      function under1000(x) {
-        if (x < 20) return ones[x];
-        if (x < 100) return tens[Math.floor(x/10)] + (x%10 ? '-' + ones[x%10] : '');
-        return ones[Math.floor(x/100)] + ' hundred' + (x%100 ? ' and ' + under1000(x%100) : '');
-      }
-      if (n === 0) return 'zero';
-      let str = '';
-      const bn = Math.floor(n / 1e9); n = n % 1e9;
-      const mn = Math.floor(n / 1e6); n = n % 1e6;
-      const th = Math.floor(n / 1e3); n = n % 1e3;
-      if (bn) str += under1000(bn) + ' billion, ';
-      if (mn) str += under1000(mn) + ' million, ';
-      if (th) str += under1000(th) + ' thousand, ';
-      if (n)  str += under1000(n);
-      return str.replace(/, $/, '').trim();
-    }
-
     function renderReceipt(inv) {
       document.getElementById('invRefTop').textContent = '#' + inv.invoiceNo;
 
@@ -320,95 +266,107 @@
       const bal = Number(inv.balancePaid || 0);
       const received = dep + bal;
       const outstanding = Math.max(0, total - received);
-      const words = received ? numToWords(received) + ' naira only' : '';
 
-      const packageList = (inv.packages || []).map(p => `
-        <div class="r-summary-row">
-          <span>${esc(p.label)}</span>
-          <span class="amt">₦${fmt(p.total)}</span>
-        </div>
-      `).join('');
+      // Build a receipt number from the invoice number (e.g. R-239820-<yyyymmdd>)
+      const now = new Date();
+      const yyyymmdd = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
+      const receiptNo = 'R-' + inv.invoiceNo + '-' + yyyymmdd.slice(-4);
+      const receiptDate = now.toLocaleDateString('en-NG', { day: 'numeric', month: 'long', year: 'numeric' });
 
-      const receivedDate = new Date().toLocaleDateString('en-NG', { day: '2-digit', month: 'long', year: 'numeric' });
+      // Transaction rows: deposit + balance if any, then total
+      const rows = [];
+      if (dep) rows.push({ label: 'Deposit Payment', amount: dep, method: 'Bank Transfer' });
+      if (bal) rows.push({ label: 'Balance Payment', amount: bal, method: 'Bank Transfer' });
+      if (!rows.length) rows.push({ label: 'Payment Received', amount: received, method: 'Bank Transfer' });
+
+      // Format the business address for "Received By"
+      const bizAddrText = (inv.bizAddr || '').replace(/<br\s*\/?>/gi, ', ').replace(/\s+,/g, ',');
 
       document.getElementById('pageWrap').innerHTML = `
         <div class="r-header">
-          <div class="r-logo-block">
-            <img class="r-logo-img" src="images/nej-logo.png" alt="NEJstudios" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
-            <div class="r-logo-fallback">Nej</div>
-          </div>
+          <img class="r-logo-img" src="images/nej-logo.png" alt="NEJstudios" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+          <div class="r-logo-fallback">Nej</div>
           <div class="r-business">
-            <div class="name">${esc(inv.bizName || 'NEJstudios')}</div>
-            <div class="addr">${inv.bizAddr || ''}</div>
-            <div style="margin-top:8px">${esc(receivedDate)}</div>
+            ${inv.bizAddr || ''}<br>
+            ${inv.bizEmail ? esc(inv.bizEmail) + '<br>' : ''}
+            ${inv.bizPhone ? esc(inv.bizPhone) : ''}
           </div>
         </div>
 
-        <div class="r-title-bar">
-          <div class="left">Receipt</div>
-          <div class="right">Invoice Ref: <strong>#${esc(inv.invoiceNo)}</strong></div>
-        </div>
+        <div class="r-accent"></div>
 
-        <div class="r-bill-row">
-          <div class="r-bill-to">
-            <div class="label">Received From</div>
-            <div class="name">${esc(inv.billTo || '')}</div>
-            ${inv.billToAddress ? `<div class="addr">${inv.billToAddress}</div>` : ''}
-          </div>
-          <div class="r-invoice-ref">
-            <div class="k">Payment Date</div>
-            <div class="v">${esc(receivedDate)}</div>
+        <div class="r-title-block">
+          <h1>Cash Receipt</h1>
+          <div class="r-meta">
+            <strong>Receipt Number:</strong> ${esc(receiptNo)}
+            <span class="sep">|</span>
+            <strong>Date:</strong> ${esc(receiptDate)}
           </div>
         </div>
 
-        <div class="r-body">
-          <div class="r-amount-box">
-            <div class="k">Amount Received</div>
-            <div class="amount">₦${fmt(received)}</div>
-            ${words ? `<div class="in-words">(${words})</div>` : ''}
-          </div>
-
-          <div class="r-payment-grid">
-            ${dep ? `
-              <div class="r-payment-cell">
-                <div class="k">Deposit</div>
-                <div class="v">₦${fmt(dep)}</div>
-              </div>` : ''}
-            ${bal ? `
-              <div class="r-payment-cell">
-                <div class="k">Balance Payment</div>
-                <div class="v">₦${fmt(bal)}</div>
-              </div>` : ''}
-            <div class="r-payment-cell">
-              <div class="k">Invoice Total</div>
-              <div class="v">₦${fmt(total)}</div>
-            </div>
-            <div class="r-payment-cell">
-              <div class="k">Outstanding</div>
-              <div class="v" style="color:${outstanding ? 'var(--red)' : 'var(--green)'}">${outstanding ? '₦' + fmt(outstanding) : '₦0 — Paid in Full'}</div>
-            </div>
-          </div>
-
-          <div class="r-summary">
-            <h4>Invoice Summary — ${esc(inv.packageTitle || '')}</h4>
-            ${packageList || '<div style="font-size:0.82rem;color:#888">No line items.</div>'}
-            <div class="r-summary-row total">
-              <span>Invoice Total</span>
-              <span class="amt">₦${fmt(total)}</span>
-            </div>
-          </div>
+        <div class="r-section">
+          <table class="r-table">
+            <thead>
+              <tr>
+                <th class="col-half">Received From</th>
+                <th class="col-half">Received By</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="col-half">
+                  <strong>${esc(inv.billTo || '')}</strong>
+                  ${inv.billToEmail ? esc(inv.billToEmail) + '<br>' : ''}
+                  ${inv.billToAddress ? inv.billToAddress.replace(/<br\s*\/?>/gi, '<br>') : ''}
+                </td>
+                <td class="col-half">
+                  <strong>${esc(inv.bizName || 'NEJstudios')}</strong>
+                  ${esc(bizAddrText)}
+                  ${inv.bankName ? '<br>Bank: ' + esc(inv.bankName) : ''}
+                  ${inv.accountNumber ? '<br>Acc: ' + esc(inv.accountNumber) : ''}
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
-        <div class="r-sign-line">
-          <div class="cell">
-            <div class="line">Received By (NEJstudios)</div>
-          </div>
-          <div class="cell">
-            <div class="line">Payer's Signature</div>
-          </div>
-        </div>
+        <h2 class="r-txn-title">Transaction Details</h2>
+        <table class="r-txn-table">
+          <thead>
+            <tr>
+              <th>Item Description</th>
+              <th class="amt">Amount (₦)</th>
+              <th class="method">Payment Method</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(r => `
+              <tr>
+                <td>${esc(r.label)}</td>
+                <td class="amt">₦${fmt(r.amount)}</td>
+                <td class="method">${esc(r.method)}</td>
+              </tr>
+            `).join('')}
+            <tr class="total">
+              <td><strong>Total Amount</strong></td>
+              <td class="amt"><strong>₦${fmt(received)}</strong></td>
+              <td class="method"></td>
+            </tr>
+            ${outstanding ? `
+              <tr>
+                <td style="color:#b03030">Outstanding Balance</td>
+                <td class="amt" style="color:#b03030">₦${fmt(outstanding)}</td>
+                <td class="method">—</td>
+              </tr>` : ''}
+          </tbody>
+        </table>
 
-        <div class="r-footer">${esc(inv.footerNote || 'Thank you for your payment.')}</div>
+        <p class="r-footer-note">
+          Thank you for your payment! ${outstanding
+            ? `An outstanding balance of <strong>₦${fmt(outstanding)}</strong> remains on invoice <strong>#${esc(inv.invoiceNo)}</strong>. `
+            : `Your invoice <strong>#${esc(inv.invoiceNo)}</strong> has been fully settled. `}
+          Should you have any questions or need further assistance, please contact us at <strong>${esc(inv.bizEmail || 'hello@nejstudios.com')}</strong>.
+        </p>
       `;
     }
   </script>

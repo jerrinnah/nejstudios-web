@@ -547,50 +547,52 @@
       margin-top: 6px;
     }
 
-    /* Payment / account block */
+    /* Payment / account block — always OUTSIDE the deliverables box, plain white,
+       clearly separate from any package block. */
     .inv-payment {
-      padding: 22px 36px;
-      background: #f8f4e8;
-      border-top: 1px solid #e2d9bc;
-      border-bottom: 1px solid #e2d9bc;
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 8px 22px;
-      font-family: var(--sans);
-      font-size: 0.85rem;
+      padding: 22px 36px 24px;
+      background: #fff;
+      border-top: 2px solid #000;
       color: #000;
     }
     .inv-payment .title {
-      grid-column: 1 / -1;
       font-family: var(--serif);
-      font-size: 1.05rem;
-      font-weight: 600;
-      color: #7a6420;
-      margin-bottom: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #000;
+      margin: 0 0 12px;
+      letter-spacing: 0.02em;
+    }
+    .inv-payment .row {
+      display: grid;
+      grid-template-columns: 130px 1fr;
+      gap: 6px 20px;
+      align-items: baseline;
+      padding: 4px 0;
+      font-family: var(--sans);
+      font-size: 0.9rem;
     }
     .inv-payment .k {
-      color: #666;
+      color: #555;
       text-transform: uppercase;
-      font-size: 0.68rem;
-      letter-spacing: 0.06em;
-      align-self: center;
+      font-size: 0.66rem;
+      letter-spacing: 0.08em;
+      font-weight: 600;
     }
     .inv-payment .v {
       color: #000;
       font-weight: 600;
-      font-size: 0.98rem;
-      letter-spacing: 0.02em;
+      font-size: 0.95rem;
     }
     .inv-payment .acct {
       font-family: monospace;
-      font-size: 1.1rem;
-      color: #000;
+      font-size: 1.15rem;
+      letter-spacing: 0.06em;
     }
     @media (max-width: 720px) {
-      .inv-payment { padding: 18px 20px; grid-template-columns: 1fr; gap: 4px 0; }
-      .inv-payment .k { margin-top: 8px; }
+      .inv-payment { padding: 18px 20px; }
+      .inv-payment .row { grid-template-columns: 1fr; gap: 2px; padding: 6px 0; }
+      .inv-payment .k { color: #888; }
     }
 
     /* footer thank-you */
@@ -767,6 +769,8 @@
       packageTitle: 'Outdoor Event',
       bizName: 'NEJstudios',
       bizAddr: '11 shell location road<br>Port Harcourt, Nigeria',
+      bizEmail: 'hello@nejstudios.com',
+      bizPhone: '+234 800 000 0000',
       bankName: 'GTBank',
       accountName: 'NEJstudios',
       accountNumber: '0123456789',
@@ -901,6 +905,16 @@
           <div class="field">
             <label>Business Address (use &lt;br&gt; for line breaks)</label>
             <textarea data-bind="bizAddr" rows="2">${esc(invoice.bizAddr)}</textarea>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Business Email</label>
+              <input data-bind="bizEmail" value="${esc(invoice.bizEmail || '')}" placeholder="hello@nejstudios.com" />
+            </div>
+            <div class="field">
+              <label>Business Phone</label>
+              <input data-bind="bizPhone" value="${esc(invoice.bizPhone || '')}" placeholder="+234 800 000 0000" />
+            </div>
           </div>
         </div>
 
@@ -1214,9 +1228,9 @@
       return `
         <div class="inv-payment">
           <div class="title">Payment Details</div>
-          ${inv.bankName ?      `<div class="k">Bank</div><div class="v">${esc(inv.bankName)}</div>` : ''}
-          ${inv.accountName ?   `<div class="k">Account Name</div><div class="v">${esc(inv.accountName)}</div>` : ''}
-          ${inv.accountNumber ? `<div class="k">Account No.</div><div class="v acct">${esc(inv.accountNumber)}</div>` : ''}
+          ${inv.bankName ?      `<div class="row"><div class="k">Bank</div><div class="v">${esc(inv.bankName)}</div></div>` : ''}
+          ${inv.accountName ?   `<div class="row"><div class="k">Account Name</div><div class="v">${esc(inv.accountName)}</div></div>` : ''}
+          ${inv.accountNumber ? `<div class="row"><div class="k">Account No.</div><div class="v acct">${esc(inv.accountNumber)}</div></div>` : ''}
         </div>`;
     }
 
