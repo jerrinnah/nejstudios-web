@@ -2007,6 +2007,16 @@
               <label class="form-label">Session Cost (₦)</label>
               <input class="form-input" id="beCost" type="number" min="0" step="1000" placeholder="e.g. 70000" />
             </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
+              <div class="form-field">
+                <label class="form-label">Deposit Paid (₦)</label>
+                <input class="form-input" id="beDepositPaidStudio" type="number" min="0" step="1000" placeholder="0" />
+              </div>
+              <div class="form-field">
+                <label class="form-label">Balance Paid (₦)</label>
+                <input class="form-input" id="beBalancePaidStudio" type="number" min="0" step="1000" placeholder="0" />
+              </div>
+            </div>
           </div>
           <!-- Event fields -->
           <div id="beEventFields" style="display:none">
@@ -2043,6 +2053,16 @@
             <div class="form-field" style="margin-top:14px">
               <label class="form-label">Event Cost (₦)</label>
               <input class="form-input" id="beBudget" type="number" min="0" step="1000" placeholder="e.g. 950000" />
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
+              <div class="form-field">
+                <label class="form-label">Deposit Paid (₦)</label>
+                <input class="form-input" id="beDepositPaidEvent" type="number" min="0" step="1000" placeholder="0" />
+              </div>
+              <div class="form-field">
+                <label class="form-label">Balance Paid (₦)</label>
+                <input class="form-input" id="beBalancePaidEvent" type="number" min="0" step="1000" placeholder="0" />
+              </div>
             </div>
             <div class="form-field" style="margin-top:14px">
               <label class="form-label">Deliverables</label>
@@ -2163,7 +2183,7 @@
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/db.js?v=7.6"></script>
-    <script src="js/dashboard.js?v=7.6"></script>
+    <script src="js/db.js?v=7.7"></script>
+    <script src="js/dashboard.js?v=7.7"></script>
   </body>
 </html>

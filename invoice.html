@@ -619,10 +619,21 @@
         <p>Fill in the editor and the invoice updates live. Use Print to save as PDF.</p>
       </div>
       <div class="actions">
-        <button class="btn" id="btnResetInvoice">Reset</button>
-        <button class="btn" id="btnSaveDraft">💾 Save</button>
+        <button class="btn" id="btnMyInvoices">📁 My Invoices</button>
+        <button class="btn" id="btnResetInvoice">New / Reset</button>
+        <button class="btn" id="btnSaveDraft">💾 Save Draft</button>
+        <button class="btn" id="btnSaveServer">☁️ Save & Get Link</button>
         <button class="btn btn--gold" id="btnPrint">🖨 Print / PDF</button>
       </div>
+    </div>
+
+    <!-- My Invoices drawer -->
+    <div id="invoicesDrawer" style="display:none;background:var(--bg-2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <strong>Saved Invoices</strong>
+        <button class="btn" id="btnRefreshInvoices" style="font-size:0.72rem;padding:6px 10px">Refresh</button>
+      </div>
+      <div id="invoicesList" style="max-height:340px;overflow:auto"></div>
     </div>
 
     <!-- Mobile toggle -->
@@ -810,6 +821,24 @@
           <div class="field">
             <label>Address (use &lt;br&gt; for new lines)</label>
             <textarea data-bind="billToAddress" rows="2" placeholder="e.g. 12 Ojike Street&lt;br&gt;GRA Phase 2, Port Harcourt">${esc(invoice.billToAddress || '')}</textarea>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Deposit Paid (₦)</label>
+              <input data-bind="depositPaid" type="number" value="${esc(invoice.depositPaid || '')}" placeholder="0" />
+            </div>
+            <div class="field">
+              <label>Balance Paid (₦)</label>
+              <input data-bind="balancePaid" type="number" value="${esc(invoice.balancePaid || '')}" placeholder="0" />
+            </div>
+          </div>
+          <div class="field">
+            <label>Status</label>
+            <select data-bind="status">
+              <option value="sent" ${(invoice.status || 'sent') === 'sent' ? 'selected' : ''}>Sent</option>
+              <option value="paid" ${invoice.status === 'paid' ? 'selected' : ''}>Paid</option>
+              <option value="overdue" ${invoice.status === 'overdue' ? 'selected' : ''}>Overdue</option>
+            </select>
           </div>
           <div class="field">
             <label>Package Title (black bar)</label>
@@ -1169,6 +1198,97 @@
     document.getElementById('btnPrint').addEventListener('click', () => {
       window.print();
     });
+
+    /* ─── SERVER-SIDE SAVE + LIST ─── */
+    async function fetchAllInvoices() {
+      try {
+        const r = await fetch('/api/sync.php?resource=invoices', { cache: 'no-store' });
+        if (!r.ok) return [];
+        const list = await r.json();
+        return Array.isArray(list) ? list : [];
+      } catch { return []; }
+    }
+    async function saveInvoiceToServer(record) {
+      const list = await fetchAllInvoices();
+      const idx = list.findIndex(x => x.invoiceNo === record.invoiceNo);
+      if (idx >= 0) list[idx] = record; else list.unshift(record);
+      await fetch('/api/sync.php?resource=invoices', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(list),
+      });
+    }
+
+    document.getElementById('btnSaveServer').addEventListener('click', async () => {
+      if (!invoice.invoiceNo) { alert('Invoice number is required'); return; }
+      const record = {
+        ...invoice,
+        savedAt: Date.now(),
+        status: invoice.status || 'sent',
+      };
+      await saveInvoiceToServer(record);
+      const url = location.origin + '/invoice-view.html?no=' + encodeURIComponent(record.invoiceNo);
+      const t = document.createElement('textarea');
+      t.value = url; document.body.appendChild(t); t.select();
+      try { document.execCommand('copy'); } catch {}
+      document.body.removeChild(t);
+      alert('Invoice saved. Client link copied to clipboard:\n\n' + url);
+    });
+
+    document.getElementById('btnMyInvoices').addEventListener('click', async () => {
+      const drawer = document.getElementById('invoicesDrawer');
+      drawer.style.display = drawer.style.display === 'none' ? 'block' : 'none';
+      if (drawer.style.display === 'block') await renderInvoicesList();
+    });
+    document.getElementById('btnRefreshInvoices').addEventListener('click', renderInvoicesList);
+
+    async function renderInvoicesList() {
+      const list = await fetchAllInvoices();
+      const el = document.getElementById('invoicesList');
+      if (!list.length) { el.innerHTML = '<div style="padding:14px;color:var(--grey-3);font-size:0.85rem;text-align:center">No saved invoices yet.</div>'; return; }
+      list.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+      el.innerHTML = list.map(inv => {
+        const total = (inv.packages || []).reduce((s, p) => s + Number(p.total || 0), 0);
+        const dep = Number(inv.depositPaid || 0), bal = Number(inv.balancePaid || 0);
+        const paid = dep + bal;
+        const outstanding = Math.max(0, total - paid);
+        const statusColor = inv.status === 'paid' ? 'var(--green)' : inv.status === 'overdue' ? 'var(--red)' : 'var(--gold)';
+        return `
+          <div style="padding:12px;background:var(--bg-3);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:0.9rem;color:var(--white);font-weight:600">${esc(inv.billTo)} · #${esc(inv.invoiceNo)}</div>
+              <div style="font-size:0.72rem;color:var(--grey-3);margin-top:2px">${esc(inv.packageTitle || '')} · Total ₦${total.toLocaleString('en-NG')}${paid ? ' · Paid ₦' + paid.toLocaleString('en-NG') : ''}${outstanding ? ' · Outstanding ₦' + outstanding.toLocaleString('en-NG') : ''}</div>
+            </div>
+            <span style="font-size:0.66rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:${statusColor}">${esc(inv.status || 'draft')}</span>
+            <div style="display:flex;gap:5px">
+              <button class="btn" data-inv-load="${esc(inv.invoiceNo)}" style="font-size:0.68rem;padding:6px 10px">Load</button>
+              <button class="btn" data-inv-link="${esc(inv.invoiceNo)}" style="font-size:0.68rem;padding:6px 10px">Copy Link</button>
+              <button class="btn" data-inv-delete="${esc(inv.invoiceNo)}" style="font-size:0.68rem;padding:6px 10px">Delete</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      el.querySelectorAll('[data-inv-load]').forEach(b => b.addEventListener('click', async () => {
+        const all = await fetchAllInvoices();
+        const found = all.find(x => x.invoiceNo === b.dataset.invLoad);
+        if (found) { invoice = found; persist(); renderEditor(); renderPreview(); document.getElementById('invoicesDrawer').style.display = 'none'; }
+      }));
+      el.querySelectorAll('[data-inv-link]').forEach(b => b.addEventListener('click', () => {
+        const url = location.origin + '/invoice-view.html?no=' + encodeURIComponent(b.dataset.invLink);
+        const t = document.createElement('textarea'); t.value = url; document.body.appendChild(t); t.select();
+        try { document.execCommand('copy'); } catch {}
+        document.body.removeChild(t);
+        alert('Link copied:\n\n' + url);
+      }));
+      el.querySelectorAll('[data-inv-delete]').forEach(b => b.addEventListener('click', async () => {
+        if (!confirm('Delete this saved invoice?')) return;
+        const all = await fetchAllInvoices();
+        const filtered = all.filter(x => x.invoiceNo !== b.dataset.invDelete);
+        await fetch('/api/sync.php?resource=invoices', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(filtered),
+        });
+        await renderInvoicesList();
+      }));
+    }
 
     // Mobile Edit/Preview toggle
     document.body.dataset.view = 'edit';

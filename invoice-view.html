@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Invoice — NEJstudios</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Outfit:wght@300;400;500;600;700&family=Great+Vibes&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    :root {
+      --serif:  'Playfair Display', Georgia, serif;
+      --sans:   'Outfit', system-ui, sans-serif;
+      --script: 'Great Vibes', cursive;
+      --gold:   #c9a84c;
+      --red:    #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #eaeaea;
+      color: #000;
+      font-family: var(--sans);
+      padding: 20px;
+    }
+    .page {
+      max-width: 820px;
+      margin: 0 auto;
+      background: #fff;
+      box-shadow: 0 6px 30px rgba(0,0,0,0.2);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .toolbar-top {
+      max-width: 820px;
+      margin: 0 auto 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .toolbar-top button, .toolbar-top a {
+      padding: 9px 14px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      color: #000;
+      font-size: 0.8rem;
+      cursor: pointer;
+      font-family: var(--sans);
+      text-decoration: none;
+    }
+    .toolbar-top button.gold { background: var(--gold); border-color: var(--gold); font-weight: 700; }
+    .status-tag {
+      display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.7rem;
+      font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .status-tag.paid    { background: rgba(62,207,142,0.18); color: #1a7a4a; }
+    .status-tag.overdue { background: rgba(239,68,68,0.15);  color: #b03030; }
+    .status-tag.sent    { background: rgba(201,168,76,0.20); color: #7a6420; }
+
+    /* Reuse invoice styles from invoice.html */
+    .inv-header {
+      padding: 30px 36px 24px;
+      display: flex; justify-content: space-between; align-items: flex-start;
+      gap: 24px; background: #fff;
+    }
+    .inv-logo-block { display: flex; align-items: center; }
+    .inv-logo-img { width: 130px; height: 130px; object-fit: contain; display: block; }
+    .inv-logo-fallback {
+      display: none; width: 130px; height: 130px; border-radius: 50%;
+      background: #000; color: #fff; font-family: var(--script); font-size: 3rem;
+      align-items: center; justify-content: center; line-height: 1;
+    }
+    .inv-business-block { text-align: right; font-family: var(--sans); font-size: 0.78rem; color: #000; }
+    .inv-business-block .biz-name { font-family: var(--serif); font-size: 1.6rem; font-weight: 700; margin: 0 0 4px; }
+    .inv-business-block .biz-addr { color: #333; line-height: 1.45; }
+    .inv-bill-row { padding: 0 36px 18px; display: grid; grid-template-columns: 1fr auto; gap: 16px; background: #fff; }
+    .inv-bill-to { font-family: var(--sans); font-size: 0.78rem; }
+    .inv-bill-to .label { color: #000; font-weight: 500; }
+    .inv-bill-to .name { font-size: 0.92rem; margin-top: 6px; color: #000; }
+    .inv-bill-to .addr { font-size: 0.78rem; color: #333; margin-top: 3px; line-height: 1.45; }
+    .inv-bill-row .invoice-no { font-size: 0.85rem; align-self: end; }
+    .inv-package-title {
+      background: #000; color: #fff; padding: 22px 36px;
+      display: flex; justify-content: space-between; align-items: center; gap: 16px;
+    }
+    .inv-package-title .left { font-family: var(--sans); font-size: 0.95rem; }
+    .inv-package-title .right { font-family: var(--serif); font-style: italic; font-size: 1.7rem; font-weight: 600; }
+    .inv-package { padding: 26px 36px 28px; background: #fff; color: #000; }
+    .inv-package--dark { background: #000; color: #fff; }
+    .inv-package h4 { font-family: var(--serif); font-size: 1.4rem; margin: 0 0 18px; font-weight: 600; }
+    .inv-line, .inv-extra-line {
+      display: grid; grid-template-columns: minmax(160px, 220px) 1fr auto; gap: 12px;
+      align-items: baseline; padding: 4px 0; font-size: 0.95rem;
+    }
+    .inv-extra-line { grid-template-columns: minmax(160px, 220px) 1fr auto auto; }
+    .inv-line .name, .inv-extra-line .name { font-family: var(--serif); font-size: 1.15rem; }
+    .inv-line .detail, .inv-extra-line .note { font-size: 0.78rem; }
+    .inv-extra-line .note { text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.6rem; }
+    .inv-line .amount, .inv-extra-line .amount { font-family: var(--sans); font-size: 0.95rem; text-align: right; }
+    .inv-totals {
+      margin-top: 18px; display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: baseline;
+    }
+    .inv-totals .days { font-family: var(--serif); font-size: 1.15rem; }
+    .inv-totals .subtotal, .inv-totals .total-amt { font-family: var(--sans); font-size: 1.05rem; text-align: right; }
+    .inv-totals .discount-label, .inv-totals .discount-amt {
+      font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; text-align: right;
+    }
+    .inv-totals .discount-amt { color: var(--red); }
+    .inv-package--dark .inv-totals .discount-amt { color: #ff8a8a; }
+    .inv-totals .total-label { font-family: var(--sans); font-size: 0.95rem; text-align: right; }
+    .inv-totals .total-amt { font-size: 1.15rem; font-weight: 500; }
+    .deliv-block { margin-top: 18px; padding: 14px 16px; border: 1px solid currentColor; border-radius: 4px; }
+    .inv-package--dark .deliv-block { border-color: #fff; }
+    .deliv-block .title { font-family: var(--serif); font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; }
+    .deliv-block ul { margin: 0 0 8px 14px; padding: 0; font-size: 0.84rem; line-height: 1.55; }
+    .deliv-block ul li { list-style: none; padding-left: 4px; }
+    .deliv-block ul li::before { content: '- '; }
+    .deliv-block .note { font-size: 0.82rem; margin-top: 6px; }
+    .inv-footer {
+      padding: 32px 36px 26px; background: #fff; color: #000; text-align: center;
+      font-family: var(--script); font-size: 1.5rem;
+    }
+    .payment-summary {
+      padding: 20px 36px; background: #f8f4e8; border-top: 1px solid #ddd;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+    }
+    .payment-summary .cell { font-size: 0.85rem; }
+    .payment-summary .label { text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.65rem; color: #666; margin-bottom: 4px; }
+    .payment-summary .value { font-size: 1.05rem; font-weight: 600; }
+
+    @media (max-width: 720px) {
+      body { padding: 10px; }
+      .inv-header { padding: 20px 20px 16px; flex-direction: column; gap: 14px; }
+      .inv-business-block { text-align: left; }
+      .inv-bill-row { padding: 0 20px 14px; grid-template-columns: 1fr; }
+      .inv-package-title { padding: 16px 20px; flex-direction: column; align-items: flex-start; gap: 4px; }
+      .inv-package { padding: 20px; }
+      .inv-line, .inv-extra-line { grid-template-columns: 1fr auto; gap: 4px 12px; }
+      .inv-line .detail, .inv-extra-line .note { grid-column: 1; color: #666; }
+      .inv-package--dark .inv-line .detail, .inv-package--dark .inv-extra-line .note { color: #bbb; }
+      .inv-line .amount, .inv-extra-line .amount { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+      .payment-summary { grid-template-columns: 1fr; padding: 18px 20px; }
+      .inv-footer { padding: 22px 20px 18px; font-size: 1.25rem; }
+    }
+    @media print {
+      body { background: #fff; padding: 0; }
+      .toolbar-top { display: none; }
+      .page { box-shadow: none; border-radius: 0; max-width: none; }
+      @page { margin: 0; }
+    }
+
+    #loadingState, #errorState { text-align: center; padding: 60px 20px; color: #666; }
+    #errorState { color: #b03030; }
+  </style>
+</head>
+<body>
+  <div class="toolbar-top">
+    <div id="statusPill"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="gold" onclick="window.print()">🖨 Print / Save PDF</button>
+    </div>
+  </div>
+
+  <div class="page" id="pageWrap">
+    <div id="loadingState">Loading invoice…</div>
+  </div>
+
+  <script>
+    const esc = (s) => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const fmt = (n) => Number(n || 0).toLocaleString('en-NG');
+
+    const urlNo = new URLSearchParams(location.search).get('no');
+    if (!urlNo) { document.getElementById('pageWrap').innerHTML = '<div id="errorState">No invoice number in URL.</div>'; }
+    else load();
+
+    async function load() {
+      try {
+        const r = await fetch('/api/sync.php?resource=invoices', { cache: 'no-store' });
+        const list = r.ok ? await r.json() : [];
+        const inv = Array.isArray(list) ? list.find(x => x.invoiceNo === urlNo) : null;
+        if (!inv) { document.getElementById('pageWrap').innerHTML = `<div id="errorState">Invoice ${esc(urlNo)} not found.</div>`; return; }
+        renderInvoice(inv);
+      } catch (e) {
+        document.getElementById('pageWrap').innerHTML = '<div id="errorState">Could not load invoice.</div>';
+      }
+    }
+
+    function renderInvoice(inv) {
+      const status = inv.status || 'sent';
+      document.getElementById('statusPill').innerHTML = `<span class="status-tag ${status}">${status}</span>`;
+
+      const packages = (inv.packages || []).map(renderPackage).join('');
+
+      const total = (inv.packages || []).reduce((s, p) => s + Number(p.total || 0), 0);
+      const dep = Number(inv.depositPaid || 0);
+      const bal = Number(inv.balancePaid || 0);
+      const paid = dep + bal;
+      const outstanding = Math.max(0, total - paid);
+      const paymentBlock = total ? `
+        <div class="payment-summary">
+          <div class="cell"><div class="label">Total Invoice</div><div class="value">₦${fmt(total)}</div></div>
+          <div class="cell"><div class="label">Amount Paid</div><div class="value" style="color:${paid >= total ? '#1a7a4a' : '#7a6420'}">₦${fmt(paid)}</div></div>
+          ${dep ? `<div class="cell"><div class="label">Deposit</div><div class="value">₦${fmt(dep)}</div></div>` : ''}
+          ${bal ? `<div class="cell"><div class="label">Balance Paid</div><div class="value">₦${fmt(bal)}</div></div>` : ''}
+          ${outstanding ? `<div class="cell"><div class="label">Outstanding</div><div class="value" style="color:#b03030">₦${fmt(outstanding)}</div></div>` : ''}
+        </div>` : '';
+
+      document.getElementById('pageWrap').innerHTML = `
+        <div class="inv-header">
+          <div class="inv-logo-block">
+            <img class="inv-logo-img" src="images/nej-logo.png" alt="NEJstudios" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+            <div class="inv-logo-fallback">Nej</div>
+          </div>
+          <div class="inv-business-block">
+            <div class="biz-name">${esc(inv.bizName || 'NEJstudios')}</div>
+            <div class="biz-addr">${inv.bizAddr || ''}</div>
+            <div style="margin-top:8px">${esc(inv.date || '')}</div>
+          </div>
+        </div>
+        <div class="inv-bill-row">
+          <div class="inv-bill-to">
+            <div class="label">BILL TO:</div>
+            <div class="name">${esc(inv.billTo || '')}</div>
+            ${inv.billToAddress ? `<div class="addr">${inv.billToAddress}</div>` : ''}
+          </div>
+          <div class="invoice-no">Invoice No: <strong>${esc(inv.invoiceNo)}</strong></div>
+        </div>
+        <div class="inv-package-title">
+          <div class="left">Package:</div>
+          <div class="right">${esc(inv.packageTitle || '')}</div>
+        </div>
+        ${packages}
+        ${paymentBlock}
+        <div class="inv-footer">${esc(inv.footerNote || 'Thank you.')}</div>
+      `;
+    }
+
+    function renderPackage(p) {
+      const items = (p.items || []).map(it => `
+        <div class="inv-line">
+          <div class="name">${esc(it.name)}</div>
+          <div class="detail">${esc(it.detail)}</div>
+          <div class="amount">${fmt(it.amount)}</div>
+        </div>
+      `).join('');
+      const extras = (p.extras || []).map(ex => `
+        <div class="inv-extra-line">
+          <div class="name" style="font-family:var(--serif);font-size:1.15rem">${esc(ex.name)}</div>
+          <div></div>
+          <div class="note">${esc(ex.note)}</div>
+          <div class="amount">${fmt(ex.amount)}</div>
+        </div>
+      `).join('');
+      const delivs = (p.deliverables || []).filter(Boolean).map(d => `<li>${esc(d)}</li>`).join('');
+      return `
+        <div class="inv-package ${p.dark ? 'inv-package--dark' : ''}">
+          <h4>${esc(p.label)}</h4>
+          ${items}
+          ${extras}
+          <div class="inv-totals">
+            <div class="days">${esc(p.days)} Days :</div>
+            <div class="subtotal">${fmt(p.daysSubtotal)}</div>
+            ${p.discount ? `<div class="discount-label">Discount</div><div class="discount-amt">${fmt(p.discount)}</div>` : ''}
+            <div class="total-label">Total:</div>
+            <div class="total-amt">${fmt(p.total)}</div>
+          </div>
+          <div class="deliv-block">
+            <div class="title">Deliverables</div>
+            <ul>${delivs}</ul>
+            ${p.deliveryNote ? `<div class="note">${esc(p.deliveryNote)}</div>` : ''}
+          </div>
+        </div>
+      `;
+    }
+  </script>
+</body>
+</html>

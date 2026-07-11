@@ -359,7 +359,11 @@ document.getElementById('mobileLogout').addEventListener('click', doLogout);
   await syncTeamFromServer().catch(() => {});
 
   const sess = getSession();
-  if (sess && sess.role === 'team') {
+  const SESSION_MAX_AGE_MS = 12 * 60 * 60 * 1000;
+  if (sess && sess.loginAt && (Date.now() - sess.loginAt) > SESSION_MAX_AGE_MS) {
+    setSession(null);
+    console.log('[Auth] Session expired after 12h — please sign in again');
+  } else if (sess && sess.role === 'team') {
     const team   = getTeam();
     const member = team.find(m => m.id === sess.memberId);
     if (member) {

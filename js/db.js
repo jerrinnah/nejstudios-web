@@ -89,7 +89,15 @@ async function dbUpsertBooking(booking) {
  * dbSoftDeleteBooking(id) — marks a booking as deleted on the server (tombstone).
  * Other devices will see { deletedAt: <ts> } and hide it from the UI.
  */
+async function _auditBookingDelete(id) {
+  try {
+    const local = JSON.parse(localStorage.getItem(DB_BOOKINGS_KEY) || '[]');
+    const b = local.find(x => x.id === id);
+    dbAuditLog('booking.delete', { bookingId: id, client: b && b.clientName });
+  } catch {}
+}
 async function dbSoftDeleteBooking(id) {
+  await _auditBookingDelete(id);
   if (!id) return false;
   const merged = await _dbMergeArray('bookings', [], [id]);
   if (merged) {
@@ -318,9 +326,11 @@ async function dbUpdateTask(id, updates) {
 }
 
 async function dbDeleteTask(id) {
+  const before = await dbGetTask(id);
   const tasks = (await _serverGet('tasks')).filter(t => t.id !== id);
   await _serverSave('tasks', tasks);
   _fireTasks(null);
+  dbAuditLog('task.delete', { taskId: id, title: before && before.title, assignedTo: before && before.assignedName });
 }
 
 /* ════════════════════════════════════════════
@@ -474,6 +484,46 @@ async function dbGetMonthlySalary(member) {
 
 // Backup tasks aren't counted in delivery stats — they're routine, not deliverables.
 const _isBackupTask = (t) => /^\s*backup\b/i.test(t.title || '');
+
+/* ────────────────────────────────────────────
+   AUDIT LOG — append-only record of major mutations
+   Stored on the server as an array of entries.
+   Keeps the last 500 entries to prevent unbounded growth.
+   ──────────────────────────────────────────── */
+async function dbAuditLog(action, details) {
+  try {
+    const sess = (function() {
+      try { return JSON.parse(sessionStorage.getItem('nej_session') || 'null'); } catch { return null; }
+    })();
+    const entry = {
+      id: 'AUD-' + Date.now() + '-' + Math.random().toString(36).slice(2,6),
+      ts: Date.now(),
+      actor: (sess && (sess.name || sess.username)) || 'unknown',
+      actorId: (sess && sess.memberId) || null,
+      role: (sess && sess.role) || 'unknown',
+      action, details: details || {},
+    };
+    const r = await fetch('/api/sync.php?resource=audit_log', { cache: 'no-store' });
+    let log = [];
+    if (r.ok) { try { log = await r.json(); } catch {} }
+    if (!Array.isArray(log)) log = [];
+    log.push(entry);
+    if (log.length > 500) log = log.slice(-500);
+    await fetch('/api/sync.php?resource=audit_log', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(log),
+    });
+  } catch (e) { console.warn('audit log failed', e); }
+}
+
+async function dbGetAuditLog(limit) {
+  try {
+    const r = await fetch('/api/sync.php?resource=audit_log', { cache: 'no-store' });
+    if (!r.ok) return [];
+    const log = await r.json();
+    if (!Array.isArray(log)) return [];
+    return limit ? log.slice(-limit).reverse() : log.slice().reverse();
+  } catch { return []; }
+}
 
 // Show "All Deliveries This Month" modal — leaderboard of every member's deliveries.
 // Available to both team and admin pages (modal HTML is included in both).
@@ -979,6 +1029,12 @@ async function dbDecideLeaveRequest(id, decision) {
   // Save the updated leave request (with refund info if applicable)
   await fetch('/api/sync.php?resource=leave_requests', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(all),
+  });
+
+  dbAuditLog('leave.' + decision, {
+    memberId: entry.memberId, memberName: entry.memberName,
+    startDate: entry.startDate, endDate: entry.endDate,
+    refundTotal: refunded.total || 0,
   });
 
   return entry;

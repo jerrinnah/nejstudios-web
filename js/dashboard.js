@@ -619,9 +619,13 @@ document.getElementById('broadcastSendBtn').addEventListener('click', async () =
   showToast(`Notification sent to ${sent} team member${sent !== 1 ? 's' : ''} ✓`);
 });
 
-// On load: check session
+// On load: check session (12-hour auto-logout)
+const SESSION_MAX_AGE_MS = 12 * 60 * 60 * 1000;
 const sess = getSession();
-if (sess && sess.role === 'admin') {
+if (sess && sess.loginAt && (Date.now() - sess.loginAt) > SESSION_MAX_AGE_MS) {
+  setSession(null);
+  console.log('[Auth] Session expired after 12h — logged out');
+} else if (sess && sess.role === 'admin') {
   showDash();
 } else if (sess && sess.role === 'team') {
   window.location.href = 'team';
@@ -727,9 +731,28 @@ function actionButtons(b) {
   }
   btns.push(`<button class="action-btn" style="border-color:var(--blue);color:var(--blue)" data-id="${b.id}" data-action="edit">Edit</button>`);
   btns.push(`<button class="action-btn" style="border-color:var(--purple);color:var(--purple)" data-id="${b.id}" data-action="assign-team">Team</button>`);
+  if (b.phone) btns.push(`<button class="action-btn" style="border-color:#25D366;color:#25D366" data-id="${b.id}" data-action="whatsapp">💬 WhatsApp</button>`);
   btns.push(`<button class="action-btn action-btn--delete" data-id="${b.id}" data-action="delete">Delete</button>`);
   btns.push(`<button class="action-btn" style="border-color:var(--border);color:var(--grey-3)" data-id="${b.id}" data-action="detail">Details</button>`);
   return btns.join('');
+}
+
+/* Normalize phone to international format for wa.me (assume Nigeria +234 if starts with 0). */
+function _normalizePhoneForWA(phone) {
+  let p = String(phone || '').replace(/[^\d+]/g, '');
+  if (p.startsWith('+')) p = p.slice(1);
+  else if (p.startsWith('0')) p = '234' + p.slice(1);
+  else if (!p.startsWith('234')) p = '234' + p;
+  return p;
+}
+function openWhatsAppForBooking(b) {
+  const phone = _normalizePhoneForWA(b.phone);
+  const name  = (b.clientName || '').split(' ')[0] || 'there';
+  const date  = b.bookingKind === 'studio' ? (b.shootDate || b.preferredDate) : b.eventDate;
+  const kind  = b.bookingKind === 'studio' ? (b.sessionType || 'studio session') : 'event';
+  const msg   = `Hi ${name}, this is NEJstudios. Reaching out about your ${kind} booking${date ? ' on ' + date : ''}. Let us know if you have any questions. 📸`;
+  const url   = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
 }
 
 function assignedTeamHtml(b) {
@@ -741,6 +764,27 @@ function assignedTeamHtml(b) {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
     <span style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">Team: ${tags}</span>
   </div>`;
+}
+
+/* ── Payment status helper ── */
+function paymentStatus(b) {
+  const total = Number(b.cost || b.budget || 0);
+  const dep   = Number(b.depositPaid || 0);
+  const bal   = Number(b.balancePaid || 0);
+  const paid  = dep + bal;
+  if (!total) {
+    if (paid > 0) return { label: `₦${paid.toLocaleString('en-NG')} paid`, color: 'var(--green)', bg: 'rgba(62,207,142,0.12)', border: 'rgba(62,207,142,0.35)' };
+    return null;
+  }
+  const outstanding = Math.max(0, total - paid);
+  if (paid >= total)   return { label: `Paid in full · ₦${total.toLocaleString('en-NG')}`, color: 'var(--green)', bg: 'rgba(62,207,142,0.12)', border: 'rgba(62,207,142,0.35)' };
+  if (paid > 0)        return { label: `₦${paid.toLocaleString('en-NG')} paid · ₦${outstanding.toLocaleString('en-NG')} due`, color: 'var(--gold)', bg: 'rgba(201,168,76,0.10)', border: 'rgba(201,168,76,0.32)' };
+  return { label: `Unpaid · ₦${total.toLocaleString('en-NG')} due`, color: 'var(--red)', bg: 'rgba(248,113,113,0.10)', border: 'rgba(248,113,113,0.32)' };
+}
+function paymentBadgeHtml(b) {
+  const p = paymentStatus(b);
+  if (!p) return '';
+  return `<div style="margin-top:6px;padding:5px 10px;background:${p.bg};border:1px solid ${p.border};border-radius:6px;font-size:0.7rem;font-weight:600;color:${p.color};display:inline-block">💰 ${p.label}</div>`;
 }
 
 function buildStudioCard(b) {
@@ -761,6 +805,7 @@ function buildStudioCard(b) {
       <div class="booking-card__meta">
         <div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>Shoot Date: ${shootLabel}</span></div>
         <div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg><span>Cost: ${costLabel}</span></div>
+        ${paymentBadgeHtml(b)}
         <div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-8-8 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0122 16.92z"/></svg><span>${b.phone}</span></div>
         <div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><span>${b.email}</span></div>
         <div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>Booked <strong>${fmtDate(b.createdAt)}</strong> at ${fmtTime(b.createdAt)}</span></div>
@@ -788,6 +833,7 @@ function buildEventCard(b) {
         <div class="event-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg><div><span class="ef-label">Event Cost</span><span class="ef-value">${budgetLabel}</span></div></div>
         <div class="event-field event-field--full"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><div><span class="ef-label">Deliverables</span><span class="ef-value ef-deliverables">${deliv}</span></div></div>
       </div>
+      <div style="margin-top:10px">${paymentBadgeHtml(b)}</div>
       <div class="booking-card__meta" style="margin-top:12px">
         <div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-8-8 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0122 16.92z"/></svg><span>${b.phone}</span></div>
         <div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><span>${b.email}</span></div>
@@ -896,6 +942,11 @@ async function handleBookingAction(id, action) {
   if (action === 'edit')         { openEditBooking(id);         return; }
   if (action === 'assign-team')  { openAssignTeamModal(id);     return; }
   if (action === 'share-event')  { shareEventToClient(id);      return; }
+  if (action === 'whatsapp')     {
+    const b = getBookings().find(x => x.id === id);
+    if (b) openWhatsAppForBooking(b);
+    return;
+  }
   const bookings = getBookings(), idx = bookings.findIndex(b => b.id === id);
   if (idx === -1) return;
   bookings[idx].status = action;
@@ -986,6 +1037,8 @@ function openEditBooking(id) {
     document.getElementById('beNumOutfits').value   = b.numOutfits   || '1';
     document.getElementById('beShootDate').value    = b.shootDate    || b.preferredDate || '';
     document.getElementById('beCost').value         = b.cost != null ? b.cost : '';
+    document.getElementById('beDepositPaidStudio').value = b.depositPaid || '';
+    document.getElementById('beBalancePaidStudio').value = b.balancePaid || '';
     const hint = document.getElementById('bePreferredDateHint');
     if (hint) hint.textContent = b.preferredDate ? fmtEventDate(b.preferredDate) : '—';
   } else {
@@ -993,9 +1046,10 @@ function openEditBooking(id) {
     document.getElementById('beEventType').value    = b.eventType    || '';
     document.getElementById('beEventDate').value    = b.eventDate    || '';
     document.getElementById('beLocation').value     = b.location     || '';
-    // Budget may be legacy label key or a raw number. Number input accepts only numbers.
     document.getElementById('beBudget').value       = (typeof b.budget === 'number' || /^\d+(\.\d+)?$/.test(b.budget || '')) ? b.budget : '';
     document.getElementById('beDeliverables').value = b.deliverables || '';
+    document.getElementById('beDepositPaidEvent').value = b.depositPaid || '';
+    document.getElementById('beBalancePaidEvent').value = b.balancePaid || '';
   }
 
   bookingEditModal.style.display = 'flex';
@@ -1027,6 +1081,10 @@ document.getElementById('bookingEditForm').addEventListener('submit', e => {
     updates.shootDate   = document.getElementById('beShootDate').value || '';
     const costRaw       = document.getElementById('beCost').value;
     updates.cost        = costRaw === '' ? null : Number(costRaw);
+    const depS = document.getElementById('beDepositPaidStudio').value;
+    const balS = document.getElementById('beBalancePaidStudio').value;
+    updates.depositPaid = depS === '' ? null : Number(depS);
+    updates.balancePaid = balS === '' ? null : Number(balS);
   } else {
     const eventName = document.getElementById('beEventName').value.trim();
     if (!eventName || !phone || !email) { showToast('Event name, phone and email are required'); return; }
@@ -1038,6 +1096,10 @@ document.getElementById('bookingEditForm').addEventListener('submit', e => {
     const budgetRaw      = document.getElementById('beBudget').value;
     updates.budget       = budgetRaw === '' ? null : Number(budgetRaw);
     updates.deliverables = document.getElementById('beDeliverables').value.trim();
+    const depE = document.getElementById('beDepositPaidEvent').value;
+    const balE = document.getElementById('beBalancePaidEvent').value;
+    updates.depositPaid = depE === '' ? null : Number(depE);
+    updates.balancePaid = balE === '' ? null : Number(balE);
   }
   const clientName = updates.clientName;
 
