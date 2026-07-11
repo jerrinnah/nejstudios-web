@@ -87,8 +87,9 @@
     .login-err { color: var(--red); font-size: 0.8rem; min-height: 1.2em; margin-top: 8px; }
 
     /* ── APP SHELL ── */
-    .app-shell { padding: 24px; max-width: 1280px; margin: 0 auto; }
+    .app-shell { padding: 20px; max-width: 1320px; margin: 0 auto; }
     .app-shell.hidden { display: none; }
+    @media (max-width: 720px) { .app-shell { padding: 12px; } }
 
     .toolbar {
       display: flex;
@@ -96,9 +97,19 @@
       align-items: center;
       flex-wrap: wrap;
       gap: 12px;
-      padding-bottom: 16px;
+      padding-bottom: 14px;
       border-bottom: 1px solid var(--border);
-      margin-bottom: 24px;
+      margin-bottom: 18px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--bg-1);
+      padding-top: 4px;
+    }
+    @media (max-width: 720px) {
+      .toolbar { padding-top: 8px; }
+      .toolbar h2 { font-size: 1.15rem; }
+      .toolbar p { display: none; }
     }
     .toolbar h2 {
       font-family: var(--serif);
@@ -120,23 +131,95 @@
     .btn--gold { background: var(--gold); color: #000; border-color: var(--gold); font-weight: 700; }
     .btn--ghost { background: transparent; }
 
+    /* Mobile toggle (Edit vs Preview) - hidden on desktop */
+    .view-toggle {
+      display: none;
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 4px;
+      margin-bottom: 14px;
+      gap: 4px;
+    }
+    .view-toggle button {
+      flex: 1;
+      padding: 9px 12px;
+      background: transparent;
+      border: none;
+      color: var(--grey-3);
+      border-radius: 6px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      font-family: var(--sans);
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+    .view-toggle button.active {
+      background: var(--gold);
+      color: #000;
+    }
+
     .grid {
       display: grid;
-      grid-template-columns: 380px 1fr;
+      grid-template-columns: 400px 1fr;
       gap: 24px;
+      align-items: start;
     }
-    @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
+    @media (max-width: 980px) {
+      .grid { grid-template-columns: 1fr; }
+      .view-toggle { display: flex; }
+      /* When mobile toggle is active, hide the non-selected panel */
+      body[data-view="edit"] .preview-section { display: none; }
+      body[data-view="preview"] .editor { display: none; }
+    }
+
+    /* Editor section tabs (Header / Packages / Footer) */
+    .editor-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 14px;
+      background: var(--bg-3);
+      padding: 4px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 3;
+    }
+    .editor-tabs button {
+      flex: 1;
+      padding: 8px 6px;
+      background: transparent;
+      border: none;
+      color: var(--grey-3);
+      border-radius: 5px;
+      font-size: 0.72rem;
+      font-family: var(--sans);
+      cursor: pointer;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .editor-tabs button.active {
+      background: var(--gold);
+      color: #000;
+    }
+    .editor-section { display: none; }
+    .editor-section.active { display: block; }
 
     /* ── EDITOR ── */
     .editor {
       background: var(--bg-2);
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 18px;
-      max-height: calc(100vh - 140px);
+      padding: 16px;
+      max-height: calc(100vh - 120px);
       overflow-y: auto;
       position: sticky;
-      top: 24px;
+      top: 20px;
+    }
+    @media (max-width: 980px) {
+      .editor { position: static; max-height: none; padding: 14px; }
     }
     .editor h3 {
       font-size: 0.78rem;
@@ -180,21 +263,60 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 8px;
       margin-bottom: 10px;
+      cursor: pointer;
+      user-select: none;
     }
     .package-block__title {
-      font-size: 0.85rem;
+      font-size: 0.9rem;
       font-weight: 600;
       color: var(--white);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
     }
+    .package-block__title .chev {
+      display: inline-block;
+      width: 14px;
+      transition: transform 0.15s;
+      color: var(--gold);
+    }
+    .package-block--collapsed .package-block__title .chev { transform: rotate(-90deg); }
+    .package-block--collapsed .package-block__body { display: none; }
+    .package-block__ctrls { display: flex; gap: 4px; }
+    .package-block__ctrls button {
+      width: 30px; height: 30px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--grey-3);
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .package-block__ctrls button:hover { color: var(--gold); border-color: var(--gold); }
+    .package-block__ctrls button.remove:hover { color: var(--red); border-color: var(--red); }
+
     .item-row {
       display: grid;
-      grid-template-columns: 1fr 1fr 90px 32px;
+      grid-template-columns: 1fr 1fr 100px 32px;
       gap: 6px;
       margin-bottom: 6px;
       align-items: center;
     }
-    .item-row input { font-size: 0.78rem; padding: 6px 8px; }
+    .item-row input { font-size: 0.8rem; padding: 8px 10px; }
+    @media (max-width: 720px) {
+      .item-row {
+        grid-template-columns: 1fr 32px;
+        gap: 4px;
+        padding: 8px;
+        background: rgba(255,255,255,0.02);
+        border-radius: 6px;
+      }
+      .item-row input[type="number"] { grid-column: 1; }
+      .item-row button { grid-column: 2; align-self: start; }
+    }
     .deliverable-row {
       display: grid;
       grid-template-columns: 1fr 32px;
@@ -419,6 +541,36 @@
       font-size: 1.5rem;
     }
 
+    /* Preview mobile scaling */
+    @media (max-width: 720px) {
+      .inv-header {
+        padding: 20px 20px 16px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 14px;
+      }
+      .inv-logo-img { width: 90px; height: 90px; }
+      .inv-business-block { text-align: left; }
+      .inv-business-block .biz-name { font-size: 1.3rem; }
+      .inv-bill-row { padding: 0 20px 14px; grid-template-columns: 1fr; }
+      .inv-package-title { padding: 16px 20px; flex-direction: column; align-items: flex-start; gap: 4px; }
+      .inv-package-title .right { font-size: 1.35rem; }
+      .inv-package { padding: 20px 20px 22px; }
+      .inv-package h4 { font-size: 1.15rem; margin-bottom: 14px; }
+      .inv-line, .inv-extra-line {
+        grid-template-columns: 1fr auto;
+        gap: 4px 12px;
+      }
+      .inv-line .detail, .inv-extra-line .note {
+        grid-column: 1;
+        color: #666;
+      }
+      .inv-package--dark .inv-line .detail, .inv-package--dark .inv-extra-line .note { color: #bbb; }
+      .inv-line .amount, .inv-extra-line .amount { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+      .deliv-block ul { font-size: 0.78rem; }
+      .inv-footer { padding: 22px 20px 18px; font-size: 1.25rem; }
+    }
+
     /* PRINT */
     @media print {
       body { background: #fff; }
@@ -451,10 +603,16 @@
         <p>Fill in the editor and the invoice updates live. Use Print to save as PDF.</p>
       </div>
       <div class="actions">
-        <button class="btn" id="btnResetInvoice">Reset Template</button>
-        <button class="btn" id="btnSaveDraft">Save Draft</button>
-        <button class="btn btn--gold" id="btnPrint">Print / Save PDF</button>
+        <button class="btn" id="btnResetInvoice">Reset</button>
+        <button class="btn" id="btnSaveDraft">💾 Save</button>
+        <button class="btn btn--gold" id="btnPrint">🖨 Print / PDF</button>
       </div>
+    </div>
+
+    <!-- Mobile toggle -->
+    <div class="view-toggle" id="viewToggle">
+      <button data-view="edit" class="active">✎ Edit</button>
+      <button data-view="preview">👁 Preview</button>
     </div>
 
     <div class="grid">
@@ -605,47 +763,70 @@
     }
 
     /* ─── EDITOR RENDER ─── */
+    let activeEditorTab = 'header';
+
     function renderEditor() {
       const root = document.getElementById('editor');
       root.innerHTML = `
-        <h3>Invoice Header</h3>
-        <div class="field-row">
-          <div class="field">
-            <label>Invoice No.</label>
-            <input data-bind="invoiceNo" value="${esc(invoice.invoiceNo)}" />
-          </div>
-          <div class="field">
-            <label>Date</label>
-            <input data-bind="date" value="${esc(invoice.date)}" />
-          </div>
-        </div>
-        <div class="field">
-          <label>Bill To</label>
-          <input data-bind="billTo" value="${esc(invoice.billTo)}" />
-        </div>
-        <div class="field">
-          <label>Package Title (black bar)</label>
-          <input data-bind="packageTitle" value="${esc(invoice.packageTitle)}" />
-        </div>
-        <div class="field">
-          <label>Business Name</label>
-          <input data-bind="bizName" value="${esc(invoice.bizName)}" />
-        </div>
-        <div class="field">
-          <label>Business Address (use &lt;br&gt; for line breaks)</label>
-          <textarea data-bind="bizAddr" rows="2">${esc(invoice.bizAddr)}</textarea>
+        <div class="editor-tabs">
+          <button data-etab="header" ${activeEditorTab === 'header' ? 'class="active"' : ''}>Header</button>
+          <button data-etab="packages" ${activeEditorTab === 'packages' ? 'class="active"' : ''}>Packages (${invoice.packages.length})</button>
+          <button data-etab="footer" ${activeEditorTab === 'footer' ? 'class="active"' : ''}>Footer</button>
         </div>
 
-        <h3>Packages</h3>
-        <div id="packagesEditor"></div>
-        <button class="add-btn" id="addPackageBtn">+ Add Package</button>
+        <!-- HEADER SECTION -->
+        <div class="editor-section ${activeEditorTab === 'header' ? 'active' : ''}" data-section="header">
+          <div class="field-row">
+            <div class="field">
+              <label>Invoice No.</label>
+              <input data-bind="invoiceNo" value="${esc(invoice.invoiceNo)}" />
+            </div>
+            <div class="field">
+              <label>Date</label>
+              <input data-bind="date" value="${esc(invoice.date)}" />
+            </div>
+          </div>
+          <div class="field">
+            <label>Bill To</label>
+            <input data-bind="billTo" value="${esc(invoice.billTo)}" />
+          </div>
+          <div class="field">
+            <label>Package Title (black bar)</label>
+            <input data-bind="packageTitle" value="${esc(invoice.packageTitle)}" />
+          </div>
+          <div class="field">
+            <label>Business Name</label>
+            <input data-bind="bizName" value="${esc(invoice.bizName)}" />
+          </div>
+          <div class="field">
+            <label>Business Address (use &lt;br&gt; for line breaks)</label>
+            <textarea data-bind="bizAddr" rows="2">${esc(invoice.bizAddr)}</textarea>
+          </div>
+        </div>
 
-        <h3>Footer</h3>
-        <div class="field">
-          <label>Thank-you Note</label>
-          <textarea data-bind="footerNote" rows="2">${esc(invoice.footerNote)}</textarea>
+        <!-- PACKAGES SECTION -->
+        <div class="editor-section ${activeEditorTab === 'packages' ? 'active' : ''}" data-section="packages">
+          <div id="packagesEditor"></div>
+          <button class="add-btn" id="addPackageBtn" style="width:100%;justify-content:center;padding:10px;margin-top:6px">+ Add New Package</button>
+        </div>
+
+        <!-- FOOTER SECTION -->
+        <div class="editor-section ${activeEditorTab === 'footer' ? 'active' : ''}" data-section="footer">
+          <div class="field">
+            <label>Thank-you Note</label>
+            <textarea data-bind="footerNote" rows="3">${esc(invoice.footerNote)}</textarea>
+          </div>
         </div>
       `;
+
+      // Tab switching
+      root.querySelectorAll('[data-etab]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          activeEditorTab = btn.dataset.etab;
+          root.querySelectorAll('[data-etab]').forEach(b => b.classList.toggle('active', b === btn));
+          root.querySelectorAll('[data-section]').forEach(s => s.classList.toggle('active', s.dataset.section === activeEditorTab));
+        });
+      });
 
       // Bind top-level fields
       root.querySelectorAll('[data-bind]').forEach(el => {
@@ -656,13 +837,13 @@
         });
       });
 
-      // Render packages editor
       renderPackagesEditor();
 
       document.getElementById('addPackageBtn').addEventListener('click', () => {
         invoice.packages.push({
           label: `Package ${invoice.packages.length + 1}`,
           dark: invoice.packages.length % 2 === 1,
+          collapsed: false,
           items: [{ name: '', detail: '', amount: 0 }],
           days: 1,
           daysSubtotal: 0,
@@ -672,6 +853,7 @@
           deliverables: [''],
           deliveryNote: '',
         });
+        activeEditorTab = 'packages';
         persist();
         renderEditor();
         renderPreview();
@@ -681,11 +863,21 @@
     function renderPackagesEditor() {
       const wrap = document.getElementById('packagesEditor');
       wrap.innerHTML = invoice.packages.map((p, i) => `
-        <div class="package-block">
-          <div class="package-block__header">
-            <span class="package-block__title">${esc(p.label)}</span>
-            <button class="small-btn" data-pkg-remove="${i}" title="Remove package">✕</button>
+        <div class="package-block ${p.collapsed ? 'package-block--collapsed' : ''}">
+          <div class="package-block__header" data-pkg-toggle="${i}">
+            <span class="package-block__title">
+              <span class="chev">▼</span>
+              <span data-pkg-title="${i}">${esc(p.label)}</span>
+              ${p.dark ? '<span style="font-size:0.62rem;padding:1px 6px;background:#000;border:1px solid var(--border);border-radius:9px;color:#aaa">DARK</span>' : ''}
+            </span>
+            <div class="package-block__ctrls" onclick="event.stopPropagation()">
+              ${i > 0 ? `<button data-pkg-up="${i}" title="Move up">↑</button>` : ''}
+              ${i < invoice.packages.length - 1 ? `<button data-pkg-down="${i}" title="Move down">↓</button>` : ''}
+              <button data-pkg-dup="${i}" title="Duplicate">⧉</button>
+              <button class="remove" data-pkg-remove="${i}" title="Remove package">✕</button>
+            </div>
           </div>
+          <div class="package-block__body">
           <div class="field-row">
             <div class="field">
               <label>Label</label>
@@ -758,8 +950,37 @@
             <label>Delivery Note</label>
             <textarea data-pkg-bind="${i}|deliveryNote" rows="2">${esc(p.deliveryNote)}</textarea>
           </div>
+          </div><!-- /body -->
         </div>
       `).join('');
+
+      // Collapse/expand
+      wrap.querySelectorAll('[data-pkg-toggle]').forEach(el => {
+        el.addEventListener('click', () => {
+          const i = parseInt(el.dataset.pkgToggle, 10);
+          invoice.packages[i].collapsed = !invoice.packages[i].collapsed;
+          persist();
+          el.closest('.package-block').classList.toggle('package-block--collapsed');
+        });
+      });
+      // Reorder
+      wrap.querySelectorAll('[data-pkg-up]').forEach(b => b.addEventListener('click', () => {
+        const i = parseInt(b.dataset.pkgUp, 10);
+        [invoice.packages[i - 1], invoice.packages[i]] = [invoice.packages[i], invoice.packages[i - 1]];
+        persist(); renderEditor(); renderPreview();
+      }));
+      wrap.querySelectorAll('[data-pkg-down]').forEach(b => b.addEventListener('click', () => {
+        const i = parseInt(b.dataset.pkgDown, 10);
+        [invoice.packages[i], invoice.packages[i + 1]] = [invoice.packages[i + 1], invoice.packages[i]];
+        persist(); renderEditor(); renderPreview();
+      }));
+      wrap.querySelectorAll('[data-pkg-dup]').forEach(b => b.addEventListener('click', () => {
+        const i = parseInt(b.dataset.pkgDup, 10);
+        const copy = JSON.parse(JSON.stringify(invoice.packages[i]));
+        copy.label = `${copy.label} (copy)`;
+        invoice.packages.splice(i + 1, 0, copy);
+        persist(); renderEditor(); renderPreview();
+      }));
 
       // Bind all
       wrap.querySelectorAll('[data-pkg-bind]').forEach(el => {
@@ -771,7 +992,10 @@
           invoice.packages[i][key] = val;
           persist();
           renderPreview();
-          if (key === 'label') wrap.querySelectorAll('.package-block__title')[i].textContent = val;
+          if (key === 'label') {
+            const t = wrap.querySelector(`[data-pkg-title="${i}"]`);
+            if (t) t.textContent = val;
+          }
         });
       });
       wrap.querySelectorAll('[data-item-bind]').forEach(el => {
@@ -922,6 +1146,16 @@
     });
     document.getElementById('btnPrint').addEventListener('click', () => {
       window.print();
+    });
+
+    // Mobile Edit/Preview toggle
+    document.body.dataset.view = 'edit';
+    document.querySelectorAll('#viewToggle button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.body.dataset.view = btn.dataset.view;
+        document.querySelectorAll('#viewToggle button').forEach(b => b.classList.toggle('active', b === btn));
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
     });
 
     // Auto-unlock — runs AFTER all const helpers and renders are defined
