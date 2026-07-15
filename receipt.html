@@ -228,7 +228,7 @@
 </head>
 <body>
   <div class="toolbar-top">
-    <div style="font-size:0.85rem;color:#333">Receipt for invoice <strong id="invRefTop">—</strong></div>
+    <div style="font-size:0.85rem;color:#333">Receipt for invoice <strong id="invRefTop">—</strong> <span id="savedTag" style="display:none;font-size:0.72rem;color:#1a7a4a;font-weight:700;margin-left:8px;padding:2px 8px;background:rgba(26,122,74,0.12);border-radius:10px">✓ Saved</span></div>
     <div>
       <button onclick="window.print()">🖨 Print / Save PDF</button>
     </div>
@@ -252,13 +252,67 @@
         const list = r.ok ? await r.json() : [];
         const inv = Array.isArray(list) ? list.find(x => x.invoiceNo === urlNo) : null;
         if (!inv) { document.getElementById('pageWrap').innerHTML = `<div id="errorState">Invoice ${esc(urlNo)} not found. Save it first from the invoice creator.</div>`; return; }
-        renderReceipt(inv);
+        // Auto-save receipt so the receipt number and amounts are locked in
+        const saved = await autoSaveReceipt(inv);
+        renderReceipt(inv, saved);
       } catch (e) {
         document.getElementById('pageWrap').innerHTML = '<div id="errorState">Could not load invoice data.</div>';
       }
     }
 
-    function renderReceipt(inv) {
+    /* Persist this receipt to the server so we have a permanent record.
+       Reuses an existing receipt if the invoice + amount received match,
+       so re-opening the page never spawns a duplicate. */
+    async function autoSaveReceipt(inv) {
+      const total    = (inv.packages || []).reduce((s, p) => s + Number(p.total || 0), 0);
+      const received = Number(inv.depositPaid || 0) + Number(inv.balancePaid || 0);
+      let receipts = [];
+      try {
+        const r = await fetch('/api/sync.php?resource=receipts', { cache: 'no-store' });
+        if (r.ok) receipts = await r.json();
+      } catch {}
+      if (!Array.isArray(receipts)) receipts = [];
+
+      // If a receipt already exists for this invoice+amount, reuse it
+      const existing = receipts.find(x => x.invoiceNo === inv.invoiceNo && Number(x.amountReceived) === received);
+      if (existing) {
+        setTimeout(() => { const el = document.getElementById('savedTag'); if (el) el.style.display = 'inline-block'; }, 300);
+        return existing;
+      }
+
+      // Otherwise create a new one
+      const now = new Date();
+      const yyyymmdd = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
+      const seq = String((receipts.filter(x => (x.receiptNo || '').includes(inv.invoiceNo)).length + 1)).padStart(2, '0');
+      const receipt = {
+        receiptNo:      'R-' + inv.invoiceNo + '-' + yyyymmdd + '-' + seq,
+        invoiceNo:      inv.invoiceNo,
+        billTo:         inv.billTo || '',
+        packageTitle:   inv.packageTitle || '',
+        total:          total,
+        amountReceived: received,
+        depositPaid:    Number(inv.depositPaid || 0),
+        balancePaid:    Number(inv.balancePaid || 0),
+        outstanding:    Math.max(0, total - received),
+        status:         (received >= total && total > 0) ? 'paid' : 'partial',
+        issuedAt:       now.getTime(),
+        issuedDate:     now.toISOString().slice(0, 10),
+      };
+      receipts.push(receipt);
+
+      try {
+        const r = await fetch('/api/sync.php?resource=receipts', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(receipts),
+        });
+        if (r.ok) {
+          setTimeout(() => { const el = document.getElementById('savedTag'); if (el) el.style.display = 'inline-block'; }, 300);
+        }
+      } catch {}
+
+      return receipt;
+    }
+
+    function renderReceipt(inv, saved) {
       document.getElementById('invRefTop').textContent = '#' + inv.invoiceNo;
 
       const total = (inv.packages || []).reduce((s, p) => s + Number(p.total || 0), 0);
@@ -267,11 +321,10 @@
       const received = dep + bal;
       const outstanding = Math.max(0, total - received);
 
-      // Build a receipt number from the invoice number (e.g. R-239820-<yyyymmdd>)
-      const now = new Date();
-      const yyyymmdd = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
-      const receiptNo = 'R-' + inv.invoiceNo + '-' + yyyymmdd.slice(-4);
-      const receiptDate = now.toLocaleDateString('en-NG', { day: 'numeric', month: 'long', year: 'numeric' });
+      // Use the persisted receipt number / issue date so it doesn't shift on re-open
+      const receiptNo = (saved && saved.receiptNo) || ('R-' + inv.invoiceNo);
+      const issuedAt  = (saved && saved.issuedAt) ? new Date(saved.issuedAt) : new Date();
+      const receiptDate = issuedAt.toLocaleDateString('en-NG', { day: 'numeric', month: 'long', year: 'numeric' });
 
       // Transaction rows: deposit + balance if any, then total
       const rows = [];
