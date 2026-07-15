@@ -659,6 +659,45 @@
     </div>
   </div>
 
+  <!-- Record Payment Modal (admin) -->
+  <div id="recordPayModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:26px 24px 22px;max-width:440px;width:100%">
+      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:6px">
+        <h3 style="margin:0;font-family:var(--serif);font-size:1.35rem;color:var(--white)">Record Client Payment</h3>
+        <button onclick="closeRecordPayModal()" style="background:none;border:none;color:var(--grey-3);font-size:1.4rem;cursor:pointer;line-height:1;padding:0 4px">×</button>
+      </div>
+      <p id="rpInvoiceLine" style="margin:0 0 16px;font-size:0.82rem;color:var(--grey-3)"></p>
+
+      <div id="rpSummary" style="background:var(--bg-3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:0.85rem;color:var(--white)"></div>
+
+      <label style="display:block;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--grey-3);margin-bottom:6px">Payment Type</label>
+      <div style="display:flex;gap:6px;margin-bottom:14px">
+        <button type="button" id="rpBtnFull"    class="btn" style="flex:1;padding:10px;font-size:0.8rem">Full Payment</button>
+        <button type="button" id="rpBtnPartial" class="btn" style="flex:1;padding:10px;font-size:0.8rem">Partial Amount</button>
+      </div>
+
+      <label style="display:block;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--grey-3);margin-bottom:4px">Amount Received (₦)</label>
+      <input id="rpAmount" type="number" min="0" step="1000" style="width:100%;padding:10px 12px;background:var(--bg-3);border:1px solid var(--border);border-radius:8px;color:var(--white);font-family:var(--sans);font-size:0.95rem;margin-bottom:12px" />
+
+      <label style="display:block;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--grey-3);margin-bottom:4px">Payment Method</label>
+      <select id="rpMethod" style="width:100%;padding:10px 12px;background:var(--bg-3);border:1px solid var(--border);border-radius:8px;color:var(--white);font-family:var(--sans);font-size:0.9rem;margin-bottom:12px">
+        <option value="Bank Transfer">Bank Transfer</option>
+        <option value="Cash">Cash</option>
+        <option value="POS">POS</option>
+        <option value="Card">Card</option>
+        <option value="Other">Other</option>
+      </select>
+
+      <label style="display:block;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--grey-3);margin-bottom:4px">Reference / Transaction ID (optional)</label>
+      <input id="rpReference" type="text" style="width:100%;padding:10px 12px;background:var(--bg-3);border:1px solid var(--border);border-radius:8px;color:var(--white);font-family:var(--sans);font-size:0.9rem;margin-bottom:16px" placeholder="e.g. TXN-9218374" />
+
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button type="button" onclick="closeRecordPayModal()" style="padding:10px 18px;background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--white);cursor:pointer;font-size:0.85rem">Cancel</button>
+        <button type="button" id="rpSaveBtn" style="padding:10px 22px;background:#1a7a4a;border:none;border-radius:7px;color:#fff;font-weight:700;cursor:pointer;font-size:0.85rem">Record Payment</button>
+      </div>
+    </div>
+  </div>
+
   <!-- APP SHELL -->
   <div class="app-shell hidden" id="appShell">
     <div class="toolbar">
@@ -1300,6 +1339,97 @@
       window.open(url, '_blank');
     });
 
+    /* ─── ADMIN — RECORD CLIENT PAYMENT MODAL ─── */
+    let _rpCurrentInvoiceNo = null;
+    let _rpOutstanding = 0;
+
+    async function openRecordPayModal(invoiceNo) {
+      const list = await fetchAllInvoices();
+      const inv = list.find(x => x.invoiceNo === invoiceNo);
+      if (!inv) { alert('Invoice not found.'); return; }
+      _rpCurrentInvoiceNo = invoiceNo;
+      const total = (inv.packages || []).reduce((s, p) => s + Number(p.total || 0), 0);
+      const paid  = Number(inv.depositPaid || 0) + Number(inv.balancePaid || 0);
+      _rpOutstanding = Math.max(0, total - paid);
+
+      document.getElementById('rpInvoiceLine').textContent = `${inv.billTo} · Invoice #${inv.invoiceNo}`;
+      document.getElementById('rpSummary').innerHTML =
+        `Total: <strong>₦${total.toLocaleString('en-NG')}</strong> · Paid so far: <strong style="color:var(--gold)">₦${paid.toLocaleString('en-NG')}</strong> · Outstanding: <strong style="color:${_rpOutstanding ? '#f87171' : 'var(--green)'}">₦${_rpOutstanding.toLocaleString('en-NG')}</strong>`;
+
+      document.getElementById('rpAmount').value    = _rpOutstanding || total || '';
+      document.getElementById('rpMethod').value    = 'Bank Transfer';
+      document.getElementById('rpReference').value = '';
+      document.getElementById('recordPayModal').style.display = 'flex';
+    }
+
+    function closeRecordPayModal() {
+      document.getElementById('recordPayModal').style.display = 'none';
+      _rpCurrentInvoiceNo = null;
+    }
+
+    document.getElementById('rpBtnFull').addEventListener('click', () => {
+      document.getElementById('rpAmount').value = _rpOutstanding;
+    });
+    document.getElementById('rpBtnPartial').addEventListener('click', () => {
+      const el = document.getElementById('rpAmount');
+      el.value = '';
+      el.focus();
+    });
+
+    document.getElementById('rpSaveBtn').addEventListener('click', async () => {
+      if (!_rpCurrentInvoiceNo) return;
+      const amt    = Number(document.getElementById('rpAmount').value) || 0;
+      const method = document.getElementById('rpMethod').value;
+      const ref    = (document.getElementById('rpReference').value || '').trim();
+      if (!amt || amt <= 0) { alert('Please enter the amount received.'); return; }
+
+      const list = await fetchAllInvoices();
+      const idx = list.findIndex(x => x.invoiceNo === _rpCurrentInvoiceNo);
+      if (idx === -1) { alert('Invoice not found on server.'); return; }
+      const inv = list[idx];
+
+      // Split payment: fill deposit toward ~50% baseline first, remainder → balance
+      const total = (inv.packages || []).reduce((s, p) => s + Number(p.total || 0), 0);
+      const existingDep = Number(inv.depositPaid || 0);
+      const existingBal = Number(inv.balancePaid || 0);
+      const targetDeposit = Math.round(total * 0.5);
+      let remaining = amt;
+      if (existingDep < targetDeposit && remaining > 0) {
+        const topUp = Math.min(remaining, targetDeposit - existingDep);
+        inv.depositPaid = existingDep + topUp;
+        remaining -= topUp;
+      }
+      if (remaining > 0) inv.balancePaid = existingBal + remaining;
+
+      if (!Array.isArray(inv.paymentLog)) inv.paymentLog = [];
+      inv.paymentLog.push({
+        ts: Date.now(),
+        amount: amt,
+        method,
+        reference: ref,
+        recordedByAdmin: true,
+        adminVerifiedAt: Date.now(),
+      });
+
+      const totalPaid = Number(inv.depositPaid || 0) + Number(inv.balancePaid || 0);
+      if (total && totalPaid >= total) inv.status = 'paid';
+      else inv.status = 'partial-paid';
+
+      list[idx] = inv;
+      await fetch('/api/sync.php?resource=invoices', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(list),
+      });
+
+      closeRecordPayModal();
+      const outstandingNow = Math.max(0, total - totalPaid);
+      const summary = outstandingNow
+        ? `₦${amt.toLocaleString('en-NG')} recorded. Outstanding: ₦${outstandingNow.toLocaleString('en-NG')}.`
+        : `₦${amt.toLocaleString('en-NG')} recorded. Invoice fully paid ✓`;
+      alert(summary + '\n\nOpening receipt in a new tab…');
+      window.open('receipt.html?no=' + encodeURIComponent(inv.invoiceNo), '_blank');
+      await renderInvoicesList();
+    });
+
     /* ─── SERVER-SIDE SAVE + LIST ─── */
     async function fetchAllInvoices() {
       try {
@@ -1364,6 +1494,8 @@
             <span style="font-size:0.66rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:${statusColor}">${esc(inv.status || 'draft')}</span>
             <div style="display:flex;gap:5px;flex-wrap:wrap">
               ${pendingVerify ? `<button class="btn" data-inv-verify="${esc(inv.invoiceNo)}" style="font-size:0.68rem;padding:6px 10px;background:#f5c400;border-color:#f5c400;color:#000;font-weight:700">✓ Verify Payment</button>` : ''}
+              ${inv.status !== 'paid' ? `<button class="btn" data-inv-record="${esc(inv.invoiceNo)}" style="font-size:0.68rem;padding:6px 10px;background:#1a7a4a;border-color:#1a7a4a;color:#fff;font-weight:700">💰 Record Payment</button>` : ''}
+              <button class="btn" data-inv-receipt="${esc(inv.invoiceNo)}" style="font-size:0.68rem;padding:6px 10px">🧾 Receipt</button>
               <button class="btn" data-inv-load="${esc(inv.invoiceNo)}" style="font-size:0.68rem;padding:6px 10px">Load</button>
               <button class="btn" data-inv-link="${esc(inv.invoiceNo)}" style="font-size:0.68rem;padding:6px 10px">Copy Link</button>
               <button class="btn" data-inv-delete="${esc(inv.invoiceNo)}" style="font-size:0.68rem;padding:6px 10px">Delete</button>
@@ -1392,6 +1524,12 @@
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(filtered),
         });
         await renderInvoicesList();
+      }));
+
+      el.querySelectorAll('[data-inv-record]').forEach(b => b.addEventListener('click', () => openRecordPayModal(b.dataset.invRecord)));
+
+      el.querySelectorAll('[data-inv-receipt]').forEach(b => b.addEventListener('click', () => {
+        window.open('receipt.html?no=' + encodeURIComponent(b.dataset.invReceipt), '_blank');
       }));
 
       el.querySelectorAll('[data-inv-verify]').forEach(b => b.addEventListener('click', async () => {
