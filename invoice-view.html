@@ -381,20 +381,10 @@
         if (idx === -1) { alert('Could not find invoice on server.'); return; }
         const inv = list[idx];
 
-        // Split the payment: first fill any missing deposit, remainder → balance
+        // Add the confirmed amount to balancePaid — no forced deposit split.
+        // Receipt uses paymentLog entries for line items.
         const total = (inv.packages || []).reduce((s, p) => s + Number(p.total || 0), 0);
-        const existingDep = Number(inv.depositPaid || 0);
-        const existingBal = Number(inv.balancePaid || 0);
-        const targetDeposit = Math.round(total * 0.5); // treat deposit as ~50% baseline
-        let remaining = amt;
-
-        // Top up deposit toward baseline first
-        if (existingDep < targetDeposit && remaining > 0) {
-          const topUp = Math.min(remaining, targetDeposit - existingDep);
-          inv.depositPaid = existingDep + topUp;
-          remaining -= topUp;
-        }
-        if (remaining > 0) inv.balancePaid = existingBal + remaining;
+        inv.balancePaid = Number(inv.balancePaid || 0) + amt;
 
         // Payment log
         if (!Array.isArray(inv.paymentLog)) inv.paymentLog = [];
@@ -456,12 +446,14 @@
       const bal = Number(inv.balancePaid || 0);
       const paid = dep + bal;
       const outstanding = Math.max(0, total - paid);
+      // Only show a Deposit / Balance split if BOTH were paid separately.
+      const showSplit = dep > 0 && bal > 0;
       const paymentBlock = total ? `
         <div class="payment-summary">
           <div class="cell"><div class="label">Total Invoice</div><div class="value">₦${fmt(total)}</div></div>
           <div class="cell"><div class="label">Amount Paid</div><div class="value" style="color:${paid >= total ? '#1a7a4a' : '#7a6420'}">₦${fmt(paid)}</div></div>
-          ${dep ? `<div class="cell"><div class="label">Deposit</div><div class="value">₦${fmt(dep)}</div></div>` : ''}
-          ${bal ? `<div class="cell"><div class="label">Balance Paid</div><div class="value">₦${fmt(bal)}</div></div>` : ''}
+          ${showSplit ? `<div class="cell"><div class="label">Deposit</div><div class="value">₦${fmt(dep)}</div></div>` : ''}
+          ${showSplit ? `<div class="cell"><div class="label">Balance Paid</div><div class="value">₦${fmt(bal)}</div></div>` : ''}
           ${outstanding ? `<div class="cell"><div class="label">Outstanding</div><div class="value" style="color:#b03030">₦${fmt(outstanding)}</div></div>` : ''}
         </div>` : '';
 

@@ -326,11 +326,27 @@
       const issuedAt  = (saved && saved.issuedAt) ? new Date(saved.issuedAt) : new Date();
       const receiptDate = issuedAt.toLocaleDateString('en-NG', { day: 'numeric', month: 'long', year: 'numeric' });
 
-      // Transaction rows: deposit + balance if any, then total
+      // Transaction rows — one row per logged payment.
+      // Only show a 'Deposit Payment' label if there was a real deposit
+      // captured separately (i.e. more than one payment entry OR deposit
+      // explicitly recorded). Otherwise show a single 'Payment Received' line.
       const rows = [];
-      if (dep) rows.push({ label: 'Deposit Payment', amount: dep, method: 'Bank Transfer' });
-      if (bal) rows.push({ label: 'Balance Payment', amount: bal, method: 'Bank Transfer' });
-      if (!rows.length) rows.push({ label: 'Payment Received', amount: received, method: 'Bank Transfer' });
+      if (Array.isArray(inv.paymentLog) && inv.paymentLog.length) {
+        inv.paymentLog.forEach(p => {
+          const d = new Date(p.ts).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' });
+          const label = 'Payment · ' + d + (p.reference ? ' · Ref ' + p.reference : '');
+          rows.push({ label, amount: p.amount, method: p.method || 'Bank Transfer' });
+        });
+      } else {
+        // Legacy fallback — no payment log recorded yet.
+        // Only include Deposit if it was actually paid; otherwise a single line.
+        if (dep && bal) {
+          rows.push({ label: 'Deposit Payment', amount: dep, method: 'Bank Transfer' });
+          rows.push({ label: 'Balance Payment', amount: bal, method: 'Bank Transfer' });
+        } else if (received) {
+          rows.push({ label: 'Payment Received', amount: received, method: 'Bank Transfer' });
+        }
+      }
 
       // Format the business address for "Received By"
       const bizAddrText = (inv.bizAddr || '').replace(/<br\s*\/?>/gi, ', ').replace(/\s+,/g, ',');

@@ -1388,18 +1388,10 @@
       if (idx === -1) { alert('Invoice not found on server.'); return; }
       const inv = list[idx];
 
-      // Split payment: fill deposit toward ~50% baseline first, remainder → balance
+      // Add the recorded amount to balancePaid — receipt derives details
+      // from paymentLog, so no forced Deposit/Balance split.
       const total = (inv.packages || []).reduce((s, p) => s + Number(p.total || 0), 0);
-      const existingDep = Number(inv.depositPaid || 0);
-      const existingBal = Number(inv.balancePaid || 0);
-      const targetDeposit = Math.round(total * 0.5);
-      let remaining = amt;
-      if (existingDep < targetDeposit && remaining > 0) {
-        const topUp = Math.min(remaining, targetDeposit - existingDep);
-        inv.depositPaid = existingDep + topUp;
-        remaining -= topUp;
-      }
-      if (remaining > 0) inv.balancePaid = existingBal + remaining;
+      inv.balancePaid = Number(inv.balancePaid || 0) + amt;
 
       if (!Array.isArray(inv.paymentLog)) inv.paymentLog = [];
       inv.paymentLog.push({
