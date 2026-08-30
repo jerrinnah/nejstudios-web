@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Wedding Offer — NEJstudios</title>
-  <meta name="description" content="Limited wedding photography slots at 2025 pricing. Ceremony &amp; Reception or the Full Day Experience, full coverage, real moments, delivered with care." />
+  <meta name="description" content="Limited wedding slots at 2026 pricing. Ceremony &amp; Reception or the Full Day Experience, full coverage, real moments, delivered with care." />
 
   <!-- ── Open Graph / Social preview ── -->
   <meta property="og:type" content="website" />
@@ -12,259 +12,429 @@
   <meta property="og:title" content="Your wedding day. Captured fully. Affordably." />
   <meta property="og:description" content="Limited wedding slots at these prices. Choose the package that fits your day." />
   <meta property="og:url" content="https://www.nejstudios.com/offer" />
-  <meta property="og:image" content="https://www.nejstudios.com/images/og-cover.jpg" />
-  <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="630" />
+  <meta property="og:image" content="https://www.nejstudios.com/images/offer-hero.jpg" />
+  <meta property="og:image:width" content="1800" />
+  <meta property="og:image:height" content="1200" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Your wedding day. Captured fully. Affordably." />
   <meta name="twitter:description" content="Limited wedding slots at these prices. Choose the package that fits your day." />
-  <meta name="twitter:image" content="https://www.nejstudios.com/images/og-cover.jpg" />
-  <meta name="theme-color" content="#c9a84c" />
+  <meta name="twitter:image" content="https://www.nejstudios.com/images/offer-hero.jpg" />
+  <meta name="theme-color" content="#14120f" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="preload" as="image" href="images/offer-hero.jpg" fetchpriority="high" />
   <link rel="stylesheet" href="css/style.css?v=4.5" />
 
   <style>
-    .offer-page {
-      max-width: 860px;
-      margin: 0 auto;
-      padding: 140px 24px 80px;
+    /* ══════════════════════════════════════════
+       OFFER — editorial wedding layout
+       Warm, print-inspired: full-bleed frames,
+       lowercase serif display, letterspaced labels
+       ══════════════════════════════════════════ */
+    :root {
+      --of-bg: #14120f;
+      --of-panel: #1c1916;
+      --of-panel-2: #221e1a;
+      --of-line: #322c25;
+      --of-cream: #ece4d8;
+      --of-muted: #a39889;
+      --of-dim: #7d7365;
+      --of-gold: #c9a84c;
+      --of-gold-lt: #e0c06a;
+      --of-measure: 62ch;
     }
 
-    /* ── Hero ── */
-    .offer-hero {
-      padding-bottom: 2.5rem;
-      border-bottom: 1px solid var(--border);
+    body { background: var(--of-bg); color: var(--of-cream); }
+
+    .of-wrap { max-width: 1180px; margin: 0 auto; padding: 0 clamp(20px, 5vw, 56px); }
+    .of-section { padding: clamp(64px, 11vw, 132px) 0; }
+    .of-section--tight { padding: clamp(48px, 8vw, 88px) 0; }
+
+    /* ── Shared type ── */
+    .of-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: .32em;
+      text-transform: uppercase;
+      color: var(--of-gold);
+      display: block;
+      margin-bottom: 1.5rem;
     }
-    .offer-badge {
+    .of-label--muted { color: var(--of-dim); }
+
+    .of-display {
+      font-family: var(--font-serif);
+      font-weight: 400;
+      line-height: 1.02;
+      letter-spacing: -0.01em;
+      color: var(--of-cream);
+      text-transform: lowercase;
+    }
+    h1.of-display { font-size: clamp(38px, 7.6vw, 92px); }
+    h2.of-display { font-size: clamp(30px, 4.6vw, 58px); margin-bottom: 1.75rem; }
+    .of-display em { font-style: italic; color: var(--of-gold); }
+
+    .of-body {
+      font-size: clamp(15px, 1.2vw, 17px);
+      line-height: 1.85;
+      color: var(--of-muted);
+      max-width: var(--of-measure);
+    }
+    .of-body + .of-body { margin-top: 1.25rem; }
+    .of-rule { height: 1px; background: var(--of-line); border: 0; margin: 0; }
+
+    /* ── Buttons ── */
+    .of-btn {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      font-size: 12px;
+      justify-content: center;
+      gap: 10px;
+      padding: 15px 34px;
+      border: 1px solid var(--of-gold);
+      border-radius: 0;
+      background: transparent;
+      color: var(--of-gold);
+      font-family: inherit;
+      font-size: 11px;
       font-weight: 600;
-      letter-spacing: .12em;
+      letter-spacing: .22em;
       text-transform: uppercase;
-      color: var(--gold);
-      border: 1px solid rgba(201,168,76,.35);
-      background: var(--gold-glow);
-      border-radius: 999px;
-      padding: 6px 14px;
-      margin-bottom: 1.5rem;
+      cursor: pointer;
+      transition: background .35s ease, color .35s ease, border-color .35s ease;
     }
-    .offer-hero h1 {
-      font-family: var(--font-serif);
-      font-size: clamp(30px, 5.4vw, 48px);
-      font-weight: 500;
-      line-height: 1.15;
-      color: var(--white);
-      margin-bottom: 1rem;
-    }
-    .offer-hero h1 em { color: var(--gold); font-style: italic; }
-    .offer-hero p {
-      font-size: 17px;
-      color: var(--grey-2);
-      max-width: 46ch;
-    }
+    .of-btn:hover { background: var(--of-gold); color: #16130f; }
+    .of-btn--solid { background: var(--of-gold); color: #16130f; }
+    .of-btn--solid:hover { background: var(--of-gold-lt); border-color: var(--of-gold-lt); }
+    .of-btn--ghost { border-color: var(--of-line); color: var(--of-cream); }
+    .of-btn--ghost:hover { background: transparent; border-color: var(--of-gold); color: var(--of-gold); }
+    .of-btn--wide { width: 100%; }
 
-    /* ── Sections ── */
-    .offer-section {
-      padding: 2.5rem 0;
-      border-bottom: 1px solid var(--border);
+    /* ══ HERO ══ */
+    .of-hero {
+      position: relative;
+      min-height: min(92vh, 860px);
+      display: flex;
+      align-items: flex-end;
+      overflow: hidden;
     }
-    .offer-section h2 {
-      font-family: var(--font-serif);
-      font-size: 24px;
-      font-weight: 500;
-      color: var(--white);
-      margin-bottom: 1.25rem;
+    .of-hero__img {
+      position: absolute;
+      inset: 0;
+      background-image: url('images/offer-hero.jpg');
+      background-size: cover;
+      background-position: center 45%;
+      transform: scale(1.04);
+      animation: ofZoom 14s ease-out forwards;
     }
-    .offer-section p {
-      font-size: 16px;
-      color: var(--grey-2);
-      line-height: 1.75;
-      margin-bottom: 1rem;
+    @keyframes ofZoom { to { transform: scale(1); } }
+    .of-hero__veil {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(to bottom, rgba(20,18,15,.55) 0%, rgba(20,18,15,.15) 35%, rgba(20,18,15,.92) 100%);
     }
-    .offer-section p:last-child { margin-bottom: 0; }
+    .of-hero__inner {
+      position: relative;
+      width: 100%;
+      padding-bottom: clamp(48px, 8vw, 96px);
+      padding-top: 160px;
+    }
+    .of-hero h1 { margin-bottom: 1.5rem; max-width: 15ch; }
+    .of-hero .of-body { color: #d7cec2; max-width: 46ch; }
+    .of-hero__cta { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 2.5rem; }
+    /* over a photograph the hairline border needs more presence */
+    .of-hero__cta .of-btn--ghost { border-color: rgba(236,228,216,.5); color: #f3ece1; }
+    .of-hero__cta .of-btn--ghost:hover { border-color: var(--of-gold); color: var(--of-gold); }
 
-    /* ── Packages ── */
-    .packages-container {
+    /* vertical edge labels, print-margin feel */
+    .of-hero__side {
+      position: absolute;
+      top: 50%;
+      font-size: 10px;
+      letter-spacing: .42em;
+      text-transform: uppercase;
+      color: rgba(236,228,216,.55);
+      white-space: nowrap;
+      pointer-events: none;
+    }
+    .of-hero__side--l { left: 22px; transform: translateY(-50%) rotate(180deg); writing-mode: vertical-rl; }
+    .of-hero__side--r { right: 22px; transform: translateY(-50%); writing-mode: vertical-rl; }
+    @media (max-width: 900px) { .of-hero__side { display: none; } }
+
+    /* ══ INTRO ══ */
+    .of-intro { text-align: center; }
+    .of-intro .of-body { margin-left: auto; margin-right: auto; text-align: center; }
+
+    /* ══ SPLIT (image + text) ══ */
+    .of-split {
       display: grid;
       grid-template-columns: 1fr;
-      gap: 20px;
-      margin-top: 2rem;
+      gap: clamp(32px, 5vw, 72px);
+      align-items: center;
     }
-    @media (min-width: 768px) {
-      .packages-container { grid-template-columns: 1fr 1fr; }
+    @media (min-width: 860px) {
+      .of-split { grid-template-columns: 0.9fr 1fr; }
+      .of-split--flip .of-split__media { order: 2; }
     }
-
-    .package-card {
-      background: var(--bg-3);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 1.75rem;
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      transition: transform var(--trans), border-color var(--trans), box-shadow var(--trans);
-    }
-    .package-card:hover {
-      transform: translateY(-4px);
-      border-color: var(--border-light);
-      box-shadow: var(--shadow-md);
-    }
-    .package-card--featured {
-      border: 1px solid rgba(201,168,76,.5);
-      background: linear-gradient(160deg, rgba(201,168,76,.07), var(--bg-3) 55%);
-    }
-    .package-card--featured:hover { box-shadow: var(--shadow-gold); }
-
-    .package-badge {
-      position: absolute;
-      top: 0;
-      right: 0;
-      background: var(--gold);
-      color: #0b0b0b;
-      padding: 5px 14px;
-      border-radius: 0 var(--radius-lg) 0 var(--radius-lg);
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-    }
-
-    .package-header { margin: .5rem 0 1.25rem; }
-    .package-name {
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--white);
-      margin-bottom: .5rem;
-    }
-    .package-price {
-      font-family: var(--font-serif);
-      font-size: 34px;
-      font-weight: 600;
-      color: var(--gold);
-      line-height: 1.1;
-      margin-bottom: .5rem;
-    }
-    .package-subtitle { font-size: 13px; color: var(--grey-3); }
-
-    .features-list {
-      border-top: 1px solid var(--border);
-      padding-top: 1.25rem;
-      margin-bottom: 1.5rem;
-      flex: 1;
-    }
-    .features-list__label {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      color: var(--grey-3);
-      margin-bottom: 14px;
-    }
-    .feature-item {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 12px;
-      font-size: 14.5px;
-      color: var(--grey-2);
-      line-height: 1.5;
-    }
-    .feature-item:last-child { margin-bottom: 0; }
-    .feature-icon { color: var(--gold); font-weight: 700; flex-shrink: 0; }
-
-    .package-card .btn { width: 100%; text-align: center; }
-    .package-note {
-      font-size: 12.5px;
-      color: var(--grey-3);
-      text-align: center;
-      margin-top: 12px;
-      line-height: 1.5;
-    }
-
-    /* ── Comparison ── */
-    .comparison-table {
+    .of-split__media img {
       width: 100%;
-      border-collapse: collapse;
-      font-size: 14px;
-      margin-top: 1.25rem;
+      display: block;
+      aspect-ratio: 4/5;
+      object-fit: cover;
     }
-    .comparison-table th {
-      text-align: left;
-      font-size: 11px;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      color: var(--grey-3);
-      font-weight: 600;
-      padding-bottom: 10px;
-      border-bottom: 1px solid var(--border);
-    }
-    .comparison-table td {
-      padding: 14px 0;
-      border-bottom: 1px solid var(--border);
-      color: var(--white);
-      font-weight: 500;
-    }
-    .comparison-table td:first-child { color: var(--grey-2); font-weight: 400; }
-    .comparison-table td:last-child { color: var(--gold); }
-    .comparison-table tr:last-child td { border-bottom: none; }
-    .comparison-wrap { overflow-x: auto; }
 
-    /* ── Spots ── */
-    .spots-grid {
+    /* ══ DATE PICKER ══ */
+    .of-date {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-      margin-bottom: 1.25rem;
+      grid-template-columns: 1fr;
+      gap: clamp(28px, 4vw, 56px);
+      align-items: start;
     }
-    .spot-card {
-      background: var(--bg-3);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      padding: 1.15rem;
-    }
-    .spot-card--featured {
-      border-color: rgba(201,168,76,.45);
-      background: var(--gold-glow);
-    }
-    .spot-label { font-size: 12.5px; color: var(--grey-3); margin-bottom: 6px; }
-    .spot-count {
-      font-family: var(--font-serif);
-      font-size: 28px;
-      font-weight: 600;
-      color: var(--white);
-    }
-    .spot-card--featured .spot-count { color: var(--gold); }
-    .spots-note { font-size: 14px; color: var(--grey-3); }
+    @media (min-width: 900px) { .of-date { grid-template-columns: 1fr 1fr; } }
 
-    /* ── CTA ── */
-    .offer-cta {
-      padding: 2.5rem 0 0;
+    .cal {
+      background: var(--of-panel);
+      border: 1px solid var(--of-line);
+      padding: clamp(16px, 2.6vw, 30px);
+      width: 100%;
+      max-width: 560px;
+    }
+    .cal__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+    .cal__month {
+      font-family: var(--font-serif);
+      font-size: clamp(17px, 2.2vw, 23px);
+      color: var(--of-cream);
+      text-transform: lowercase;
+    }
+    .cal__nav {
+      width: 34px; height: 34px;
+      border: 1px solid var(--of-line);
+      background: transparent;
+      color: var(--of-muted);
+      font-size: 15px; line-height: 1;
+      cursor: pointer;
+      transition: .3s ease;
+    }
+    .cal__nav:hover:not(:disabled) { border-color: var(--of-gold); color: var(--of-gold); }
+    .cal__nav:disabled { opacity: .25; cursor: not-allowed; }
+    .cal__grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: clamp(2px, .7vw, 6px); }
+    .cal__dow {
+      text-align: center;
+      font-size: 10px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--of-dim);
+      padding-bottom: 10px;
+    }
+    .cal__day {
+      aspect-ratio: 1;
+      min-height: 36px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--of-cream);
+      font-family: inherit;
+      font-size: clamp(12px, 1.5vw, 15px);
+      cursor: pointer;
+      transition: .25s ease;
+    }
+    .cal__day:hover:not(:disabled) { border-color: var(--of-gold); color: var(--of-gold); }
+    .cal__day:disabled { color: #4c453c; cursor: not-allowed; }
+    .cal__day.is-selected { background: var(--of-gold); border-color: var(--of-gold); color: #16130f; font-weight: 600; }
+    .cal__day.is-empty { visibility: hidden; }
+    .cal__readout {
+      margin-top: 1.5rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--of-line);
+      font-size: 13px;
+      letter-spacing: .04em;
+      color: var(--of-muted);
+    }
+    .cal__readout strong { color: var(--of-gold); font-weight: 500; }
+
+    /* ══ PACKAGES ══ */
+    .of-packages {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1px;
+      background: var(--of-line);
+      border: 1px solid var(--of-line);
+      margin-top: clamp(32px, 5vw, 56px);
+    }
+    @media (min-width: 820px) { .of-packages { grid-template-columns: 1fr 1fr; } }
+
+    .of-pkg {
+      background: var(--of-bg);
+      padding: clamp(28px, 4vw, 48px);
       display: flex;
       flex-direction: column;
-      gap: 14px;
-      align-items: stretch;
+      position: relative;
+      transition: background .4s ease;
     }
-    .offer-cta .btn { text-align: center; }
-    @media (min-width: 600px) {
-      .offer-cta { flex-direction: row; justify-content: center; }
-      .offer-cta .btn { min-width: 260px; }
-    }
-
-    .offer-signoff {
-      text-align: center;
+    .of-pkg:hover { background: var(--of-panel); }
+    .of-pkg--featured { background: var(--of-panel); }
+    .of-pkg__no {
+      font-family: var(--font-serif);
       font-size: 13px;
-      color: var(--grey-3);
-      margin-top: 2rem;
-      line-height: 1.9;
+      color: var(--of-dim);
+      letter-spacing: .2em;
+      margin-bottom: 1.5rem;
     }
+    .of-pkg__name {
+      font-family: var(--font-serif);
+      font-size: clamp(22px, 2.6vw, 30px);
+      text-transform: lowercase;
+      color: var(--of-cream);
+      margin-bottom: .75rem;
+    }
+    .of-pkg__price {
+      font-family: var(--font-serif);
+      font-size: clamp(30px, 4vw, 42px);
+      color: var(--of-gold);
+      margin-bottom: .5rem;
+    }
+    .of-pkg__sub {
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--of-dim);
+      margin-bottom: 2rem;
+      max-width: 34ch;
+    }
+    .of-pkg__list { list-style: none; margin: 0 0 2.5rem; padding: 2rem 0 0; border-top: 1px solid var(--of-line); flex: 1; }
+    .of-pkg__list li {
+      display: flex;
+      gap: 14px;
+      font-size: 14.5px;
+      line-height: 1.6;
+      color: var(--of-muted);
+      padding: 11px 0;
+    }
+    .of-pkg__list li::before {
+      content: '';
+      flex: none;
+      width: 14px;
+      height: 1px;
+      background: var(--of-gold);
+      margin-top: 12px;
+    }
+    .of-pkg__list li.of-pkg__listlabel::before { content: none; }
+    .of-pkg__listlabel {
+      display: block;
+      font-size: 10px;
+      letter-spacing: .24em;
+      text-transform: uppercase;
+      color: var(--of-dim);
+      padding: 0 0 8px;
+    }
+    .of-pkg__flag {
+      position: absolute;
+      top: clamp(28px, 4vw, 48px);
+      right: clamp(28px, 4vw, 48px);
+      font-size: 10px;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--of-gold);
+    }
+    .of-pkg__note { font-size: 12px; color: var(--of-dim); margin-top: 14px; line-height: 1.6; }
 
-    @media (max-width: 640px) {
-      .offer-page { padding: 110px 20px 60px; }
-      .spots-grid { grid-template-columns: 1fr; }
+    /* ══ COMPARISON ══ */
+    .of-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .of-table th {
+      text-align: left;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--of-dim);
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--of-line);
+    }
+    .of-table td { padding: 18px 12px 18px 0; border-bottom: 1px solid var(--of-line); color: var(--of-cream); }
+    .of-table td:first-child { color: var(--of-muted); }
+    .of-table td:last-child { color: var(--of-gold); }
+    .of-table tr:last-child td { border-bottom: none; }
+    .of-tablewrap { overflow-x: auto; }
+
+    /* ══ GALLERY ══ */
+    .offer-gallery {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: clamp(8px, 1.2vw, 16px);
+      margin: clamp(28px, 4vw, 48px) 0;
+    }
+    @media (min-width: 760px) { .offer-gallery { grid-template-columns: repeat(3, 1fr); } }
+    .offer-gallery figure { margin: 0; overflow: hidden; background: var(--of-panel); aspect-ratio: 3/4; cursor: zoom-in; }
+    .offer-gallery figure:nth-child(4n+1) { aspect-ratio: 3/4; }
+    .offer-gallery img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 1.2s cubic-bezier(.2,.7,.2,1), opacity .4s ease; }
+    .offer-gallery figure:hover img { transform: scale(1.06); opacity: .9; }
+    .gallery-empty { font-size: 15px; color: var(--of-muted); }
+
+    .offer-lightbox {
+      position: fixed; inset: 0; z-index: 200;
+      display: none; align-items: center; justify-content: center;
+      background: rgba(12,10,8,.95);
+      padding: 24px; cursor: zoom-out;
+    }
+    .offer-lightbox.open { display: flex; }
+    .offer-lightbox img { max-width: 94vw; max-height: 90vh; }
+
+    /* ══ QUOTE BAND ══ */
+    .of-band {
+      position: relative;
+      min-height: min(76vh, 620px);
+      display: flex;
+      align-items: center;
+      text-align: center;
+      overflow: hidden;
+    }
+    .of-band__img {
+      position: absolute; inset: 0;
+      background-image: url('images/offer-band.jpg');
+      background-size: cover;
+      background-position: center 50%;
+    }
+    .of-band__veil {
+      position: absolute;
+      inset: 0;
+      /* the band photograph is already dark, so the veil stays light */
+      background:
+        radial-gradient(ellipse at center, rgba(16,13,10,.22) 0%, rgba(16,13,10,.62) 80%),
+        linear-gradient(to bottom, rgba(20,18,15,.6), rgba(20,18,15,.12) 45%, rgba(20,18,15,.72));
+    }
+    .of-band__inner { position: relative; width: 100%; }
+    .of-band blockquote {
+      font-family: var(--font-serif);
+      font-size: clamp(24px, 3.6vw, 46px);
+      line-height: 1.28;
+      color: #f3ece1;
+      margin: 0 auto 2.25rem;
+      max-width: 20ch;
+      text-transform: lowercase;
+    }
+    .of-band blockquote em { font-style: italic; color: var(--of-gold-lt); }
+
+    /* ══ SPOTS ══ */
+    .of-spots { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--of-line); border: 1px solid var(--of-line); }
+    .of-spot { background: var(--of-bg); padding: clamp(20px, 3vw, 34px); }
+    .of-spot__label { font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: var(--of-dim); margin-bottom: 12px; }
+    .of-spot__count { font-family: var(--font-serif); font-size: clamp(28px, 4vw, 40px); color: var(--of-cream); }
+    .of-spot--featured .of-spot__count { color: var(--of-gold); }
+    .of-spots + .of-body { margin-top: 1.5rem; }
+
+    /* ══ CLOSING ══ */
+    .of-close { text-align: center; }
+    .of-close .of-body { margin: 0 auto 2.5rem; text-align: center; }
+    .of-close__cta { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; }
+    .of-signoff {
+      text-align: center;
+      padding: clamp(40px, 6vw, 72px) 0;
+      border-top: 1px solid var(--of-line);
+      font-size: 11px;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--of-dim);
+      line-height: 2.4;
     }
   </style>
 </head>
@@ -306,148 +476,209 @@
     </div>
   </nav>
 
-  <main class="offer-page">
+  <main>
 
-    <!-- ── Hero ── -->
-    <header class="offer-hero">
-      <span class="offer-badge">Limited availability · Dec 31</span>
-      <h1>Your wedding day.<br />Captured fully. <em>Affordably.</em></h1>
-      <p>Choose what fits your day. Both come with full attention, real skill, and the care your wedding deserves.</p>
+    <!-- ══ HERO ══ -->
+    <header class="of-hero">
+      <div class="of-hero__img"></div>
+      <div class="of-hero__veil"></div>
+      <span class="of-hero__side of-hero__side--l">Port Harcourt · Nigeria</span>
+      <span class="of-hero__side of-hero__side--r">Booking 2026 dates</span>
+      <div class="of-hero__inner of-wrap">
+        <span class="of-label">Limited availability · until Dec 31</span>
+        <h1 class="of-display">your wedding day, captured <em>fully</em></h1>
+        <p class="of-body">Choose what fits your day. Both come with full attention, real skill, and the care your wedding deserves.</p>
+        <div class="of-hero__cta">
+          <a href="#packages-choose" class="of-btn of-btn--solid">See the packages</a>
+          <a href="#your-date" class="of-btn of-btn--ghost">Pick your date</a>
+        </div>
+      </div>
     </header>
 
-    <!-- ── Why ── -->
-    <section class="offer-section">
-      <h2>Why we're doing this</h2>
-      <p>I started NEJ Weddings because I saw couples like you: ready to commit, ready to celebrate, but held back by the fear that professional photography costs too much, or requires a big studio, or means endless retakes and perfectionism.</p>
-      <p>You don't need that. You need someone who understands what the day actually feels like. Someone who captures the real moments, the laugh, the tears, the first kiss, not the posed ones.</p>
-    </section>
-
-    <!-- ── Packages ── -->
-    <section class="offer-section" id="packages-choose">
-      <h2>Choose your package</h2>
-
-      <div class="packages-container">
-        <!-- Package 1 -->
-        <article class="package-card">
-          <div class="package-header">
-            <div class="package-name">Ceremony &amp; Reception</div>
-            <div class="package-price">₦500,000</div>
-            <div class="package-subtitle">Full-day photography, 1 content thriller, digital delivery</div>
-          </div>
-
-          <div class="features-list">
-            <div class="feature-item"><span class="feature-icon">✓</span><span>8–10 hour coverage</span></div>
-            <div class="feature-item"><span class="feature-icon">✓</span><span>250+ professionally edited photos</span></div>
-            <div class="feature-item"><span class="feature-icon">✓</span><span>High-res digital files (print anywhere)</span></div>
-            <div class="feature-item"><span class="feature-icon">✓</span><span>1 content thriller (short teaser film for socials)</span></div>
-            <div class="feature-item"><span class="feature-icon">✓</span><span>One photographer (me, Jerry)</span></div>
-          </div>
-
-          <button class="btn btn--outline" onclick="handleBooking('ceremony-reception')">Choose this package</button>
-          <p class="package-note">Perfect if your wedding is ceremony + reception (typical 8–10 hours)</p>
-        </article>
-
-        <!-- Package 2 (Featured) -->
-        <article class="package-card package-card--featured">
-          <span class="package-badge">Most chosen</span>
-
-          <div class="package-header">
-            <div class="package-name">Full Day Experience</div>
-            <div class="package-price">₦950,000</div>
-            <div class="package-subtitle">Everything in Ceremony &amp; Reception, plus full video, premium album &amp; prints</div>
-          </div>
-
-          <div class="features-list">
-            <div class="features-list__label">Includes everything above, plus:</div>
-            <div class="feature-item"><span class="feature-icon">✓</span><span>12-hour coverage (getting ready through late reception)</span></div>
-            <div class="feature-item"><span class="feature-icon">✓</span><span>300+ edited photos (more angles, more moments)</span></div>
-            <div class="feature-item"><span class="feature-icon">✓</span><span>Full wedding video (ceremony + reception, fully edited)</span></div>
-            <div class="feature-item"><span class="feature-icon">✓</span><span>2 content thrillers (short teaser films for socials)</span></div>
-            <div class="feature-item"><span class="feature-icon">✓</span><span>Premium 30-page leather album (printed, keepsake)</span></div>
-            <div class="feature-item"><span class="feature-icon">✓</span><span>100× 4×6 prints (ready to frame, share, gift)</span></div>
-            <div class="feature-item"><span class="feature-icon">✓</span><span>1 enlarged framed portrait (ready to hang)</span></div>
-          </div>
-
-          <button class="btn btn--gold" onclick="handleBooking('full-day-experience')">Choose this package</button>
-          <p class="package-note">Best value: captures every moment + gives you something tangible to hold</p>
-        </article>
+    <!-- ══ INTRO ══ -->
+    <section class="of-section of-section--tight">
+      <div class="of-wrap of-intro">
+        <span class="of-label">Why we're doing this</span>
+        <p class="of-body">I started NEJ Weddings because I saw couples like you: ready to commit, ready to celebrate, but held back by the fear that professional photography costs too much, or requires a big studio, or means endless retakes and perfectionism.</p>
       </div>
     </section>
 
-    <!-- ── Comparison ── -->
-    <section class="offer-section">
-      <h2>What's the difference?</h2>
-      <div class="comparison-wrap">
-        <table class="comparison-table">
-          <thead>
-            <tr>
-              <th></th>
-              <th>Ceremony &amp; Reception</th>
-              <th>Full Day Experience</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>Coverage length</td><td>8–10 hours</td><td>12 hours</td></tr>
-            <tr><td>Photo count</td><td>250+</td><td>300+</td></tr>
-            <tr><td>Content thrillers</td><td>1</td><td>2</td></tr>
-            <tr><td>Full wedding video</td><td>Not included</td><td>Included</td></tr>
-            <tr><td>Album</td><td>Not included</td><td>30-page leather</td></tr>
-            <tr><td>Prints included</td><td>Not included</td><td>100× 4×6</td></tr>
-            <tr><td>Enlarged frame</td><td>Not included</td><td>Included</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- ── Why now ── -->
-    <section class="offer-section">
-      <h2>Why now?</h2>
-      <p>I'm opening limited slots at these prices because I want to work with couples who are serious about their day, not just serious about their budget. At this price point, I can give you my full attention, no rushing, no cutting corners.</p>
-      <p>After December, pricing goes up. This is the moment to lock it in.</p>
-    </section>
-
-    <!-- ── Availability ── -->
-    <section class="offer-section">
-      <h2>Spots available</h2>
-      <div class="spots-grid">
-        <div class="spot-card">
-          <div class="spot-label">Ceremony &amp; Reception</div>
-          <div class="spot-count" id="spots-tier1">42</div>
+    <!-- ══ SPLIT ══ -->
+    <section class="of-section">
+      <div class="of-wrap of-split">
+        <div class="of-split__media">
+          <img src="images/offer-portrait.jpg" alt="Bride on her wedding day, photographed by NEJ Weddings" loading="lazy" />
         </div>
-        <div class="spot-card spot-card--featured">
-          <div class="spot-label">Full Day Experience</div>
-          <div class="spot-count" id="spots-tier2">18</div>
+        <div>
+          <span class="of-label of-label--muted">Our approach</span>
+          <h2 class="of-display">the real moments, <em>not the posed ones</em></h2>
+          <p class="of-body">You don't need a production. You need someone who understands what the day actually feels like. Someone who captures the laugh, the tears, the first kiss, as they happen.</p>
+          <p class="of-body">At this price point I can give you my full attention: no rushing, no cutting corners, no second shooter learning on your day.</p>
         </div>
       </div>
-      <p class="spots-note">Both fill up fast. If your date works, book now.</p>
     </section>
 
-    <!-- ── Contact ── -->
-    <section class="offer-section">
-      <p>Questions? Available on WhatsApp or email. Response within 2 hours.</p>
+    <!-- ══ DATE PICKER ══ -->
+    <section class="of-section" id="your-date">
+      <div class="of-wrap">
+        <hr class="of-rule" style="margin-bottom: clamp(40px, 6vw, 72px)" />
+        <div class="of-date">
+          <div>
+            <span class="of-label">Step one</span>
+            <h2 class="of-display">pick your <em>date</em></h2>
+            <p class="of-body">Start here. Choose your date, then pick the package below. Your date comes through with your message, so we can check it against the calendar straight away.</p>
+          </div>
+          <div class="cal" id="cal">
+            <div class="cal__head">
+              <button class="cal__nav" id="calPrev" aria-label="Previous month">&#8249;</button>
+              <div class="cal__month" id="calMonth"></div>
+              <button class="cal__nav" id="calNext" aria-label="Next month">&#8250;</button>
+            </div>
+            <div class="cal__grid" id="calGrid"></div>
+            <div class="cal__readout" id="calReadout">No date picked yet.</div>
+          </div>
+        </div>
+      </div>
     </section>
 
-    <!-- ── CTA ── -->
-    <div class="offer-cta">
-      <button class="btn btn--gold btn--lg" onclick="handleBooking('main-cta')">Book your wedding date</button>
-      <a href="/#weddings-gallery" class="btn btn--outline btn--lg">See gallery from past weddings</a>
+    <!-- ══ PACKAGES ══ -->
+    <section class="of-section" id="packages-choose">
+      <div class="of-wrap">
+        <span class="of-label">Step two</span>
+        <h2 class="of-display">choose your <em>package</em></h2>
+
+        <div class="of-packages">
+          <article class="of-pkg">
+            <div class="of-pkg__no">01</div>
+            <h3 class="of-pkg__name">ceremony &amp; reception</h3>
+            <div class="of-pkg__price">₦750,000</div>
+            <p class="of-pkg__sub">Full-day photography, one content thriller, digital delivery.</p>
+            <ul class="of-pkg__list">
+              <li>8–10 hour coverage</li>
+              <li>250+ professionally edited photos</li>
+              <li>High-res digital files, print anywhere</li>
+              <li>1 content thriller, a short teaser film for socials</li>
+              <li>One photographer, me, Jerry</li>
+            </ul>
+            <button class="of-btn of-btn--wide" onclick="handleBooking('ceremony-reception')">Choose this package</button>
+            <p class="of-pkg__note">Right if your day is ceremony and reception, typically 8–10 hours.</p>
+          </article>
+
+          <article class="of-pkg of-pkg--featured">
+            <span class="of-pkg__flag">Most chosen</span>
+            <div class="of-pkg__no">02</div>
+            <h3 class="of-pkg__name">full day experience</h3>
+            <div class="of-pkg__price">₦1,400,000</div>
+            <p class="of-pkg__sub">Everything above, plus the full film, the album and the prints.</p>
+            <ul class="of-pkg__list">
+              <li class="of-pkg__listlabel">Everything in 01, plus</li>
+              <li>12-hour coverage, getting ready through late reception</li>
+              <li>300+ edited photos, more angles, more moments</li>
+              <li>Full wedding video, ceremony and reception, fully edited</li>
+              <li>2 content thrillers for socials</li>
+              <li>Premium 30-page leather album</li>
+              <li>100× 4×6 prints, ready to frame, share, gift</li>
+              <li>1 enlarged framed portrait, ready to hang</li>
+            </ul>
+            <button class="of-btn of-btn--solid of-btn--wide" onclick="handleBooking('full-day-experience')">Choose this package</button>
+            <p class="of-pkg__note">Every moment covered, and something you can hold afterwards.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ COMPARISON ══ -->
+    <section class="of-section of-section--tight">
+      <div class="of-wrap">
+        <span class="of-label of-label--muted">Side by side</span>
+        <h2 class="of-display">what's the <em>difference</em></h2>
+        <div class="of-tablewrap">
+          <table class="of-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Ceremony &amp; Reception</th>
+                <th>Full Day Experience</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Coverage length</td><td>8–10 hours</td><td>12 hours</td></tr>
+              <tr><td>Photo count</td><td>250+</td><td>300+</td></tr>
+              <tr><td>Content thrillers</td><td>1</td><td>2</td></tr>
+              <tr><td>Full wedding video</td><td>Not included</td><td>Included</td></tr>
+              <tr><td>Album</td><td>Not included</td><td>30-page leather</td></tr>
+              <tr><td>Prints included</td><td>Not included</td><td>100× 4×6</td></tr>
+              <tr><td>Enlarged frame</td><td>Not included</td><td>Included</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ GALLERY ══ -->
+    <section class="of-section">
+      <div class="of-wrap">
+        <span class="of-label">Recent work</span>
+        <h2 class="of-display">weddings we've <em>shot</em></h2>
+        <p class="gallery-empty of-body" id="galleryIntro">A few frames from recent days. Tap any photo to see it full size.</p>
+        <div class="offer-gallery" id="offerGallery"></div>
+        <a href="/#weddings-gallery" class="of-btn of-btn--ghost">See the full wedding gallery</a>
+      </div>
+    </section>
+
+    <!-- ══ QUOTE BAND ══ -->
+    <section class="of-band">
+      <div class="of-band__img"></div>
+      <div class="of-band__veil"></div>
+      <div class="of-band__inner of-wrap">
+        <span class="of-label">Why now</span>
+        <blockquote>after december, <em>pricing goes up</em></blockquote>
+        <p class="of-body" style="margin: 0 auto 2.5rem; text-align:center; color:#d7cec2">I'm opening limited slots at these prices for couples who are serious about their day. This is the moment to lock it in.</p>
+        <a href="#packages-choose" class="of-btn of-btn--solid">Lock in your date</a>
+      </div>
+    </section>
+
+    <!-- ══ AVAILABILITY ══ -->
+    <section class="of-section of-section--tight">
+      <div class="of-wrap">
+        <span class="of-label of-label--muted">Availability</span>
+        <h2 class="of-display">spots <em>left</em></h2>
+        <div class="of-spots">
+          <div class="of-spot">
+            <div class="of-spot__label">Ceremony &amp; Reception</div>
+            <div class="of-spot__count" id="spots-tier1">42</div>
+          </div>
+          <div class="of-spot of-spot--featured">
+            <div class="of-spot__label">Full Day Experience</div>
+            <div class="of-spot__count" id="spots-tier2">18</div>
+          </div>
+        </div>
+        <p class="of-body">Both fill up fast. If your date works, book now.</p>
+      </div>
+    </section>
+
+    <!-- ══ CLOSING ══ -->
+    <section class="of-section of-close">
+      <div class="of-wrap">
+        <span class="of-label">Let's talk</span>
+        <h2 class="of-display">book your <em>wedding date</em></h2>
+        <p class="of-body">Questions? We're on WhatsApp and email, and we answer within 2 hours.</p>
+        <div class="of-close__cta">
+          <button class="of-btn of-btn--solid" onclick="handleBooking('main-cta')">Message us on WhatsApp</button>
+          <a href="/#weddings-gallery" class="of-btn of-btn--ghost">See past weddings</a>
+        </div>
+      </div>
+    </section>
+
+    <div class="of-wrap">
+      <p class="of-signoff">
+        NEJ Weddings · Port Harcourt, Nigeria<br />
+        Captured with intention · Delivered with care
+      </p>
     </div>
-
-    <p class="offer-signoff">
-      NEJ Weddings · Port Harcourt, Nigeria<br />
-      Captured with intention. Delivered with care.
-    </p>
   </main>
 
-  <!-- ══════════════ FOOTER ══════════════ -->
-  <footer class="footer">
-    <div class="container">
-      <div class="footer__bottom">
-        <span>© 2026 NEJstudios. All rights reserved.</span>
-        <span>Designed with craft in Lagos, Nigeria.</span>
-      </div>
-    </div>
-  </footer>
+  <div class="offer-lightbox" id="lightbox" aria-hidden="true"><img alt="" id="lightboxImg" /></div>
 
   <script>
     /* ── NAV: scroll shadow + mobile menu ── */
@@ -486,14 +717,17 @@
     document.getElementById('spots-tier2').textContent = CONFIG.tier2SpotsRemaining;
 
     const PACKAGE_NAMES = {
-      'ceremony-reception': 'Ceremony & Reception (₦500,000)',
-      'full-day-experience': 'Full Day Experience (₦950,000)',
+      'ceremony-reception': 'Ceremony & Reception (₦750,000)',
+      'full-day-experience': 'Full Day Experience (₦1,400,000)',
       'main-cta': 'Booking Inquiry',
     };
 
     function handleBooking(pkg) {
       const packageName = PACKAGE_NAMES[pkg] || 'Wedding Package';
-      const message = `Hi Jerry, I'm interested in the ${packageName} package. Can we discuss dates and details?`;
+      const datePart = selectedDate
+        ? ` Our wedding date is ${formatDate(selectedDate)}.`
+        : '';
+      const message = `Hi Jerry, I'm interested in the ${packageName} package.${datePart} Can we discuss dates and details?`;
 
       if (CONFIG.whatsapp) {
         window.open(`https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(message)}`, '_blank');
@@ -505,6 +739,133 @@
         `mailto:${CONFIG.email}?subject=${encodeURIComponent('Wedding booking: ' + packageName)}` +
         `&body=${encodeURIComponent(message)}`;
     }
+  </script>
+
+  <script>
+    /* ══ WEDDING GALLERY ══
+       The CMS payload is heavy (photos are stored inline), so it is only
+       fetched once this section is close to the viewport. If it is empty
+       or unreachable the section still points at the full gallery. ── */
+    (function () {
+      const grid = document.getElementById('offerGallery');
+      const intro = document.getElementById('galleryIntro');
+      const lightbox = document.getElementById('lightbox');
+      const lightboxImg = document.getElementById('lightboxImg');
+      if (!grid) return;
+
+      const MAX = 6;
+
+      function render(photos) {
+        if (!photos.length) {
+          intro.textContent = 'Our full wedding work lives in the main gallery.';
+          grid.style.display = 'none';
+          return;
+        }
+        grid.style.display = '';
+        grid.innerHTML = photos.slice(0, MAX).map(p => `
+          <figure><img src="${p.url}" alt="${(p.label || 'Wedding photograph').replace(/"/g, '&quot;')}" loading="lazy" /></figure>
+        `).join('');
+
+        grid.querySelectorAll('img').forEach(img => {
+          img.addEventListener('error', () => img.closest('figure').remove());
+          img.addEventListener('click', () => {
+            lightboxImg.src = img.src;
+            lightbox.classList.add('open');
+            lightbox.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+          });
+        });
+      }
+
+      function closeLightbox() {
+        lightbox.classList.remove('open');
+        lightbox.setAttribute('aria-hidden', 'true');
+        lightboxImg.src = '';
+        document.body.style.overflow = '';
+      }
+      lightbox.addEventListener('click', closeLightbox);
+      document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+
+      async function loadGallery() {
+        // Whatever this browser already cached from the main site loads instantly
+        try {
+          const local = JSON.parse(localStorage.getItem('nej_cms') || '{}');
+          if (local.weddingPhotos && local.weddingPhotos.length) render(local.weddingPhotos);
+        } catch (_) { /* ignore malformed cache */ }
+
+        try {
+          const r = await fetch('/api/sync.php?resource=site_content', { cache: 'no-store' });
+          if (!r.ok) throw new Error(r.status);
+          const data = await r.json();
+          render(data.weddingPhotos || []);
+        } catch (_) {
+          if (!grid.children.length) render([]);
+        }
+      }
+
+      if ('IntersectionObserver' in window) {
+        const io = new IntersectionObserver((entries, obs) => {
+          if (entries.some(e => e.isIntersecting)) { obs.disconnect(); loadGallery(); }
+        }, { rootMargin: '400px' });
+        io.observe(grid);
+      } else {
+        loadGallery();
+      }
+    })();
+  </script>
+
+  <script>
+    /* ══ WEDDING DATE PICKER ══ */
+    let selectedDate = null;
+
+    function formatDate(d) {
+      return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    (function () {
+      const grid = document.getElementById('calGrid');
+      const monthLabel = document.getElementById('calMonth');
+      const readout = document.getElementById('calReadout');
+      const prev = document.getElementById('calPrev');
+      const next = document.getElementById('calNext');
+      if (!grid) return;
+
+      const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      let view = new Date(today.getFullYear(), today.getMonth(), 1);
+
+      const sameDay = (a, b) => a && b && a.toDateString() === b.toDateString();
+
+      function render() {
+        monthLabel.textContent = view.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+        prev.disabled = view.getFullYear() === today.getFullYear() && view.getMonth() === today.getMonth();
+
+        const firstDay = new Date(view.getFullYear(), view.getMonth(), 1).getDay();
+        const daysInMonth = new Date(view.getFullYear(), view.getMonth() + 1, 0).getDate();
+
+        let html = DOW.map(d => `<div class="cal__dow">${d[0]}</div>`).join('');
+        for (let i = 0; i < firstDay; i++) html += '<button class="cal__day is-empty" disabled tabindex="-1"></button>';
+        for (let d = 1; d <= daysInMonth; d++) {
+          const date = new Date(view.getFullYear(), view.getMonth(), d);
+          const past = date < today;
+          const sel = sameDay(date, selectedDate);
+          html += `<button class="cal__day${sel ? ' is-selected' : ''}" data-day="${d}"${past ? ' disabled' : ''}${sel ? ' aria-current="date"' : ''}>${d}</button>`;
+        }
+        grid.innerHTML = html;
+
+        grid.querySelectorAll('[data-day]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            selectedDate = new Date(view.getFullYear(), view.getMonth(), parseInt(btn.dataset.day, 10));
+            readout.innerHTML = `Your date: <strong>${formatDate(selectedDate)}</strong>`;
+            render();
+          });
+        });
+      }
+
+      prev.addEventListener('click', () => { view.setMonth(view.getMonth() - 1); render(); });
+      next.addEventListener('click', () => { view.setMonth(view.getMonth() + 1); render(); });
+      render();
+    })();
   </script>
 </body>
 </html>
