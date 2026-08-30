@@ -424,25 +424,90 @@ function populateWeddingGallery() {
 }
 
 /* ── PRODUCTION GALLERY ── */
+let pgEditIdx = null;
+
+function pgFormReset() {
+  pgEditIdx = null;
+  clearForm(['pg-url','pg-label']);
+  setVal('pg-cat', 'brand');
+  const fi = document.getElementById('pg-file'); if (fi) fi.value = '';
+  setChecked('pg-tall', false);
+  setFormMode('addProductionForm', 'pg-add-btn', 'New Production Photo', 'Add Photo');
+}
+
+function pgFormEdit(idx) {
+  const item = getArr('productionPhotos')[idx];
+  if (!item) return;
+  pgEditIdx = idx;
+  setVal('pg-url', item.url);
+  setVal('pg-label', item.label);
+  setVal('pg-cat', item.cat || 'brand');
+  setChecked('pg-tall', item.tall);
+  const fi = document.getElementById('pg-file'); if (fi) fi.value = '';
+  setFormMode('addProductionForm', 'pg-add-btn', 'Edit Production Photo', 'Update Photo', true);
+}
+
 function populateProductionGallery() {
-  renderImageList('productionPhotos', 'productionGalleryList');
+  renderImageList('productionPhotos', 'productionGalleryList', pgFormEdit);
+
   setupAddForm('addProductionImg', 'addProductionForm', 'pg-add-btn', 'pg-cancel-btn', async () => {
     const url = await resolveImageUrl('pg-file', 'pg-url');
     if (!url) return toast('Please upload an image or paste a URL', 'err');
     const item = { url, label: val('pg-label'), cat: val('pg-cat'), tall: checked('pg-tall') };
     const arr = getArr('productionPhotos');
-    arr.push(item);
+    const editing = pgEditIdx !== null && arr[pgEditIdx];
+    if (editing) arr[pgEditIdx] = item; else arr.push(item);
     cmsData.productionPhotos = arr;
     save();
-    renderImageList('productionPhotos', 'productionGalleryList');
-    clearForm(['pg-url','pg-label']);
-    const fi = document.getElementById('pg-file'); if (fi) fi.value = '';
-    setChecked('pg-tall', false);
-    toast('Photo added');
+    toast(editing ? 'Photo updated' : 'Photo added');
+    pgFormReset();
+    renderImageList('productionPhotos', 'productionGalleryList', pgFormEdit);
+  });
+
+  // Leaving the form (Cancel, or Add a new one) drops edit mode
+  document.getElementById('pg-cancel-btn')?.addEventListener('click', pgFormReset);
+  document.getElementById('addProductionImg')?.addEventListener('click', () => {
+    if (pgEditIdx !== null) pgFormReset();
   });
 }
 
 /* ── PRODUCTION VIDEOS ── */
+let pvEditIdx = null;
+
+/* Swap an add-form between "new" and "edit" mode */
+function setFormMode(formId, confirmBtnId, title, btnLabel, open) {
+  const form = document.getElementById(formId);
+  if (!form) return;
+  const t = form.querySelector('.add-form__title');
+  if (t) t.textContent = title;
+  const b = document.getElementById(confirmBtnId);
+  if (b) b.textContent = btnLabel;
+  if (open) {
+    form.classList.add('open');
+    form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+function pvFormReset() {
+  pvEditIdx = null;
+  clearForm(['pv-id','pv-title','pv-desc']);
+  setVal('pv-cat', 'brand');
+  setChecked('pv-featured', false);
+  setFormMode('addProductionVideoForm', 'pv-add-btn', 'New Production Video', 'Add Video');
+}
+
+function pvFormEdit(idx) {
+  const item = getArr('productionVideos')[idx];
+  if (!item) return;
+  pvEditIdx = idx;
+  setVal('pv-id', item.id);
+  setVal('pv-title', item.title);
+  setVal('pv-desc', item.desc);
+  setVal('pv-cat', item.cat || 'brand');
+  setChecked('pv-featured', item.featured);
+  setFormMode('addProductionVideoForm', 'pv-add-btn', 'Edit Production Video', 'Update Video', true);
+}
+
 function populateProductionVideos() {
   renderProductionVideoList();
 
@@ -450,13 +515,19 @@ function populateProductionVideos() {
     const item = { id: val('pv-id'), title: val('pv-title'), desc: val('pv-desc'), cat: val('pv-cat'), featured: checked('pv-featured') };
     if (!item.id) return toast('YouTube Video ID required', 'err');
     const arr = getArr('productionVideos');
-    arr.push(item);
+    const editing = pvEditIdx !== null && arr[pvEditIdx];
+    if (editing) arr[pvEditIdx] = item; else arr.push(item);
     cmsData.productionVideos = arr;
     save();
+    toast(editing ? 'Video updated' : 'Video added');
+    pvFormReset();
     renderProductionVideoList();
-    clearForm(['pv-id','pv-title','pv-desc']);
-    setChecked('pv-featured', false);
-    toast('Video added');
+  });
+
+  // Leaving the form (Cancel, or Add a new one) drops edit mode
+  document.getElementById('pv-cancel-btn')?.addEventListener('click', pvFormReset);
+  document.getElementById('addProductionVideo')?.addEventListener('click', () => {
+    if (pvEditIdx !== null) pvFormReset();
   });
 }
 
@@ -605,23 +676,43 @@ function updateLogoPreview() {
 }
 
 /* ── RENDER HELPERS ── */
-function renderImageList(key, listId) {
+function renderImageList(key, listId, onEdit) {
   const list = document.getElementById(listId);
   if (!list) return;
   const items = getArr(key);
   if (!items.length) { list.innerHTML = '<p style="font-size:.8rem;color:var(--grey-4);padding:8px 0">No photos yet.</p>'; return; }
   list.innerHTML = items.map((item, i) => `
     <div class="list-item" data-idx="${i}">
-      <img class="list-item__thumb" src="${escAttr(item.url)}" alt="" onerror="this.style.background='var(--bg-4)';this.src=''" />
+      <img class="list-item__thumb" src="${escAttr(item.url)}" alt="" />
       <div class="list-item__body">
         <div class="list-item__label">${escHtml(item.label || 'Untitled')}</div>
         <div class="list-item__meta">${escHtml(item.cat || '')}${item.tall ? ' · tall' : ''}${item.wide ? ' · wide' : ''}</div>
       </div>
       <div class="list-item__actions">
+        ${onEdit ? `<button class="btn-ghost-sm" data-edit-img data-idx="${i}">Edit</button>` : ''}
         <button class="btn-danger-sm" data-del-img="${key}" data-idx="${i}">Remove</button>
       </div>
     </div>
   `).join('');
+
+  // Flag entries whose file is gone so they are easy to spot and fix
+  list.querySelectorAll('.list-item__thumb').forEach(img => {
+    img.addEventListener('error', () => {
+      img.style.opacity = '.2';
+      img.style.background = 'var(--bg-4)';
+      const meta = img.closest('.list-item')?.querySelector('.list-item__meta');
+      if (meta && !meta.dataset.broken) {
+        meta.dataset.broken = '1';
+        meta.insertAdjacentHTML('beforeend', ' · <span style="color:var(--red)">image missing</span>');
+      }
+    });
+  });
+
+  if (onEdit) {
+    list.querySelectorAll('[data-edit-img]').forEach(btn => {
+      btn.addEventListener('click', () => onEdit(parseInt(btn.dataset.idx)));
+    });
+  }
 
   list.querySelectorAll('[data-del-img]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -629,7 +720,7 @@ function renderImageList(key, listId) {
       arr.splice(parseInt(btn.dataset.idx), 1);
       cmsData[key] = arr;
       save();
-      renderImageList(key, listId);
+      renderImageList(key, listId, onEdit);
       toast('Photo removed');
     });
   });
@@ -682,10 +773,15 @@ function renderProductionVideoList() {
         <div class="list-item__meta">${escHtml(item.cat || '')} · ${escHtml(item.desc || '')}</div>
       </div>
       <div class="list-item__actions">
+        <button class="btn-ghost-sm" data-edit-pv data-idx="${i}">Edit</button>
         <button class="btn-danger-sm" data-del-pv data-idx="${i}">Remove</button>
       </div>
     </div>
   `).join('');
+
+  list.querySelectorAll('[data-edit-pv]').forEach(btn => {
+    btn.addEventListener('click', () => pvFormEdit(parseInt(btn.dataset.idx)));
+  });
 
   list.querySelectorAll('[data-del-pv]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -693,6 +789,7 @@ function renderProductionVideoList() {
       arr.splice(parseInt(btn.dataset.idx), 1);
       cmsData.productionVideos = arr;
       save();
+      pvFormReset();
       renderProductionVideoList();
       toast('Video removed');
     });

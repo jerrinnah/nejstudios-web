@@ -9,6 +9,10 @@
 
   const CMS_KEY = 'nej_cms';
 
+  /* A photo whose file no longer exists (deleted upload, dead URL) would render
+     as an empty tile with a broken-image icon. Drop the whole card instead. */
+  const DROP_ON_ERROR = "onerror=\"this.closest('[data-media-card]').remove()\"";
+
   /* ── DEFAULTS (mirrors cms.js) ── */
   const DEFAULTS = {
     hero: {
@@ -259,8 +263,8 @@
     if (!grid) return;
 
     grid.innerHTML = cms.studioGallery.map(item => `
-      <div class="masonry-item${item.tall ? ' masonry-item--tall' : ''}${item.wide ? ' masonry-item--wide' : ''}" data-category="${esc(item.cat || 'portrait')}">
-        <img src="${esc(item.url)}" alt="${esc(item.label || '')}" loading="lazy" />
+      <div class="masonry-item${item.tall ? ' masonry-item--tall' : ''}${item.wide ? ' masonry-item--wide' : ''}" data-media-card data-category="${esc(item.cat || 'portrait')}">
+        <img src="${esc(item.url)}" alt="${esc(item.label || '')}" loading="lazy" ${DROP_ON_ERROR} />
         <div class="masonry-item__overlay"><span>${esc(item.label || '')}</span></div>
       </div>
     `).join('');
@@ -279,8 +283,8 @@
     if (!photos && !videos) return;
 
     const photoItems = (photos || []).map(item => `
-      <div class="wedding-item${item.tall ? ' wedding-item--tall' : ''}${item.wide ? ' wedding-item--wide' : ''}" data-category="${esc(item.cat || 'photo')}">
-        <img src="${esc(item.url)}" alt="${esc(item.label || '')}" loading="lazy" />
+      <div class="wedding-item${item.tall ? ' wedding-item--tall' : ''}${item.wide ? ' wedding-item--wide' : ''}" data-media-card data-category="${esc(item.cat || 'photo')}">
+        <img src="${esc(item.url)}" alt="${esc(item.label || '')}" loading="lazy" ${DROP_ON_ERROR} />
         <div class="wedding-item__overlay"><span>${esc(item.label || '')}</span></div>
       </div>
     `);
@@ -337,9 +341,9 @@
     const videos = cms.productionVideos || [];
 
     const photoItems = photos.map(item => `
-      <div class="video-card" data-category="${esc(item.cat || 'brand')}">
+      <div class="video-card" data-media-card data-category="${esc(item.cat || 'brand')}">
         <div class="video-thumb" style="cursor:default">
-          <img src="${esc(item.url)}" alt="${esc(item.label || '')}" loading="lazy" style="object-fit:cover;width:100%;height:100%" />
+          <img src="${esc(item.url)}" alt="${esc(item.label || '')}" loading="lazy" style="object-fit:cover;width:100%;height:100%" ${DROP_ON_ERROR} />
         </div>
         <div class="video-card__info">
           <span class="video-card__tag">${esc(CAT_LABELS[item.cat] || item.cat || 'Photo')}</span>
@@ -354,9 +358,9 @@
         ? `https://img.youtube.com/vi/${v.id}/maxresdefault.jpg`
         : `https://img.youtube.com/vi/${v.id}/hqdefault.jpg`;
       return `
-        <div class="video-card${v.featured ? ' video-card--featured' : ''}" data-category="${esc(v.cat || 'brand')}">
+        <div class="video-card${v.featured ? ' video-card--featured' : ''}" data-media-card data-category="${esc(v.cat || 'brand')}">
           <div class="video-thumb" data-video-id="${esc(v.id)}" data-source="youtube">
-            <img src="${esc(thumb)}" alt="${esc(v.title || v.id)}" />
+            <img src="${esc(thumb)}" alt="${esc(v.title || v.id)}" onerror="this.onerror=null;this.src='https://img.youtube.com/vi/${esc(v.id)}/hqdefault.jpg'" />
             <div class="video-card__play">
               <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="currentColor"/></svg>
             </div>
