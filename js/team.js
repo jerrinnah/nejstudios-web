@@ -1723,10 +1723,12 @@ function shareSelectionLink(schedId, shots) {
    WALK-IN BOOKING
    ════════════════════════════════════════════ */
 const WALKIN_OUTFIT_LIMITS = {
-  'Half Session':     [1],
-  'Regular Session':  [1, 2],
-  'Birthday Session': [1, 2, 3],
-  'Outdoor Session':  [1, 2, 3, 4, 5, 6],
+  'Half Session':      [1],
+  'Regular Session':   [1, 2],
+  'Pregnancy Session': [1, 2],
+  'Family Session':    [1, 2, 3],
+  'Birthday Session':  [1, 2, 3],
+  'Outdoor Session':   [1, 2, 3, 4, 5, 6],
 };
 
 function initWalkinForm() {

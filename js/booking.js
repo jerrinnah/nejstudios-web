@@ -80,13 +80,46 @@ const OUTFIT_LIMITS = {
   "Outdoor Session":  [1, 2, 3, 4, 5, 6],
 };
 
+// ── Session prices. A number is a flat rate; an object prices per outfit count ──
+const SESSION_PRICES = {
+  "Half Session":      45000,
+  "Regular Session":   70000,
+  "Pregnancy Session": 70000,
+  "Family Session":    { 1: 70000, 2: 100000, 3: 100000 },
+  "Birthday Session":  100000,
+  "Outdoor Session":   250000,
+};
+
+function priceFor(sessionType, outfits) {
+  const price = SESSION_PRICES[sessionType];
+  if (price == null) return null;
+  if (typeof price === "number") return price;
+  return price[outfits] ?? null;
+}
+
+const priceNoteEl = document.getElementById("sessionPriceNote");
+
+function updatePriceNote() {
+  if (!priceNoteEl) return;
+  const amount = priceFor(sessionInput.value, parseInt(numOutfitsEl?.value, 10));
+  if (!amount) { priceNoteEl.style.display = "none"; return; }
+  const outfits = parseInt(numOutfitsEl.value, 10);
+  priceNoteEl.innerHTML =
+    `${sessionInput.value}, ${outfits} outfit${outfits > 1 ? "s" : ""} — ` +
+    `<strong style="color:var(--gold)">₦${amount.toLocaleString()}</strong>`;
+  priceNoteEl.style.display = "block";
+}
+
 function updateOutfitOptions(sessionType) {
   const options = OUTFIT_LIMITS[sessionType];
   if (!options || !numOutfitsEl) return;
   numOutfitsEl.innerHTML = options
     .map(n => `<option value="${n}">${n} outfit${n > 1 ? "s" : ""}</option>`)
     .join("");
-  numOutfitsEl.value = String(options[options.length - 1]);
+  // Where outfits change the price, start at the cheapest tier rather than
+  // silently quoting the top one
+  const tiered = typeof SESSION_PRICES[sessionType] === "object";
+  numOutfitsEl.value = String(tiered ? options[0] : options[options.length - 1]);
 }
 
 // ── Session type dropdown ──
@@ -94,7 +127,11 @@ picker.addEventListener("change", () => {
   sessionInput.value = picker.value;
   if (picker.value) spError.classList.remove("show");
   updateOutfitOptions(picker.value);
+  updatePriceNote();
 });
+
+// Changing the outfit count can change the price (Family Session)
+numOutfitsEl?.addEventListener("change", updatePriceNote);
 
 // ── Rate card modal ──
 const rateCardModal = document.getElementById("rateCardModal");

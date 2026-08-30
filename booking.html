@@ -567,7 +567,7 @@
           <div class="session-tile">
             <div>
               <div class="session-tile__label">Family Session</div>
-              <div class="session-tile__desc">12 pictures · 3 outfits · 1 hour</div>
+              <div class="session-tile__desc">12 pictures · 1–3 outfits · 1 hour</div>
             </div>
           </div>
           <div class="session-tile">
@@ -652,7 +652,7 @@
               <option value="Half Session">Half Session — ₦45,000</option>
               <option value="Regular Session">Regular Session — ₦70,000</option>
               <option value="Pregnancy Session">Pregnancy Session — ₦70,000</option>
-              <option value="Family Session">Family Session — ₦70,000</option>
+              <option value="Family Session">Family Session — from ₦70,000</option>
               <option value="Birthday Session">Birthday Session — ₦100,000</option>
               <option value="Outdoor Session">Outdoor Session — ₦250,000</option>
             </select>
@@ -669,6 +669,7 @@
               <option value="5">5 outfits</option>
               <option value="6">6 outfits</option>
             </select>
+            <p id="sessionPriceNote" style="display:none;margin-top:8px;font-size:0.78rem;color:var(--grey-3)"></p>
           </div>
 
           <div class="form-row">
@@ -734,9 +735,9 @@
                 <div style="background:var(--bg-3);border:1px solid var(--border);border-radius:10px;padding:16px">
                   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
                     <strong style="color:var(--white);font-size:0.95rem">Family Session</strong>
-                    <strong style="color:var(--gold);font-size:1rem">₦70,000</strong>
+                    <strong style="color:var(--gold);font-size:1rem">₦70,000 <span style="color:var(--grey-3);font-weight:400;font-size:0.78rem">/ 1 outfit</span></strong>
                   </div>
-                  <div style="font-size:0.78rem;color:var(--grey-3);line-height:1.8">12 pictures &nbsp;·&nbsp; 3 outfits &nbsp;·&nbsp; 1 hour</div>
+                  <div style="font-size:0.78rem;color:var(--grey-3);line-height:1.8">12 pictures &nbsp;·&nbsp; 1 hour<br /><span style="color:var(--gold)">₦100,000</span> for 2 – 3 outfits</div>
                 </div>
                 <div style="background:var(--bg-3);border:1px solid var(--border);border-radius:10px;padding:16px">
                   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -862,6 +863,6 @@
   ╚══════════════════════════════════════════════════════╝
   -->
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-    <script src="js/booking.js?v=3.1"></script>
+    <script src="js/booking.js?v=3.2"></script>
   </body>
 </html>
