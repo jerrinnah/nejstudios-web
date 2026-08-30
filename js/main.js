@@ -252,19 +252,61 @@
     document.body.style.overflow = '';
   }
 
+  /* ── INLINE PLAYBACK ──
+     Play inside the card itself. The player keeps its own fullscreen
+     control, so tapping that is how a viewer goes full screen. ── */
+  function stopInlinePlayers() {
+    document.querySelectorAll('.video-thumb[data-playing]').forEach((t) => {
+      if (t.dataset.poster != null) t.innerHTML = t.dataset.poster;
+      delete t.dataset.poster;
+      t.removeAttribute('data-playing');
+      t.style.cursor = '';
+    });
+  }
+
+  function playInline(thumb) {
+    if (!thumb || thumb.hasAttribute('data-playing')) return false;
+    const videoId = thumb.dataset.videoId;
+    if (!videoId) return false;
+    const source = thumb.dataset.source || 'youtube';
+
+    stopInlinePlayers(); // one at a time, so two soundtracks never overlap
+
+    thumb.dataset.poster = thumb.innerHTML;
+    thumb.dataset.playing = '1';
+    thumb.style.cursor = 'default';
+    thumb.innerHTML = source === 'youtube'
+      ? `<iframe
+          src="https://www.youtube.com/embed/${encodeURIComponent(videoId)}?autoplay=1&rel=0&modestbranding=1&playsinline=1"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+          allowfullscreen
+          title="NEJstudios video"
+          style="width:100%;aspect-ratio:16/9;border:none;display:block;background:#000"
+        ></iframe>`
+      : `<video src="${videoId}" controls autoplay playsinline
+          style="width:100%;aspect-ratio:16/9;display:block;background:#000"></video>`;
+    return true;
+  }
+
   // Delegated handlers — video cards are rendered dynamically by site-content.js
   // (and re-rendered after server sync), so binding once on document keeps Play working.
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('.play-btn');
     if (btn) {
       e.stopPropagation();
-      openVideo(btn.dataset.videoId, btn.dataset.source || 'youtube');
+      const card = btn.closest('.video-card, .wedding-item');
+      const thumb = card && card.querySelector('.video-thumb');
+      if (thumb && !thumb.dataset.videoId && btn.dataset.videoId) {
+        thumb.dataset.videoId = btn.dataset.videoId;
+        thumb.dataset.source = btn.dataset.source || 'youtube';
+      }
+      // Fall back to the modal only if the card has no thumb to play in
+      if (thumb) playInline(thumb);
+      else openVideo(btn.dataset.videoId, btn.dataset.source || 'youtube');
       return;
     }
     const thumb = e.target.closest('.video-thumb');
-    if (thumb) {
-      openVideo(thumb.dataset.videoId, thumb.dataset.source || 'youtube');
-    }
+    if (thumb) playInline(thumb);
   });
 
   modalClose.addEventListener('click', closeVideo);
