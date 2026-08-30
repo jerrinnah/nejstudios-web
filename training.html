@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <title>Training Portal — NEJstudios</title>
+  <meta name="description" content="NEJstudios training portal — see your curriculum, your track, and the classes you have completed." />
+  <meta name="robots" content="noindex" />
+  <meta name="theme-color" content="#c9a84c" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css?v=4.5" />
+
+  <style>
+    .tp-page { max-width: 900px; margin: 0 auto; padding: 130px 20px 80px; }
+
+    .tp-head { text-align: center; margin-bottom: 2.5rem; }
+    .tp-head h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(28px, 5vw, 44px);
+      font-weight: 500;
+      color: var(--white);
+      margin-bottom: .75rem;
+    }
+    .tp-head h1 em { font-style: italic; color: var(--gold); }
+    .tp-head p { color: var(--grey-2); font-size: 15px; }
+
+    .tp-label {
+      display: block;
+      font-size: 10px;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 8px;
+    }
+
+    /* ── Tabs ── */
+    .tp-tabs { display: flex; justify-content: center; gap: 8px; margin-bottom: 2.5rem; }
+    .tp-tab {
+      padding: 10px 22px;
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      background: transparent;
+      color: var(--grey-3);
+      font-family: inherit;
+      font-size: 12px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: var(--trans);
+    }
+    .tp-tab:hover { color: var(--gold); border-color: var(--gold); }
+    .tp-tab.is-active { background: var(--gold); border-color: var(--gold); color: #14120f; font-weight: 600; }
+
+    /* ── Cards, buttons, inputs ── */
+    .tp-card {
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: clamp(20px, 4vw, 34px);
+      margin-bottom: 20px;
+    }
+    .tp-card h2 {
+      font-family: var(--font-serif);
+      font-size: 20px;
+      font-weight: 500;
+      color: var(--white);
+      margin-bottom: 1.25rem;
+    }
+    .tp-btn {
+      padding: 12px 24px;
+      border: 1px solid var(--gold);
+      border-radius: var(--radius-sm);
+      background: var(--gold);
+      color: #14120f;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: var(--trans);
+    }
+    .tp-btn:hover { background: var(--gold-light); border-color: var(--gold-light); }
+    .tp-btn--sm { padding: 7px 14px; font-size: 10px; letter-spacing: .08em; background: transparent; color: var(--grey-2); border-color: var(--border-light); }
+    .tp-btn--sm:hover { background: transparent; border-color: var(--gold); color: var(--gold); }
+    .tp-btn--danger:hover { border-color: #e05a5a; color: #e05a5a; }
+    .tp-input, .tp-select {
+      width: 100%;
+      padding: 12px 14px;
+      background: var(--bg-4);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--white);
+      font-family: inherit;
+      font-size: 14px;
+      outline: none;
+      transition: var(--trans);
+    }
+    .tp-input:focus, .tp-select:focus { border-color: var(--gold); }
+    .tp-input::placeholder { color: var(--grey-4); }
+    .tp-field { margin-bottom: 14px; }
+    .tp-field label { display: block; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--grey-3); margin-bottom: 7px; }
+    .tp-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+    @media (min-width: 680px) { .tp-grid { grid-template-columns: 1fr 1fr 1fr; } }
+    .tp-error { display: none; color: #e05a5a; font-size: 13px; margin-top: 10px; }
+    .tp-empty { color: var(--grey-4); font-size: 14px; padding: 12px 0; list-style: none; }
+
+    /* ── Student progress ── */
+    .tp-progress { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+    .tp-progress__pct { font-family: var(--font-serif); font-size: 34px; color: var(--gold); }
+    .tp-track { height: 6px; background: var(--bg-4); border-radius: 99px; overflow: hidden; }
+    .tp-track span { display: block; height: 100%; background: var(--gold); border-radius: 99px; transition: width .6s ease; }
+
+    .tp-next { background: var(--gold-glow); border: 1px solid rgba(201,168,76,.35); border-radius: var(--radius-md); padding: 18px; margin-top: 20px; }
+    .tp-next strong { display: block; color: var(--white); font-size: 16px; margin-bottom: 4px; }
+    .tp-next p { color: var(--grey-2); font-size: 13.5px; margin: 0; }
+
+    /* ── Class list ── */
+    .tp-classes { list-style: none; margin: 0; padding: 0; }
+    .tp-class { display: flex; gap: 16px; align-items: flex-start; padding: 16px 0; border-bottom: 1px solid var(--border); }
+    .tp-class:last-child { border-bottom: none; }
+    .tp-class__mark {
+      flex: none;
+      width: 30px; height: 30px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid var(--border-light);
+      border-radius: 50%;
+      font-size: 12px;
+      color: var(--grey-4);
+    }
+    .tp-class.is-done .tp-class__mark { background: var(--gold); border-color: var(--gold); color: #14120f; font-weight: 700; }
+    .tp-class.is-next .tp-class__mark { border-color: var(--gold); color: var(--gold); }
+    .tp-class__body { flex: 1; }
+    .tp-class__title { color: var(--white); font-size: 15px; margin-bottom: 3px; }
+    .tp-class.is-done .tp-class__title { color: var(--grey-2); }
+    .tp-class__desc { color: var(--grey-3); font-size: 13px; line-height: 1.6; }
+    .tp-class__note { margin-top: 8px; font-size: 13px; color: var(--grey-2); border-left: 2px solid var(--gold); padding-left: 10px; }
+    .tp-class__note strong { color: var(--gold); font-weight: 600; }
+    .tp-class__meta { flex: none; font-size: 11px; color: var(--grey-4); letter-spacing: .06em; text-align: right; }
+
+    /* ── Tutor rows ── */
+    .tp-row { display: flex; gap: 14px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+    .tp-row:last-child { border-bottom: none; }
+    .tp-row.is-active { background: rgba(201,168,76,.05); }
+    .tp-row__main { flex: 1; min-width: 200px; }
+    .tp-row__name { color: var(--white); font-size: 15px; }
+    .tp-row__meta { color: var(--grey-4); font-size: 12px; margin: 3px 0 8px; }
+    .tp-row__bar { height: 4px; background: var(--bg-4); border-radius: 99px; overflow: hidden; max-width: 260px; }
+    .tp-row__bar span { display: block; height: 100%; background: var(--gold); }
+    .tp-row__actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    /* ── Tutor checklist ── */
+    .tp-checks { list-style: none; margin: 0; padding: 0; }
+    .tp-check { display: flex; gap: 14px; align-items: flex-start; padding: 14px 0; border-bottom: 1px solid var(--border); }
+    .tp-check:last-child { border-bottom: none; }
+    .tp-check__box { flex: none; position: relative; width: 24px; height: 24px; cursor: pointer; }
+    .tp-check__box input { position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; margin: 0; }
+    .tp-check__box span {
+      position: absolute; inset: 0;
+      border: 1px solid var(--border-light);
+      border-radius: 5px;
+      transition: var(--trans);
+    }
+    .tp-check__box input:checked + span { background: var(--gold); border-color: var(--gold); }
+    .tp-check__box input:checked + span::after {
+      content: '✓';
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      color: #14120f; font-size: 14px; font-weight: 700;
+    }
+    .tp-check__body { flex: 1; }
+    .tp-check__title { color: var(--white); font-size: 14.5px; margin-bottom: 8px; }
+    .tp-check.is-done .tp-check__title { color: var(--grey-2); }
+    .tp-note { width: 100%; padding: 8px 10px; background: var(--bg-4); border: 1px solid var(--border); border-radius: 5px; color: var(--grey-1); font-family: inherit; font-size: 12.5px; outline: none; }
+    .tp-note:focus { border-color: var(--gold); }
+    .tp-note:disabled { opacity: .4; }
+    .tp-check__date { flex: none; font-size: 11px; color: var(--grey-4); }
+
+    /* ── Curriculum editor ── */
+    .tp-edits { list-style: none; margin: 0 0 16px; padding: 0; }
+    .tp-edit { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .tp-edit:last-child { border-bottom: none; }
+    .tp-edit__no { flex: none; font-family: var(--font-serif); color: var(--grey-4); font-size: 13px; padding-top: 12px; }
+    .tp-edit__fields { flex: 1; display: grid; gap: 8px; }
+
+    .tp-toast {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translate(-50%, 20px);
+      background: var(--bg-4); border: 1px solid var(--gold);
+      color: var(--white); font-size: 13px;
+      padding: 12px 22px; border-radius: 99px;
+      opacity: 0; pointer-events: none; transition: var(--trans); z-index: 99;
+    }
+    .tp-toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    .tp-foot { text-align: center; font-size: 12px; color: var(--grey-4); margin-top: 2.5rem; line-height: 2; }
+  </style>
+</head>
+<body>
+
+  <!-- ══ NAVIGATION ══ -->
+  <nav class="nav" id="nav">
+    <div class="nav__inner">
+      <a href="/" class="nav__logo">
+        <span class="nav__logo-nej">NEJ</span><span class="nav__logo-studios">studios</span>
+      </a>
+      <ul class="nav__links" id="navLinks">
+        <li><a href="/#studio-gallery">Studio</a></li>
+        <li><a href="/#weddings-gallery">Weddings</a></li>
+        <li><a href="/#production-gallery">Production</a></li>
+        <li><a href="/live">Live</a></li>
+        <li><a href="/#packages">Packages</a></li>
+        <li><a href="/#contact">Contact</a></li>
+      </ul>
+      <div class="nav__actions">
+        <a href="/offer" class="btn btn--offer nav__cta">Offer</a>
+        <a href="/#packages" class="btn btn--gold nav__cta">Book Now</a>
+      </div>
+      <button class="nav__hamburger" id="hamburger" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div class="nav__mobile" id="mobileMenu">
+      <ul>
+        <li><a href="/#studio-gallery" onclick="closeMobile()">Studio</a></li>
+        <li><a href="/#weddings-gallery" onclick="closeMobile()">Weddings</a></li>
+        <li><a href="/#production-gallery" onclick="closeMobile()">Production</a></li>
+        <li><a href="/live" onclick="closeMobile()">Live</a></li>
+        <li><a href="/#packages" onclick="closeMobile()">Packages</a></li>
+        <li><a href="/#contact" onclick="closeMobile()">Contact</a></li>
+        <li><a href="/offer" class="mobile-cta mobile-cta--offer" onclick="closeMobile()">Offer</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="tp-page">
+    <div class="tp-head">
+      <h1>NEJ <em>Training</em></h1>
+      <p>Your track, your curriculum, and everything you have covered so far.</p>
+    </div>
+
+    <p id="tpLoading" style="text-align:center;color:var(--grey-4);font-size:14px">Loading…</p>
+
+    <div id="tpApp" style="display:none">
+      <div class="tp-tabs">
+        <button class="tp-tab is-active" id="tabStudent" type="button">Student</button>
+        <button class="tp-tab" id="tabTutor" type="button">Tutor</button>
+      </div>
+
+      <!-- ══ STUDENT ══ -->
+      <section id="viewStudent">
+        <div class="tp-card" id="studentGate">
+          <h2>Enter your access code</h2>
+          <form id="gateForm">
+            <div class="tp-field">
+              <label for="gateCode">Access code</label>
+              <input class="tp-input" id="gateCode" placeholder="NEJ-XXXX" autocomplete="off" />
+            </div>
+            <button class="tp-btn" type="submit">Open my portal</button>
+            <p class="tp-error" id="gateError"></p>
+          </form>
+          <p style="margin-top:16px;font-size:13px;color:var(--grey-4)">Your tutor gives you this code when you enrol.</p>
+        </div>
+
+        <div id="studentPortal" style="display:none">
+          <div class="tp-card">
+            <span class="tp-label">Student</span>
+            <h2 style="margin-bottom:.35rem" id="stName"></h2>
+            <p style="color:var(--gold);font-size:14px;margin-bottom:.25rem" id="stTrack"></p>
+            <p style="color:var(--grey-3);font-size:13.5px;margin-bottom:1.75rem" id="stTrackDesc"></p>
+
+            <div class="tp-progress">
+              <div>
+                <span class="tp-label">Progress</span>
+                <span style="color:var(--grey-2);font-size:14px" id="stCount"></span>
+              </div>
+              <div class="tp-progress__pct" id="stPct">0%</div>
+            </div>
+            <div class="tp-track"><span id="stBar" style="width:0"></span></div>
+
+            <div class="tp-next" id="stNext"></div>
+          </div>
+
+          <div class="tp-card">
+            <h2>Your curriculum</h2>
+            <ul class="tp-classes" id="stClasses"></ul>
+          </div>
+
+          <p style="text-align:center">
+            <button class="tp-btn tp-btn--sm" id="stSignOut" type="button">Sign out of this portal</button>
+          </p>
+        </div>
+      </section>
+
+      <!-- ══ TUTOR ══ -->
+      <section id="viewTutor" style="display:none">
+        <div class="tp-card" id="tutorGate">
+          <h2>Tutor sign in</h2>
+          <form id="pinForm">
+            <div class="tp-field">
+              <label for="pinInput">PIN</label>
+              <input class="tp-input" id="pinInput" type="password" autocomplete="off" />
+            </div>
+            <button class="tp-btn" type="submit">Enter console</button>
+            <p class="tp-error" id="pinError">That PIN is not right.</p>
+          </form>
+        </div>
+
+        <div id="tutorConsole" style="display:none">
+          <div class="tp-card">
+            <h2>Add a student</h2>
+            <form id="addStudentForm">
+              <div class="tp-grid">
+                <div class="tp-field"><label for="nsName">Name</label><input class="tp-input" id="nsName" placeholder="e.g. Amaka Obi" /></div>
+                <div class="tp-field"><label for="nsPhone">Phone</label><input class="tp-input" id="nsPhone" placeholder="0800 000 0000" /></div>
+                <div class="tp-field">
+                  <label for="nsTrack">Track</label>
+                  <select class="tp-select" id="nsTrack">
+                    <option value="photography">Photography</option>
+                    <option value="cinematography">Cinematography</option>
+                    <option value="upgrade">Upgrade</option>
+                  </select>
+                </div>
+              </div>
+              <button class="tp-btn" type="submit">Add student</button>
+            </form>
+          </div>
+
+          <div class="tp-card">
+            <h2>Students</h2>
+            <div id="tutorStudents"></div>
+          </div>
+
+          <div class="tp-card" id="tutorChecklist" style="display:none">
+            <span class="tp-label">Tick classes off</span>
+            <h2 style="margin-bottom:.35rem" id="ckName"></h2>
+            <p style="color:var(--grey-3);font-size:13px;margin-bottom:1.5rem" id="ckMeta"></p>
+            <ul class="tp-checks" id="ckList"></ul>
+            <p style="font-size:12px;color:var(--grey-4);margin-top:14px">Saved as you tick. The student sees it next time they open their portal.</p>
+          </div>
+
+          <div class="tp-card">
+            <h2>Curriculum</h2>
+            <div class="tp-field">
+              <label for="curriculumTrack">Track</label>
+              <select class="tp-select" id="curriculumTrack">
+                <option value="photography">Photography</option>
+                <option value="cinematography">Cinematography</option>
+                <option value="upgrade">Upgrade</option>
+              </select>
+            </div>
+            <ul class="tp-edits" id="curriculumList"></ul>
+            <button class="tp-btn tp-btn--sm" id="addClassBtn" type="button">+ Add class</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <p class="tp-foot">
+      NEJstudios Training · Port Harcourt, Nigeria<br />
+      Questions about your classes? Message your tutor on WhatsApp.
+    </p>
+  </main>
+
+  <div class="tp-toast" id="tpToast"></div>
+
+  <script>
+    /* ── NAV: scroll shadow + mobile menu ── */
+    (function () {
+      const nav = document.getElementById('nav');
+      const hamburger = document.getElementById('hamburger');
+      const mobileMenu = document.getElementById('mobileMenu');
+      window.addEventListener('scroll', () => {
+        nav.classList.toggle('scrolled', window.scrollY > 60);
+      }, { passive: true });
+      hamburger.addEventListener('click', () => {
+        const open = hamburger.classList.toggle('open');
+        mobileMenu.classList.toggle('open', open);
+        document.body.style.overflow = open ? 'hidden' : '';
+      });
+      window.closeMobile = function () {
+        hamburger.classList.remove('open');
+        mobileMenu.classList.remove('open');
+        document.body.style.overflow = '';
+      };
+    })();
+  </script>
+  <script src="js/training.js?v=1.0"></script>
+</body>
+</html>
