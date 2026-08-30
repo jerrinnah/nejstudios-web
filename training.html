@@ -281,6 +281,59 @@
     .tp-project strong { display: block; color: var(--gold); font-weight: 500; }
     .tp-project span { color: var(--grey-2); }
 
+    /* ── Register ── */
+    .tp-regbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 18px; }
+    .tp-regbar .tp-input { width: auto; }
+    .tp-regcount { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--grey-3); }
+    .tp-reg { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--border); }
+    .tp-reg:last-child { border-bottom: none; }
+    .tp-reg__main { flex: 1; min-width: 190px; }
+    .tp-reg__name { color: var(--white); font-size: 15px; }
+    .tp-reg__class { color: var(--grey-2); font-size: 13px; margin-top: 3px; }
+    .tp-reg__state { color: var(--gold); font-size: 12px; margin-top: 4px; }
+    .tp-reg__actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tp-reg.is-done .tp-reg__name { color: var(--grey-2); }
+    .tp-reg.is-missed .tp-reg__state { color: #e0a05a; }
+
+    /* ── Day picker ── */
+    .tp-days { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tp-day {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 8px 11px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      color: var(--grey-3);
+      cursor: pointer;
+      transition: var(--trans);
+    }
+    .tp-day:hover { border-color: var(--gold); color: var(--gold); }
+    .tp-day input { accent-color: var(--gold); margin: 0; cursor: pointer; }
+    .tp-day:has(input:checked) { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
+    .tp-cohortnote { grid-column: 1 / -1; margin: 0; font-size: 12px; color: var(--gold); }
+
+    /* ── Fees ── */
+    .tp-fees {
+      padding: 16px;
+      margin-bottom: 20px;
+      background: var(--bg-4);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      display: grid;
+      gap: 14px;
+    }
+    .tp-payform { display: grid; grid-template-columns: 1fr; gap: 10px; align-items: end; }
+    @media (min-width: 620px) { .tp-payform { grid-template-columns: 1fr 1.4fr auto; } }
+    .tp-feesum { margin: 0; font-size: 13px; color: var(--grey-2); }
+    .tp-paylist { list-style: none; margin: 0; padding: 0; }
+    .tp-paylist li { font-size: 12.5px; color: var(--grey-3); padding: 5px 0; border-bottom: 1px solid var(--border); }
+    .tp-paylist li:last-child { border-bottom: none; }
+    .tp-link { background: none; border: none; color: var(--grey-4); font-size: 11px; cursor: pointer; text-decoration: underline; font-family: inherit; }
+    .tp-link:hover { color: #e05a5a; }
+
+    .tp-class.is-missed .tp-class__mark { border-color: #e0a05a; color: #e0a05a; }
+    .tp-check.is-missed .tp-check__title { color: var(--grey-3); }
+
     .tp-toast {
       position: fixed; bottom: 24px; left: 50%;
       transform: translate(-50%, 20px);
@@ -382,6 +435,8 @@
             <div class="tp-next" id="stNext"></div>
           </div>
 
+          <div class="tp-card" id="stFees" style="display:none"></div>
+
           <div class="tp-card tp-prog" id="stProgramme" style="display:none"></div>
 
           <div class="tp-card">
@@ -410,6 +465,54 @@
         </div>
 
         <div id="tutorConsole" style="display:none">
+
+          <!-- Today's register -->
+          <div class="tp-card">
+            <h2>Register</h2>
+            <div class="tp-regbar">
+              <input class="tp-input" id="regDate" type="date" />
+              <button class="tp-btn tp-btn--sm" id="regToday" type="button">Today</button>
+              <span class="tp-regcount" id="regCount"></span>
+            </div>
+            <div id="register"></div>
+          </div>
+
+          <!-- Cohorts -->
+          <div class="tp-card">
+            <h2>Cohorts</h2>
+            <div id="cohortList" style="margin-bottom:20px"></div>
+            <form id="addCohortForm">
+              <div class="tp-grid">
+                <div class="tp-field"><label for="coName">Cohort name</label><input class="tp-input" id="coName" placeholder="e.g. September intake" /></div>
+                <div class="tp-field">
+                  <label for="coTrack">Track</label>
+                  <select class="tp-select" id="coTrack">
+                    <option value="photography">Photography</option>
+                    <option value="cinematography">Cinematography</option>
+                    <option value="both">Photography + Cinematography</option>
+                    <option value="upgrade">Upgrade</option>
+                  </select>
+                </div>
+                <div class="tp-field"><label for="coStart">Start date</label><input class="tp-input" id="coStart" type="date" /></div>
+              </div>
+              <div class="tp-grid">
+                <div class="tp-field" style="grid-column:span 2">
+                  <label>Class days</label>
+                  <div class="tp-days" id="coDays">
+                    <label class="tp-day"><input type="checkbox" data-coday="0"  />Sun</label>
+                    <label class="tp-day"><input type="checkbox" data-coday="1" checked />Mon</label>
+                    <label class="tp-day"><input type="checkbox" data-coday="2"  />Tue</label>
+                    <label class="tp-day"><input type="checkbox" data-coday="3" checked />Wed</label>
+                    <label class="tp-day"><input type="checkbox" data-coday="4"  />Thu</label>
+                    <label class="tp-day"><input type="checkbox" data-coday="5" checked />Fri</label>
+                    <label class="tp-day"><input type="checkbox" data-coday="6"  />Sat</label></div>
+                </div>
+                <div class="tp-field"><label for="coTime">Time</label><input class="tp-input" id="coTime" type="time" /></div>
+              </div>
+              <button class="tp-btn" type="submit">Create cohort</button>
+            </form>
+          </div>
+
           <div class="tp-card">
             <h2>Add a student</h2>
             <form id="addStudentForm">
@@ -426,16 +529,33 @@
                   </select>
                 </div>
                 <div class="tp-field">
+                  <label for="nsCohort">Cohort</label>
+                  <select class="tp-select" id="nsCohort"><option value="">On their own timetable</option></select>
+                </div>
+                <div class="tp-field">
                   <label for="nsStart">Start date</label>
                   <input class="tp-input" id="nsStart" type="date" />
                 </div>
                 <div class="tp-field">
-                  <label for="nsInterval">Classes run</label>
-                  <select class="tp-select" id="nsInterval">
-                    <option value="3" selected>Twice a week</option>
-                    <option value="7">Once a week</option>
-                    <option value="14">Every two weeks</option>
-                  </select>
+                  <label for="nsTime">Class time</label>
+                  <input class="tp-input" id="nsTime" type="time" />
+                </div>
+              </div>
+              <div class="tp-grid">
+                <div class="tp-field" style="grid-column:span 2">
+                  <label>Class days</label>
+                  <div class="tp-days" id="nsDays">
+                    <label class="tp-day"><input type="checkbox" data-nsday="0"  />Sun</label>
+                    <label class="tp-day"><input type="checkbox" data-nsday="1" checked />Mon</label>
+                    <label class="tp-day"><input type="checkbox" data-nsday="2"  />Tue</label>
+                    <label class="tp-day"><input type="checkbox" data-nsday="3" checked />Wed</label>
+                    <label class="tp-day"><input type="checkbox" data-nsday="4"  />Thu</label>
+                    <label class="tp-day"><input type="checkbox" data-nsday="5" checked />Fri</label>
+                    <label class="tp-day"><input type="checkbox" data-nsday="6"  />Sat</label></div>
+                </div>
+                <div class="tp-field">
+                  <label for="nsFee">Course fee (₦)</label>
+                  <input class="tp-input" id="nsFee" type="number" min="0" step="1000" placeholder="e.g. 150000" />
                 </div>
               </div>
               <button class="tp-btn" type="submit">Add student</button>
@@ -454,21 +574,46 @@
 
             <div class="tp-schedbar">
               <div class="tp-field" style="margin:0">
+                <label for="ckCohort">Cohort</label>
+                <select class="tp-select" id="ckCohort"><option value="">On their own timetable</option></select>
+              </div>
+              <div class="tp-field" style="margin:0">
                 <label for="ckStart">Start date</label>
                 <input class="tp-input" id="ckStart" type="date" />
               </div>
               <div class="tp-field" style="margin:0">
-                <label for="ckInterval">Classes run</label>
-                <select class="tp-select" id="ckInterval">
-                  <option value="7">Once a week</option>
-                  <option value="3">Twice a week</option>
-                  <option value="14">Every two weeks</option>
-                </select>
+                <label for="ckTime">Class time</label>
+                <input class="tp-input" id="ckTime" type="time" />
+              </div>
+              <div class="tp-field" style="margin:0;grid-column:span 2">
+                <label>Class days</label>
+                <div class="tp-days" id="ckDays"></div>
               </div>
               <div class="tp-field" style="margin:0">
                 <label>Finishes</label>
                 <div class="tp-endsat" id="ckEnds">—</div>
               </div>
+              <p class="tp-cohortnote" id="ckCohortNote" style="display:none">This student follows their cohort's timetable. Change it on the cohort, or move them off it.</p>
+            </div>
+
+            <div class="tp-fees">
+              <div class="tp-field" style="margin:0">
+                <label for="ckFeeTotal">Course fee (₦)</label>
+                <input class="tp-input" id="ckFeeTotal" type="number" min="0" step="1000" />
+              </div>
+              <form id="addPaymentForm" class="tp-payform">
+                <div class="tp-field" style="margin:0">
+                  <label for="payAmount">Record a payment (₦)</label>
+                  <input class="tp-input" id="payAmount" type="number" min="0" step="1000" />
+                </div>
+                <div class="tp-field" style="margin:0">
+                  <label for="payNote">Note</label>
+                  <input class="tp-input" id="payNote" placeholder="e.g. transfer, part payment" />
+                </div>
+                <button class="tp-btn tp-btn--sm" type="submit">Add</button>
+              </form>
+              <p class="tp-feesum" id="ckFeeSummary"></p>
+              <ul class="tp-paylist" id="ckPayments"></ul>
             </div>
 
             <ul class="tp-checks" id="ckList"></ul>
@@ -521,7 +666,7 @@
       };
     })();
   </script>
-  <script src="js/training-curriculum.js?v=1.1"></script>
-  <script src="js/training.js?v=1.3"></script>
+  <script src="js/training-curriculum.js?v=1.2"></script>
+  <script src="js/training.js?v=2.1"></script>
 </body>
 </html>

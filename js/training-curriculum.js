@@ -1,15 +1,15 @@
 /* ══════════════════════════════════════════
    NEJstudios — Seed curriculum
    Beginner foundations, segmented one topic
-   per class and paced across 6 weeks
-   (14 classes, two a week).
+   per class and paced across 5 weeks
+   (14 classes, three a week).
    Once a tutor edits anything, the saved
    version on the server takes over.
    ══════════════════════════════════════════ */
 window.NEJ_CURRICULUM = {
   programme: {
     title: 'The NEJ Photography Programme',
-    duration: 'Beginner foundations: 14 classes over 6 weeks, two classes a week',
+    duration: 'Beginner foundations: 14 classes over 5 weeks, three classes a week',
     philosophy: [
       ['Accessibility first',    'Every lesson is taught with tools you already have: a smartphone camera and basic equipment.'],
       ['Incremental complexity', 'One skill at a time. Master it before moving on.'],
@@ -18,7 +18,7 @@ window.NEJ_CURRICULUM = {
       ['Business ready',         'Foundational business thinking is built in from day one.'],
     ],
     structure: [
-      ['Beginner',  '6 weeks · Foundations, 14 classes'],
+      ['Beginner',  '5 weeks · Foundations, 14 classes'],
       ['Mid-level', '12 weeks · Specialisation and application'],
       ['Capstone',  '2 – 4 weeks · Real-world client work'],
     ],
@@ -53,7 +53,7 @@ window.NEJ_CURRICULUM = {
       tools: ['Natural light, no extra equipment needed'],
     },
     {
-      id: 'pc03', level: 'Beginner', week: 2, module: 'Camera as a Tool',
+      id: 'pc03', level: 'Beginner', week: 1, module: 'Camera as a Tool',
       title: 'Using what you have',
       desc: 'Your phone is a real camera. Creative vision comes before equipment.',
       objectives: [
@@ -81,7 +81,7 @@ window.NEJ_CURRICULUM = {
       tools: ['Camera or phone', 'Optional: grid overlay on your camera phone'],
     },
     {
-      id: 'pc05', level: 'Beginner', week: 3, module: 'Composition & Frame',
+      id: 'pc05', level: 'Beginner', week: 2, module: 'Composition & Frame',
       title: 'Framing and perspective',
       desc: 'Where you stand changes everything.',
       objectives: [
@@ -94,7 +94,7 @@ window.NEJ_CURRICULUM = {
       tools: ['Camera or phone'],
     },
     {
-      id: 'pc06', level: 'Beginner', week: 3, module: 'Composition & Frame',
+      id: 'pc06', level: 'Beginner', week: 2, module: 'Composition & Frame',
       title: 'Negative space and minimalism',
       desc: 'What you leave out is as loud as what you keep.',
       objectives: [
@@ -109,7 +109,7 @@ window.NEJ_CURRICULUM = {
 
     /* ── WEEK 4–5 · Portrait fundamentals: how do you capture a person? ── */
     {
-      id: 'pc07', level: 'Beginner', week: 4, module: 'Portrait Fundamentals',
+      id: 'pc07', level: 'Beginner', week: 3, module: 'Portrait Fundamentals',
       title: 'Light on the face',
       desc: 'The five classic portrait lighting patterns.',
       objectives: [
@@ -123,7 +123,7 @@ window.NEJ_CURRICULUM = {
       tools: ['Camera or phone', 'A window or another source of diffused light'],
     },
     {
-      id: 'pc08', level: 'Beginner', week: 4, module: 'Portrait Fundamentals',
+      id: 'pc08', level: 'Beginner', week: 3, module: 'Portrait Fundamentals',
       title: 'Posing principles',
       desc: 'Angles, hands, tension and where the eyes go.',
       objectives: [
@@ -137,7 +137,7 @@ window.NEJ_CURRICULUM = {
       tools: ['Camera or phone', 'A willing subject'],
     },
     {
-      id: 'pc09', level: 'Beginner', week: 5, module: 'Portrait Fundamentals',
+      id: 'pc09', level: 'Beginner', week: 3, module: 'Portrait Fundamentals',
       title: 'Connection and direction',
       desc: 'Getting a real expression, not a performed one.',
       objectives: [
@@ -151,7 +151,7 @@ window.NEJ_CURRICULUM = {
       tools: ['Camera or phone', 'Three willing subjects'],
     },
     {
-      id: 'pc10', level: 'Beginner', week: 5, module: 'Portrait Fundamentals',
+      id: 'pc10', level: 'Beginner', week: 4, module: 'Portrait Fundamentals',
       title: 'DIY portrait setup',
       desc: 'A window, a board and a bedsheet will take you far.',
       objectives: [
@@ -167,7 +167,7 @@ window.NEJ_CURRICULUM = {
 
     /* ── WEEK 5–6 · Documentary and storytelling: telling a story in stills ── */
     {
-      id: 'pc11', level: 'Beginner', week: 5, module: 'Documentary & Storytelling',
+      id: 'pc11', level: 'Beginner', week: 4, module: 'Documentary & Storytelling',
       title: 'The decisive moment',
       desc: 'Anticipating the frame before it happens.',
       objectives: [
@@ -180,7 +180,7 @@ window.NEJ_CURRICULUM = {
       tools: ['Camera or phone'],
     },
     {
-      id: 'pc12', level: 'Beginner', week: 6, module: 'Documentary & Storytelling',
+      id: 'pc12', level: 'Beginner', week: 4, module: 'Documentary & Storytelling',
       title: 'Visual story sequences',
       desc: 'How a set of frames becomes a narrative.',
       objectives: [
@@ -193,7 +193,7 @@ window.NEJ_CURRICULUM = {
       tools: ['Camera or phone'],
     },
     {
-      id: 'pc13', level: 'Beginner', week: 6, module: 'Documentary & Storytelling',
+      id: 'pc13', level: 'Beginner', week: 5, module: 'Documentary & Storytelling',
       title: 'Authentic vs candid',
       desc: 'Directing the natural, and knowing when not to.',
       objectives: [
@@ -206,7 +206,7 @@ window.NEJ_CURRICULUM = {
       tools: ['Camera or phone'],
     },
     {
-      id: 'pc14', level: 'Beginner', week: 6, module: 'Documentary & Storytelling',
+      id: 'pc14', level: 'Beginner', week: 5, module: 'Documentary & Storytelling',
       title: 'Lighting in real situations',
       desc: 'Working with the light a venue gives you.',
       objectives: [
