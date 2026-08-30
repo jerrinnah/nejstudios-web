@@ -74,6 +74,7 @@ const numOutfitsEl = document.getElementById("numOutfits");
 const OUTFIT_LIMITS = {
   "Half Session":     [1],
   "Regular Session":  [1, 2],
+  "Pregnancy Session":[1, 2],
   "Birthday Session": [1, 2, 3],
   "Family Session":   [1, 2, 3],
   "Outdoor Session":  [1, 2, 3, 4, 5, 6],
