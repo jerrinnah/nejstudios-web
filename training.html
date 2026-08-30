@@ -187,6 +187,100 @@
     .tp-edit__no { flex: none; font-family: var(--font-serif); color: var(--grey-4); font-size: 13px; padding-top: 12px; }
     .tp-edit__fields { flex: 1; display: grid; gap: 8px; }
 
+    .tp-stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      margin-top: 22px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+    @media (min-width: 620px) { .tp-stats { grid-template-columns: repeat(4, 1fr); } }
+    .tp-stat strong { display: block; color: var(--white); font-size: 15px; font-weight: 500; }
+    .tp-stat .tp-label { margin-bottom: 5px; }
+    .tp-shift { margin-top: 16px; font-size: 13px; color: var(--gold); }
+
+    .tp-group {
+      list-style: none;
+      font-size: 10px;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--gold);
+      padding: 22px 0 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .tp-class.is-skipped .tp-class__mark { border-style: dashed; color: var(--grey-3); }
+    .tp-class__skip { margin-top: 6px; font-size: 12.5px; color: var(--gold); }
+
+    .tp-schedbar {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+      background: var(--bg-4);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+    }
+    @media (min-width: 620px) { .tp-schedbar { grid-template-columns: 1fr 1fr 1fr; } }
+    .tp-endsat { padding: 12px 0; color: var(--gold); font-size: 14px; }
+
+    .tp-check__side { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+    .tp-check__skipnote { margin-top: 6px; font-size: 12px; color: var(--gold); }
+    .tp-check.is-skipped .tp-check__title { color: var(--grey-3); }
+    .tp-btn--on { border-color: var(--gold); color: var(--gold); }
+    .tp-row__meta--gold { color: var(--gold); }
+
+    /* ── Programme overview ── */
+    .tp-prog__dur { color: var(--gold); font-size: 13.5px; margin-bottom: 1.5rem; }
+    .tp-prog__grid { display: grid; grid-template-columns: 1fr; gap: 24px; }
+    @media (min-width: 680px) { .tp-prog__grid { grid-template-columns: 1.3fr 1fr; } }
+
+    /* ── Class detail ── */
+    .tp-chip {
+      display: inline-block;
+      font-size: 9.5px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--gold);
+      border: 1px solid rgba(201,168,76,.35);
+      border-radius: 99px;
+      padding: 3px 9px;
+      margin-bottom: 8px;
+    }
+    .tp-points { list-style: none; margin: 0; padding: 0; }
+    .tp-points li {
+      position: relative;
+      padding: 4px 0 4px 16px;
+      font-size: 13.5px;
+      line-height: 1.65;
+      color: var(--grey-2);
+    }
+    .tp-points li::before { content: ''; position: absolute; left: 0; top: 13px; width: 7px; height: 1px; background: var(--gold); }
+    .tp-points strong { color: var(--white); font-weight: 500; }
+
+    .tp-detail { margin-top: 12px; }
+    .tp-detail summary {
+      cursor: pointer;
+      font-size: 11px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--gold);
+      list-style: none;
+      padding: 6px 0;
+    }
+    .tp-detail summary::-webkit-details-marker { display: none; }
+    .tp-detail summary::before { content: '+ '; }
+    .tp-detail[open] summary::before { content: '– '; }
+    .tp-detail__body { padding: 10px 0 4px; border-left: 1px solid var(--border); padding-left: 16px; margin-top: 6px; }
+    .tp-detail__sec { margin-bottom: 18px; }
+    .tp-detail__sec:last-child { margin-bottom: 0; }
+    .tp-lesson { margin-bottom: 12px; }
+    .tp-lesson__title { color: var(--white); font-size: 13.5px; margin-bottom: 2px; }
+    .tp-project { margin-bottom: 10px; font-size: 13.5px; line-height: 1.65; }
+    .tp-project strong { display: block; color: var(--gold); font-weight: 500; }
+    .tp-project span { color: var(--grey-2); }
+
     .tp-toast {
       position: fixed; bottom: 24px; left: 50%;
       transform: translate(-50%, 20px);
@@ -282,8 +376,13 @@
             </div>
             <div class="tp-track"><span id="stBar" style="width:0"></span></div>
 
+            <div class="tp-stats" id="stSchedule"></div>
+            <p class="tp-shift" id="stNote" style="display:none"></p>
+
             <div class="tp-next" id="stNext"></div>
           </div>
+
+          <div class="tp-card tp-prog" id="stProgramme" style="display:none"></div>
 
           <div class="tp-card">
             <h2>Your curriculum</h2>
@@ -322,7 +421,20 @@
                   <select class="tp-select" id="nsTrack">
                     <option value="photography">Photography</option>
                     <option value="cinematography">Cinematography</option>
+                    <option value="both">Photography + Cinematography</option>
                     <option value="upgrade">Upgrade</option>
+                  </select>
+                </div>
+                <div class="tp-field">
+                  <label for="nsStart">Start date</label>
+                  <input class="tp-input" id="nsStart" type="date" />
+                </div>
+                <div class="tp-field">
+                  <label for="nsInterval">Classes run</label>
+                  <select class="tp-select" id="nsInterval">
+                    <option value="3" selected>Twice a week</option>
+                    <option value="7">Once a week</option>
+                    <option value="14">Every two weeks</option>
                   </select>
                 </div>
               </div>
@@ -338,9 +450,29 @@
           <div class="tp-card" id="tutorChecklist" style="display:none">
             <span class="tp-label">Tick classes off</span>
             <h2 style="margin-bottom:.35rem" id="ckName"></h2>
-            <p style="color:var(--grey-3);font-size:13px;margin-bottom:1.5rem" id="ckMeta"></p>
+            <p style="color:var(--grey-3);font-size:13px;margin-bottom:1.25rem" id="ckMeta"></p>
+
+            <div class="tp-schedbar">
+              <div class="tp-field" style="margin:0">
+                <label for="ckStart">Start date</label>
+                <input class="tp-input" id="ckStart" type="date" />
+              </div>
+              <div class="tp-field" style="margin:0">
+                <label for="ckInterval">Classes run</label>
+                <select class="tp-select" id="ckInterval">
+                  <option value="7">Once a week</option>
+                  <option value="3">Twice a week</option>
+                  <option value="14">Every two weeks</option>
+                </select>
+              </div>
+              <div class="tp-field" style="margin:0">
+                <label>Finishes</label>
+                <div class="tp-endsat" id="ckEnds">—</div>
+              </div>
+            </div>
+
             <ul class="tp-checks" id="ckList"></ul>
-            <p style="font-size:12px;color:var(--grey-4);margin-top:14px">Saved as you tick. The student sees it next time they open their portal.</p>
+            <p style="font-size:12px;color:var(--grey-4);margin-top:14px">Saved as you tick. <strong style="color:var(--grey-2)">Skip</strong> moves a class when an event gets in the way: that class and the ones after it shift a slot later and the finish date moves with them.</p>
           </div>
 
           <div class="tp-card">
@@ -389,6 +521,7 @@
       };
     })();
   </script>
-  <script src="js/training.js?v=1.0"></script>
+  <script src="js/training-curriculum.js?v=1.1"></script>
+  <script src="js/training.js?v=1.3"></script>
 </body>
 </html>

@@ -16,18 +16,7 @@ const DEFAULT_DATA = {
     photography: {
       name: 'Photography',
       desc: 'From first exposure to a paid shoot.',
-      classes: [
-        { id: 'p1',  title: 'Camera bodies, lenses and kit',      desc: 'What the buttons do, which lens for which job.' },
-        { id: 'p2',  title: 'Exposure triangle',                  desc: 'Aperture, shutter, ISO, and reading light by eye.' },
-        { id: 'p3',  title: 'Focus and composition',              desc: 'Focus modes, framing, and where to put your subject.' },
-        { id: 'p4',  title: 'Natural light',                      desc: 'Direction, quality, golden hour, working with shade.' },
-        { id: 'p5',  title: 'Studio lighting',                    desc: 'One light to three, modifiers, and metering.' },
-        { id: 'p6',  title: 'Posing and directing',               desc: 'Getting real expressions out of nervous people.' },
-        { id: 'p7',  title: 'Culling and Lightroom',              desc: 'Selecting, colour grading, and a consistent look.' },
-        { id: 'p8',  title: 'Retouching in Photoshop',            desc: 'Skin, cleanup, and knowing when to stop.' },
-        { id: 'p9',  title: 'Shooting a live event',              desc: 'On set with the team, real client, real pressure.' },
-        { id: 'p10', title: 'Portfolio and pricing',              desc: 'Building your book and quoting your first jobs.' },
-      ],
+      classes: (window.NEJ_CURRICULUM && window.NEJ_CURRICULUM.photography) || [],
     },
     cinematography: {
       name: 'Cinematography',
@@ -62,6 +51,8 @@ const DEFAULT_DATA = {
   students: [],
 };
 
+const PROGRAMME = (window.NEJ_CURRICULUM && window.NEJ_CURRICULUM.programme) || null;
+
 let data = JSON.parse(JSON.stringify(DEFAULT_DATA));
 let serverOnline = false;   // set by loadData; drives honest error messages
 
@@ -73,8 +64,15 @@ async function loadData() {
     if (r.ok) {
       serverOnline = true;
       const server = await r.json();
-      if (server && server.tracks) {
-        data = server;
+      // Accept a payload with either half present: a record saved without
+      // tracks must not throw the students (and their codes) away
+      if (server && (server.tracks || server.students)) {
+        data = {
+          ...DEFAULT_DATA,
+          ...server,
+          tracks: { ...DEFAULT_DATA.tracks, ...(server.tracks || {}) },
+          students: Array.isArray(server.students) ? server.students : [],
+        };
         localStorage.setItem(TRAINING_KEY, JSON.stringify(data));
       }
     }
@@ -104,17 +102,137 @@ function warnLocalOnly() {
   }
 }
 
+/* ── Track options. "both" runs the photography and cinematography
+   curricula back to back as one course. ── */
+const TRACK_OPTIONS = [
+  { value: 'photography',   label: 'Photography',                  keys: ['photography'] },
+  { value: 'cinematography', label: 'Cinematography',              keys: ['cinematography'] },
+  { value: 'both',          label: 'Photography + Cinematography',  keys: ['photography', 'cinematography'] },
+  { value: 'upgrade',       label: 'Upgrade',                       keys: ['upgrade'] },
+];
+
+const DAY = 86400000;
+
 /* ── Helpers ── */
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-const trackOf = s => data.tracks[s.track] || { name: s.track, classes: [] };
-
-function progressOf(student) {
-  const classes = trackOf(student).classes || [];
-  const done = classes.filter(c => student.completed && student.completed[c.id]).length;
-  return { done, total: classes.length, pct: classes.length ? Math.round((done / classes.length) * 100) : 0 };
+// Older records stored a single `track` string
+function trackKeys(student) {
+  if (Array.isArray(student.tracks) && student.tracks.length) return student.tracks;
+  return student.track ? [student.track] : [];
 }
+
+function trackLabel(student) {
+  const keys = trackKeys(student);
+  const opt = TRACK_OPTIONS.find(o => o.keys.join() === keys.join());
+  if (opt) return opt.label;
+  return keys.map(k => (data.tracks[k] || {}).name || k).join(' + ');
+}
+
+// Every class the student takes, in teaching order, tagged with its track
+function classesFor(student) {
+  const out = [];
+  trackKeys(student).forEach(key => {
+    const track = data.tracks[key];
+    if (!track) return;
+    (track.classes || []).forEach(c => out.push({ ...c, trackKey: key, trackName: track.name }));
+  });
+  return out;
+}
+
+const startOf = student => {
+  const iso = student.startDate;
+  if (iso) { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d, 12); }
+  return new Date(student.startedAt || Date.now());
+};
+
+/* Schedule.
+   Classes run one per slot from the start date. A skipped session still uses
+   up its slot, so that class and everything after it move one slot later and
+   the course finishes later by the same amount. */
+function scheduleFor(student) {
+  const classes = classesFor(student);
+  const interval = Number(student.intervalDays) || 7;
+  const start = startOf(student);
+  const skipped = student.skipped || {};
+  const completed = student.completed || {};
+
+  let shift = 0;
+  const dates = {};
+  classes.forEach((c, i) => {
+    if (skipped[c.id]) shift += 1;          // the missed session pushes this one on
+    dates[c.id] = new Date(start.getTime() + (i + shift) * interval * DAY);
+  });
+
+  const done = classes.filter(c => completed[c.id]).length;
+  const total = classes.length;
+  const last = classes.length ? dates[classes[classes.length - 1].id] : null;
+  const daysLeft = last ? Math.ceil((last - new Date()) / DAY) : 0;
+
+  return {
+    classes, dates, interval, start,
+    endsAt: last,
+    done, total,
+    classesLeft: total - done,
+    pct: total ? Math.round((done / total) * 100) : 0,
+    weeksLeft: Math.max(0, Math.ceil(daysLeft / 7)),
+    daysLeft: Math.max(0, daysLeft),
+    skips: Object.keys(skipped).length,
+  };
+}
+
+function progressOf(student) { return scheduleFor(student); }
+
+/* Classes group by week when the curriculum is timetabled, otherwise by track */
+function groupKey(c, multiTrack) {
+  if (c.week) {
+    return {
+      key: c.trackKey + '|w' + c.week,
+      label: (multiTrack ? c.trackName + ' · ' : '') + 'Week ' + c.week,
+    };
+  }
+  return multiTrack ? { key: c.trackKey, label: c.trackName } : null;
+}
+
+/* Full class detail, collapsed until the student opens it */
+function classDetail(c) {
+  const list = (items, cls) => items && items.length
+    ? `<ul class="${cls}">${items.map(i => `<li>${esc(i)}</li>`).join('')}</ul>` : '';
+  const lessons = (c.lessons || []).map(l => `
+    <div class="tp-lesson">
+      <div class="tp-lesson__title">${esc(l.title)}</div>
+      ${list(l.points || [], 'tp-points')}
+    </div>`).join('');
+  const projects = (c.projects || []).map(pr => `
+    <div class="tp-project">
+      <strong>${esc(pr.name)}</strong>
+      <span>${esc(pr.brief)}</span>
+    </div>`).join('');
+
+  if (!(c.objectives || c.lessons || c.projects || c.tools)) return '';
+  return `
+    <details class="tp-detail">
+      <summary>What this class covers</summary>
+      <div class="tp-detail__body">
+        ${c.objectives && c.objectives.length ? `<div class="tp-detail__sec"><span class="tp-label">What we cover</span>${list(c.objectives, 'tp-points')}</div>` : ''}
+        ${lessons ? `<div class="tp-detail__sec"><span class="tp-label">Lessons</span>${lessons}</div>` : ''}
+        ${projects ? `<div class="tp-detail__sec"><span class="tp-label">Projects</span>${projects}</div>` : ''}
+        ${c.tools && c.tools.length ? `<div class="tp-detail__sec"><span class="tp-label">What you need</span>${list(c.tools, 'tp-points')}</div>` : ''}
+      </div>
+    </details>`;
+}
+
+const durationText = s =>
+  s.total ? `${s.total} classes over ${Math.max(1, Math.ceil(((s.total - 1) * s.interval + 1) / 7))} weeks` : 'No classes yet';
+
+const remainingText = s => {
+  if (!s.total) return '';
+  if (!s.classesLeft) return 'Course complete';
+  const weeks = s.weeksLeft;
+  const time = weeks > 1 ? `${weeks} weeks left` : s.daysLeft > 0 ? `${s.daysLeft} day${s.daysLeft === 1 ? '' : 's'} left` : 'Final class due';
+  return `${s.classesLeft} class${s.classesLeft === 1 ? '' : 'es'} left · ${time}`;
+};
 
 function findStudent(code) {
   let wanted = String(code || '').trim().toUpperCase().replace(/\s+/g, '');
@@ -142,37 +260,78 @@ const fmtDate = ts => ts
 const el = id => document.getElementById(id);
 
 function showStudent(student) {
-  const track = trackOf(student);
-  const { done, total, pct } = progressOf(student);
-  const classes = track.classes || [];
-  const nextClass = classes.find(c => !(student.completed || {})[c.id]);
+  const s = scheduleFor(student);
+  const nextClass = s.classes.find(c => !(student.completed || {})[c.id]);
 
   el('studentGate').style.display = 'none';
   el('studentPortal').style.display = 'block';
 
   el('stName').textContent = student.name;
-  el('stTrack').textContent = track.name;
-  el('stTrackDesc').textContent = track.desc || '';
-  el('stCount').textContent = `${done} of ${total} classes`;
-  el('stPct').textContent = pct + '%';
-  el('stBar').style.width = pct + '%';
+  el('stTrack').textContent = trackLabel(student);
+  el('stTrackDesc').textContent = durationText(s);
+  el('stCount').textContent = `${s.done} of ${s.total} classes`;
+  el('stPct').textContent = s.pct + '%';
+  el('stBar').style.width = s.pct + '%';
+
+  el('stSchedule').innerHTML = s.total ? `
+    <div class="tp-stat"><span class="tp-label">Started</span><strong>${esc(fmtDate(s.start))}</strong></div>
+    <div class="tp-stat"><span class="tp-label">Finishes</span><strong>${esc(fmtDate(s.endsAt))}</strong></div>
+    <div class="tp-stat"><span class="tp-label">Classes left</span><strong>${s.classesLeft}</strong></div>
+    <div class="tp-stat"><span class="tp-label">Time left</span><strong>${s.classesLeft ? (s.weeksLeft > 1 ? s.weeksLeft + ' weeks' : s.daysLeft + ' days') : 'Complete'}</strong></div>
+  ` : '';
 
   el('stNext').innerHTML = nextClass
-    ? `<span class="tp-label">Next class</span><strong>${esc(nextClass.title)}</strong><p>${esc(nextClass.desc || '')}</p>`
+    ? `<span class="tp-label">Next class${s.dates[nextClass.id] ? ' · ' + esc(fmtDate(s.dates[nextClass.id])) : ''}</span>
+       <strong>${esc(nextClass.title)}</strong><p>${esc(nextClass.desc || '')}</p>`
     : `<span class="tp-label">Curriculum complete</span><strong>Every class ticked off</strong><p>Nice work. Ask your tutor about what comes next.</p>`;
 
-  el('stClasses').innerHTML = classes.map((c, i) => {
+  if (s.skips) {
+    el('stNote').style.display = 'block';
+    el('stNote').textContent = `${s.skips} class${s.skips === 1 ? ' was' : 'es were'} moved, so the finish date has shifted to ${fmtDate(s.endsAt)}.`;
+  } else {
+    el('stNote').style.display = 'none';
+  }
+
+  const prog = el('stProgramme');
+  if (PROGRAMME && prog) {
+    prog.innerHTML = `
+      <h2>${esc(PROGRAMME.title)}</h2>
+      <p class="tp-prog__dur">${esc(PROGRAMME.duration)}</p>
+      <div class="tp-prog__grid">
+        <div>
+          <span class="tp-label">How we teach</span>
+          <ul class="tp-points">${PROGRAMME.philosophy.map(([t, d]) => `<li><strong>${esc(t)}.</strong> ${esc(d)}</li>`).join('')}</ul>
+        </div>
+        <div>
+          <span class="tp-label">The path</span>
+          <ul class="tp-points">${PROGRAMME.structure.map(([t, d]) => `<li><strong>${esc(t)}.</strong> ${esc(d)}</li>`).join('')}</ul>
+        </div>
+      </div>`;
+    prog.style.display = 'block';
+  }
+
+  let lastGroup = null;
+  const multi = trackKeys(student).length > 1;
+  el('stClasses').innerHTML = s.classes.map((c, i) => {
     const rec = (student.completed || {})[c.id];
+    const skip = (student.skipped || {})[c.id];
     const isNext = nextClass && c.id === nextClass.id;
-    return `
-      <li class="tp-class${rec ? ' is-done' : ''}${isNext ? ' is-next' : ''}">
+    const group = groupKey(c, multi);
+    const heading = group && group.key !== lastGroup ? `<li class="tp-group">${esc(group.label)}</li>` : '';
+    lastGroup = group ? group.key : lastGroup;
+    const when = rec ? fmtDate(rec.at) : s.dates[c.id] ? fmtDate(s.dates[c.id]) : '';
+    return heading + `
+      <li class="tp-class${rec ? ' is-done' : ''}${isNext ? ' is-next' : ''}${skip ? ' is-skipped' : ''}">
         <div class="tp-class__mark">${rec ? '✓' : String(i + 1).padStart(2, '0')}</div>
         <div class="tp-class__body">
+          ${c.module ? `<span class="tp-chip">${esc(c.module)}</span>` : ''}
           <div class="tp-class__title">${esc(c.title)}</div>
           ${c.desc ? `<div class="tp-class__desc">${esc(c.desc)}</div>` : ''}
+          ${skip ? `<div class="tp-class__skip">Moved${skip.reason ? ': ' + esc(skip.reason) : ''} · now ${esc(fmtDate(s.dates[c.id]))}</div>` : ''}
           ${rec && rec.note ? `<div class="tp-class__note"><strong>Tutor:</strong> ${esc(rec.note)}</div>` : ''}
+          ${classDetail(c)}
         </div>
-        <div class="tp-class__meta">${rec ? esc(fmtDate(rec.at)) : isNext ? 'Up next' : ''}</div>
+        <div class="tp-class__meta">${esc(when)}${isNext ? '<br />Up next' : ''}</div>
       </li>`;
   }).join('') || '<li class="tp-empty">No classes on this track yet.</li>';
 
@@ -212,39 +371,51 @@ function renderStudentList() {
     list.innerHTML = '<p class="tp-empty">No students yet. Add one above.</p>';
     return;
   }
-  list.innerHTML = data.students.map(s => {
-    const { done, total, pct } = progressOf(s);
+  list.innerHTML = data.students.map(st => {
+    const s = scheduleFor(st);
     return `
-      <div class="tp-row${s.id === selectedStudentId ? ' is-active' : ''}" data-student="${esc(s.id)}">
+      <div class="tp-row${st.id === selectedStudentId ? ' is-active' : ''}" data-student="${esc(st.id)}">
         <div class="tp-row__main">
-          <div class="tp-row__name">${esc(s.name)}</div>
-          <div class="tp-row__meta">${esc(trackOf(s).name)} · ${done}/${total} classes · code ${esc(s.code)}</div>
-          <div class="tp-row__bar"><span style="width:${pct}%"></span></div>
+          <div class="tp-row__name">${esc(st.name)}</div>
+          <div class="tp-row__meta">${esc(trackLabel(st))} · ${s.done}/${s.total} classes · code ${esc(st.code)}</div>
+          <div class="tp-row__meta tp-row__meta--gold">${esc(remainingText(s))}${s.endsAt ? ' · ends ' + esc(fmtDate(s.endsAt)) : ''}</div>
+          <div class="tp-row__bar"><span style="width:${s.pct}%"></span></div>
         </div>
         <div class="tp-row__actions">
-          <button class="tp-btn tp-btn--sm" data-open="${esc(s.id)}">Open</button>
-          <button class="tp-btn tp-btn--sm" data-copy="${esc(s.code)}">Copy link</button>
-          <button class="tp-btn tp-btn--sm tp-btn--danger" data-remove="${esc(s.id)}">Remove</button>
+          <button class="tp-btn tp-btn--sm" data-open="${esc(st.id)}">Open</button>
+          <button class="tp-btn tp-btn--sm" data-copy="${esc(st.code)}">Copy link</button>
+          <button class="tp-btn tp-btn--sm tp-btn--danger" data-remove="${esc(st.id)}">Remove</button>
         </div>
       </div>`;
   }).join('');
 }
 
 function renderChecklist() {
-  const student = data.students.find(s => s.id === selectedStudentId);
+  const student = data.students.find(x => x.id === selectedStudentId);
   const wrap = el('tutorChecklist');
   if (!student) { wrap.style.display = 'none'; return; }
 
-  const classes = trackOf(student).classes || [];
-  const { done, total } = progressOf(student);
+  const s = scheduleFor(student);
   wrap.style.display = 'block';
   el('ckName').textContent = student.name;
-  el('ckMeta').textContent = `${trackOf(student).name} · ${done}/${total} done · portal code ${student.code}`;
+  el('ckMeta').textContent =
+    `${trackLabel(student)} · ${s.done}/${s.total} done · ${remainingText(s)} · code ${student.code}`;
 
-  el('ckList').innerHTML = classes.map((c, i) => {
+  // Schedule controls reflect the student being edited
+  el('ckStart').value = student.startDate || new Date(student.startedAt || Date.now()).toISOString().slice(0, 10);
+  el('ckInterval').value = String(Number(student.intervalDays) || 7);
+  el('ckEnds').textContent = s.endsAt ? fmtDate(s.endsAt) : '—';
+
+  let lastGroup = null;
+  const multi = trackKeys(student).length > 1;
+  el('ckList').innerHTML = s.classes.map((c, i) => {
     const rec = (student.completed || {})[c.id];
-    return `
-      <li class="tp-check${rec ? ' is-done' : ''}">
+    const skip = (student.skipped || {})[c.id];
+    const group = groupKey(c, multi);
+    const heading = group && group.key !== lastGroup ? `<li class="tp-group">${esc(group.label)}</li>` : '';
+    lastGroup = group ? group.key : lastGroup;
+    return heading + `
+      <li class="tp-check${rec ? ' is-done' : ''}${skip ? ' is-skipped' : ''}">
         <label class="tp-check__box">
           <input type="checkbox" data-tick="${esc(c.id)}" ${rec ? 'checked' : ''} />
           <span></span>
@@ -253,8 +424,12 @@ function renderChecklist() {
           <div class="tp-check__title">${String(i + 1).padStart(2, '0')} · ${esc(c.title)}</div>
           <input class="tp-note" data-note="${esc(c.id)}" placeholder="Note for the student (optional)"
                  value="${esc(rec && rec.note ? rec.note : '')}" ${rec ? '' : 'disabled'} />
+          ${skip ? `<div class="tp-check__skipnote">Moved${skip.reason ? ': ' + esc(skip.reason) : ''}</div>` : ''}
         </div>
-        <div class="tp-check__date">${rec ? esc(fmtDate(rec.at)) : ''}</div>
+        <div class="tp-check__side">
+          <div class="tp-check__date">${esc(rec ? fmtDate(rec.at) : fmtDate(s.dates[c.id]))}</div>
+          ${rec ? '' : `<button class="tp-btn tp-btn--sm ${skip ? 'tp-btn--on' : ''}" data-skip="${esc(c.id)}">${skip ? 'Un-skip' : 'Skip'}</button>`}
+        </div>
       </li>`;
   }).join('') || '<li class="tp-empty">This track has no classes yet.</li>';
 }
@@ -315,14 +490,18 @@ function wireTutor() {
     e.preventDefault();
     const name = el('nsName').value.trim();
     if (!name) return;
+    const opt = TRACK_OPTIONS.find(o => o.value === el('nsTrack').value) || TRACK_OPTIONS[0];
     const student = {
       id: 's_' + Date.now().toString(36),
       name,
       phone: el('nsPhone').value.trim(),
-      track: el('nsTrack').value,
+      tracks: opt.keys.slice(),
       code: newCode(),
       startedAt: Date.now(),
+      startDate: el('nsStart').value || new Date().toISOString().slice(0, 10),
+      intervalDays: Number(el('nsInterval').value) || 3,
       completed: {},
+      skipped: {},
     };
     data.students.push(student);
     await saveData();
@@ -367,30 +546,77 @@ function wireTutor() {
     if (!student) return;
     const tick = e.target.closest('[data-tick]');
     if (!tick) return;
+    const id = tick.dataset.tick;
     student.completed = student.completed || {};
-    if (tick.checked) {
-      student.completed[tick.dataset.tick] = { at: Date.now(), note: '' };
-    } else {
-      delete student.completed[tick.dataset.tick];
+
+    if (!tick.checked) {
+      // Un-ticking restores the Skip control and the scheduled date, so redraw
+      delete student.completed[id];
+      await saveData();
+      renderChecklist();
+      renderStudentList();
+      toast('Class reopened');
+      return;
     }
+
+    student.completed[id] = { at: Date.now(), note: '' };
+    // A class that was taught is no longer a moved one
+    if (student.skipped) delete student.skipped[id];
 
     // Patch this row rather than re-rendering the list, so a note being typed
     // in another row is not destroyed mid-edit
     const row  = tick.closest('.tp-check');
     const note = row.querySelector('[data-note]');
     const date = row.querySelector('.tp-check__date');
-    const rec  = student.completed[tick.dataset.tick];
-    row.classList.toggle('is-done', tick.checked);
-    if (note) { note.disabled = !tick.checked; if (!tick.checked) note.value = ''; }
-    if (date) date.textContent = rec ? fmtDate(rec.at) : '';
+    const rec  = student.completed[id];
+    row.classList.add('is-done');
+    row.classList.remove('is-skipped');
+    row.querySelector('[data-skip]')?.remove();
+    row.querySelector('.tp-check__skipnote')?.remove();
+    if (note) note.disabled = false;
+    if (date) date.textContent = fmtDate(rec.at);
     el('ckMeta').textContent = (() => {
-      const { done, total } = progressOf(student);
-      return `${trackOf(student).name} · ${done}/${total} done · portal code ${student.code}`;
+      const sch = scheduleFor(student);
+      return `${trackLabel(student)} · ${sch.done}/${sch.total} done · ${remainingText(sch)} · code ${student.code}`;
     })();
 
     renderStudentList();
     await saveData();
-    toast(tick.checked ? 'Class ticked off' : 'Class reopened');
+    toast('Class ticked off');
+  });
+
+  // Skip a class: the session is used up, so this class and the rest move on a slot
+  el('ckList').addEventListener('click', async e => {
+    const btn = e.target.closest('[data-skip]');
+    if (!btn) return;
+    const student = data.students.find(x => x.id === selectedStudentId);
+    if (!student) return;
+    student.skipped = student.skipped || {};
+    const id = btn.dataset.skip;
+    if (student.skipped[id]) {
+      delete student.skipped[id];
+    } else {
+      const reason = prompt('Why is this class moving? (optional, the student sees it)', '') ?? '';
+      student.skipped[id] = { at: Date.now(), reason: reason.trim() };
+    }
+    await saveData();
+    renderChecklist();
+    renderStudentList();
+    toast(student.skipped[id] ? 'Class moved, schedule shifted' : 'Class restored to its slot');
+  });
+
+  // Start date and cadence drive the whole schedule
+  ['ckStart', 'ckInterval'].forEach(id => {
+    el(id).addEventListener('change', async () => {
+      const student = data.students.find(x => x.id === selectedStudentId);
+      if (!student) return;
+      student.startDate = el('ckStart').value;
+      student.intervalDays = Number(el('ckInterval').value) || 7;
+      await saveData();
+      renderChecklist();
+      renderStudentList();
+      toast('Schedule updated');
+    });
   });
 
   el('ckList').addEventListener('input', e => {
