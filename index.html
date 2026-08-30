@@ -25,7 +25,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="preload" as="image" href="images/NEJ_3306.jpg" fetchpriority="high" />
-  <link rel="stylesheet" href="css/style.css?v=4.4" />
+  <link rel="stylesheet" href="css/style.css?v=4.5" />
 </head>
 <body>
 
@@ -36,17 +36,17 @@
         <span class="nav__logo-nej">NEJ</span><span class="nav__logo-studios">studios</span>
       </a>
       <ul class="nav__links" id="navLinks">
-        <li><a href="#services">Services</a></li>
         <li><a href="#studio-gallery">Studio</a></li>
         <li><a href="#weddings-gallery">Weddings</a></li>
         <li><a href="#production-gallery">Production</a></li>
         <li><a href="/live">Live</a></li>
-        <li><a href="/offer">Offer</a></li>
         <li><a href="#packages">Packages</a></li>
-        <li><a href="#about">About</a></li>
         <li><a href="#contact">Contact</a></li>
       </ul>
-      <button class="btn btn--gold nav__cta book-trigger" aria-label="Book Now">Book Now</button>
+      <div class="nav__actions">
+        <a href="/offer" class="btn btn--offer nav__cta">Offer</a>
+        <button class="btn btn--gold nav__cta book-trigger" aria-label="Book Now">Book Now</button>
+      </div>
       <button class="nav__hamburger" id="hamburger" aria-label="Toggle menu">
         <span></span><span></span><span></span>
       </button>
@@ -54,15 +54,13 @@
     <!-- Mobile menu -->
     <div class="nav__mobile" id="mobileMenu">
       <ul>
-        <li><a href="#services" onclick="closeMobile()">Services</a></li>
         <li><a href="#studio-gallery" onclick="closeMobile()">Studio</a></li>
         <li><a href="#weddings-gallery" onclick="closeMobile()">Weddings</a></li>
         <li><a href="#production-gallery" onclick="closeMobile()">Production</a></li>
         <li><a href="/live">Live</a></li>
-        <li><a href="/offer" onclick="closeMobile()">Offer</a></li>
         <li><a href="#packages" onclick="closeMobile()">Packages</a></li>
-        <li><a href="#about" onclick="closeMobile()">About</a></li>
         <li><a href="#contact" onclick="closeMobile()">Contact</a></li>
+        <li><a href="/offer" class="mobile-cta mobile-cta--offer" onclick="closeMobile()">Offer</a></li>
         <li><button class="mobile-cta book-trigger" onclick="closeMobile()">Book Now</button></li>
       </ul>
     </div>

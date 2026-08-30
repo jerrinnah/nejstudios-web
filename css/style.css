@@ -233,6 +233,23 @@ input, select, textarea { font-family: inherit; }
 
 .nav__cta { display: flex; }
 
+/* Nav action buttons (Offer + Book Now) */
+.nav__actions { display: flex; align-items: center; gap: 12px; }
+.nav__actions .btn { padding: 10px 22px; font-size: 0.78rem; }
+.btn--offer {
+  background: transparent;
+  color: var(--gold);
+  border: 1px solid var(--gold);
+  font-weight: 600;
+}
+.btn--offer:hover {
+  background: var(--gold-glow);
+  color: var(--gold-light);
+  border-color: var(--gold-light);
+  box-shadow: var(--shadow-gold);
+  transform: translateY(-1px);
+}
+
 /* Hamburger */
 .nav__hamburger {
   display: none;
@@ -285,6 +302,12 @@ input, select, textarea { font-family: inherit; }
   border-radius: var(--radius-sm);
   font-weight: 600;
 }
+.nav__mobile .mobile-cta--offer {
+  color: var(--gold);
+  background: transparent;
+  border: 1px solid var(--gold);
+}
+.nav__mobile .mobile-cta--offer:hover { background: var(--gold-glow); color: var(--gold-light); }
 
 /* ══════════════════════════════════════════════
    HERO
