@@ -507,7 +507,7 @@
                     <label class="tp-day"><input type="checkbox" data-coday="5" checked />Fri</label>
                     <label class="tp-day"><input type="checkbox" data-coday="6"  />Sat</label></div>
                 </div>
-                <div class="tp-field"><label for="coTime">Time</label><input class="tp-input" id="coTime" type="time" /></div>
+                <div class="tp-field"><label for="coTime">Time</label><input class="tp-input" id="coTime" type="time" value="12:00" /></div>
               </div>
               <button class="tp-btn" type="submit">Create cohort</button>
             </form>
@@ -538,7 +538,7 @@
                 </div>
                 <div class="tp-field">
                   <label for="nsTime">Class time</label>
-                  <input class="tp-input" id="nsTime" type="time" />
+                  <input class="tp-input" id="nsTime" type="time" value="12:00" />
                 </div>
               </div>
               <div class="tp-grid">
@@ -573,6 +573,18 @@
             <p style="color:var(--grey-3);font-size:13px;margin-bottom:1.25rem" id="ckMeta"></p>
 
             <div class="tp-schedbar">
+              <div class="tp-field" style="margin:0">
+                <label for="ckStudentName">Name</label>
+                <input class="tp-input" id="ckStudentName" />
+              </div>
+              <div class="tp-field" style="margin:0">
+                <label for="ckStudentPhone">Phone</label>
+                <input class="tp-input" id="ckStudentPhone" placeholder="0800 000 0000" />
+              </div>
+              <div class="tp-field" style="margin:0">
+                <label for="ckTrack">Course</label>
+                <select class="tp-select" id="ckTrack"></select>
+              </div>
               <div class="tp-field" style="margin:0">
                 <label for="ckCohort">Cohort</label>
                 <select class="tp-select" id="ckCohort"><option value="">On their own timetable</option></select>
@@ -666,7 +678,7 @@
       };
     })();
   </script>
-  <script src="js/training-curriculum.js?v=1.2"></script>
-  <script src="js/training.js?v=2.1"></script>
+  <script src="js/training-curriculum.js?v=2.0"></script>
+  <script src="js/training.js?v=2.2"></script>
 </body>
 </html>

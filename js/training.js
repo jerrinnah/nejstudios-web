@@ -229,6 +229,9 @@ function scheduleFor(student) {
     dates[c.id] = slots[i + shift] || null;
   });
 
+  const ids = new Set(classes.map(c => c.id));
+  const liveSkips = Object.keys(skipped).filter(id => ids.has(id)).length;
+  const liveMissed = Object.keys(absences).filter(id => ids.has(id)).length;
   const done = classes.filter(c => completed[c.id]).length;
   const total = classes.length;
   const last = classes.length ? dates[classes[classes.length - 1].id] : null;
@@ -239,11 +242,11 @@ function scheduleFor(student) {
     endsAt: last,
     done, total,
     classesLeft: total - done,
-    missed: Object.keys(absences).length,
+    missed: liveMissed,
     pct: total ? Math.round((done / total) * 100) : 0,
     weeksLeft: Math.max(0, Math.ceil(daysLeft / 7)),
     daysLeft: Math.max(0, daysLeft),
-    skips: Object.keys(skipped).length,
+    skips: liveSkips,
   };
 }
 
@@ -570,6 +573,13 @@ function renderChecklist() {
   el('ckMeta').textContent =
     `${trackLabel(student)} · ${s.done}/${s.total} done · ${remainingText(s)} · code ${student.code}`;
 
+  el('ckStudentName').value = student.name || '';
+  el('ckStudentPhone').value = student.phone || '';
+  const currentTrack = TRACK_OPTIONS.find(o => o.keys.join() === trackKeys(student).join());
+  el('ckTrack').innerHTML = TRACK_OPTIONS
+    .map(o => `<option value="${o.value}">${esc(o.label)}</option>`).join('');
+  el('ckTrack').value = currentTrack ? currentTrack.value : TRACK_OPTIONS[0].value;
+
   el('ckStart').value = s.tt.startDate;
   el('ckTime').value = s.tt.time || '';
   el('ckCohort').value = student.cohortId || '';
@@ -579,7 +589,7 @@ function renderChecklist() {
       <input type="checkbox" data-day="${i}" ${(s.tt.days || []).includes(i) ? 'checked' : ''} />${n}
     </label>`).join('');
   const inCohort = !!s.tt.cohort;
-  ['ckStart', 'ckTime'].forEach(id => { el(id).disabled = inCohort; });
+  ['ckStart', 'ckTime', 'ckTrack'].forEach(id => { el(id).disabled = inCohort; });
   el('ckDays').style.opacity = inCohort ? '.45' : '1';
   el('ckCohortNote').style.display = inCohort ? 'block' : 'none';
 
@@ -884,6 +894,54 @@ function wireTutor() {
   }
   ['ckStart', 'ckTime', 'ckCohort'].forEach(id => el(id).addEventListener('change', saveTimetable));
   el('ckDays').addEventListener('change', saveTimetable);
+
+  /* ── Student details: name, phone, course ── */
+  ['ckStudentName', 'ckStudentPhone'].forEach(id => {
+    el(id).addEventListener('change', async () => {
+      const student = studentById(selectedStudentId);
+      if (!student) return;
+      const name = el('ckStudentName').value.trim();
+      if (name) student.name = name;
+      student.phone = el('ckStudentPhone').value.trim();
+      await saveData();
+      renderChecklist();
+      renderStudentList();
+      renderRegister();
+      toast('Student details saved');
+    });
+  });
+
+  el('ckTrack').addEventListener('change', async () => {
+    const student = studentById(selectedStudentId);
+    if (!student) return;
+    const opt = TRACK_OPTIONS.find(o => o.value === el('ckTrack').value);
+    if (!opt) return;
+
+    // Progress is keyed to the old course's classes, so it cannot follow them over
+    const before = scheduleFor(student);
+    const recorded = before.done + before.skips + before.missed;
+    if (recorded && !confirm(
+      `Move ${student.name} to ${opt.label}?\n\n` +
+      `${recorded} recorded class${recorded === 1 ? '' : 'es'} on ${trackLabel(student)} will be cleared, ` +
+      `because the new course has different classes.`)) {
+      renderChecklist();
+      return;
+    }
+
+    student.tracks = opt.keys.slice();
+    delete student.track;                       // drop the old single-track field
+    const ids = new Set(classesFor(student).map(c => c.id));
+    ['completed', 'skipped', 'absences'].forEach(key => {
+      if (!student[key]) return;
+      Object.keys(student[key]).forEach(id => { if (!ids.has(id)) delete student[key][id]; });
+    });
+
+    await saveData();
+    renderChecklist();
+    renderStudentList();
+    renderRegister();
+    toast(`Course changed to ${opt.label}`);
+  });
 
   /* ── Fees ── */
   el('ckFeeTotal').addEventListener('change', async () => {
