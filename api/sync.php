@@ -13,7 +13,7 @@ header('Access-Control-Allow-Headers: Content-Type');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(200); exit; }
 
 // Allowed resources
-$allowed  = ['bookings', 'schedule', 'tasks', 'notifications', 'gallery', 'gallery_links', 'approvals', 'attendance', 'site_content', 'sign_out_briefs', 'team_members', 'confirmations', 'team_points', 'team_deleted', 'leave_requests', 'team_overrides', 'audit_log', 'invoices', 'receipts', 'training'];
+$allowed  = ['bookings', 'schedule', 'tasks', 'notifications', 'gallery', 'gallery_links', 'approvals', 'attendance', 'site_content', 'sign_out_briefs', 'team_members', 'confirmations', 'team_points', 'team_deleted', 'leave_requests', 'team_overrides', 'audit_log', 'invoices', 'receipts', 'training', 'payroll'];
 $resource = isset($_GET['resource']) ? preg_replace('/[^a-z_]/', '', $_GET['resource']) : '';
 
 if (!in_array($resource, $allowed)) {
@@ -29,7 +29,7 @@ $file = $dataDir . '/' . $resource . '.json';
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // notifications, gallery, approvals, attendance use an object {}, all others use an array []
-    $default = in_array($resource, ['notifications', 'gallery', 'approvals', 'attendance', 'site_content', 'training']) ? '{}' : '[]';
+    $default = in_array($resource, ['notifications', 'gallery', 'approvals', 'attendance', 'site_content', 'training', 'payroll']) ? '{}' : '[]';
 
     if (!file_exists($file)) {
         echo $default;

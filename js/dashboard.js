@@ -669,7 +669,7 @@ function switchTab(name) {
   // Load panel content
   if (name === 'schedule') renderAdminSchedule();
   if (name === 'tasks')    renderTasks();
-  if (name === 'team')     { renderTeam(); renderAttendance(); renderLeaveRequests(); }
+  if (name === 'team')     { renderTeam(); renderAttendance(); renderLeaveRequests(); renderPayroll(); }
   if (name === 'calendar') renderBookingsCalendar();
   if (name === 'gallery')  renderGalleryPanel();
   if (name === 'summary')  { renderDailySummary(); renderMonthlyDeliveryAdmin(); renderAllDeliveriesList(); }
@@ -4765,3 +4765,95 @@ function openBookingCreateFromDate(date) {
 document.getElementById('calPrev')?.addEventListener('click', () => { _calCursor.setMonth(_calCursor.getMonth() - 1); renderBookingsCalendar(); });
 document.getElementById('calNext')?.addEventListener('click', () => { _calCursor.setMonth(_calCursor.getMonth() + 1); renderBookingsCalendar(); });
 document.getElementById('calToday')?.addEventListener('click', () => { _calCursor = new Date(); _calCursor.setDate(1); renderBookingsCalendar(); });
+
+/* ════════════════════════════════════════════
+   MONTH-END PAYROLL
+   Once a month closes, every member with a salary shows here until
+   the admin confirms they have been paid. Confirming clears the row.
+   ════════════════════════════════════════════ */
+async function renderPayroll() {
+  const section = document.getElementById('payrollSection');
+  if (!section) return;
+
+  const team = getTeam().filter(m => parseInt(m.salary, 10) > 0);
+  if (!team.length) { section.style.display = 'none'; return; }
+
+  const payroll = await dbGetPayroll();
+  const from = await dbPayrollStart(payroll);
+
+  // Every closed month since payroll started, so nothing is forgotten
+  const closed = dbPayrollMonths(from);
+  const owed = [];
+  const paid = [];
+
+  for (const key of closed) {
+    const done = payroll[key] || {};
+    for (const m of team) {
+      // Only bill months the member existed for
+      if (m.createdAt && monthKeyOf(new Date(m.createdAt)) > key) continue;
+      if (done[m.id]) { paid.push({ key, m, rec: done[m.id] }); continue; }
+      const sal = await dbGetMonthlySalary(m, key).catch(() => null);
+      if (sal && sal.expected > 0) owed.push({ key, m, sal });
+    }
+  }
+
+  if (!owed.length && !paid.length) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+
+  const totalOwed = owed.reduce((n, o) => n + o.sal.expected, 0);
+  document.getElementById('payrollSub').textContent = owed.length
+    ? `${owed.length} payment${owed.length === 1 ? '' : 's'} outstanding. Confirm each one once the money has gone out.`
+    : 'All salaries confirmed.';
+  document.getElementById('payrollTotal').textContent = totalOwed ? `₦${totalOwed.toLocaleString()} to pay` : '';
+
+  document.getElementById('payrollList').innerHTML = owed.map(({ key, m, sal }) => `
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;margin-bottom:8px">
+      <div style="min-width:180px;flex:1">
+        <div style="color:var(--white);font-weight:600;font-size:0.9rem">${_escHtml(m.name)}</div>
+        <div style="font-size:0.72rem;color:var(--grey-3);margin-top:2px">${_escHtml(monthLabel(key))} · base ₦${sal.baseSalary.toLocaleString()}${sal.lateTotal ? ` · late −₦${sal.lateTotal.toLocaleString()}` : ''}${sal.absentTotal ? ` · absent −₦${sal.absentTotal.toLocaleString()}` : ''}${sal.bonusAmount ? ` · bonus +₦${sal.bonusAmount.toLocaleString()}` : ''}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <strong style="color:var(--gold);font-size:1rem">₦${sal.expected.toLocaleString()}</strong>
+        <button class="btn-save" data-paysalary="${_escHtml(key)}|${_escHtml(m.id)}|${sal.expected}" style="padding:8px 14px;font-size:0.72rem">Confirm payment</button>
+      </div>
+    </div>`).join('') || '<p style="font-size:0.8rem;color:var(--grey-4)">Nothing outstanding.</p>';
+
+  document.getElementById('payrollPaid').innerHTML = paid.length ? `
+    <details>
+      <summary style="cursor:pointer;font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--grey-3);padding:6px 0">Paid (${paid.length})</summary>
+      ${paid.map(({ key, m, rec }) => `
+        <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center;padding:9px 12px;font-size:0.78rem;color:var(--grey-3);border-bottom:1px solid var(--border)">
+          <span>${_escHtml(m.name)} · ${_escHtml(monthLabel(key))}</span>
+          <span style="display:flex;align-items:center;gap:10px">
+            <span style="color:var(--green)">₦${Number(rec.amount || 0).toLocaleString()} paid ${fmtDateShort(rec.paidAt)}</span>
+            <button class="btn-cancel-edit" data-undopay="${_escHtml(key)}|${_escHtml(m.id)}" style="padding:5px 10px;font-size:0.66rem">Undo</button>
+          </span>
+        </div>`).join('')}
+    </details>` : '';
+}
+
+document.addEventListener('click', async (e) => {
+  const pay  = e.target.closest('[data-paysalary]');
+  const undo = e.target.closest('[data-undopay]');
+  if (!pay && !undo) return;
+
+  if (pay) {
+    const [key, memberId, amount] = pay.dataset.paysalary.split('|');
+    const m = getTeam().find(x => x.id === memberId);
+    if (!confirm(`Confirm you have paid ${m ? m.name : 'this member'} ₦${Number(amount).toLocaleString()} for ${monthLabel(key)}?`)) return;
+    pay.disabled = true;
+    const ok = await dbConfirmSalary(key, memberId, { amount: Number(amount), name: m ? m.name : '' });
+    pay.disabled = false;
+    if (!ok) { alert('That did not reach the server, so the payment is not recorded. Check your connection and try again.'); return; }
+    showToast(`${m ? m.name : 'Member'} marked paid for ${monthLabel(key)}`);
+  }
+
+  if (undo) {
+    const [key, memberId] = undo.dataset.undopay.split('|');
+    if (!confirm('Undo this payment confirmation? It will show as outstanding again.')) return;
+    const ok = await dbUndoSalary(key, memberId);
+    if (!ok) { alert('That did not reach the server. Try again.'); return; }
+    showToast('Payment confirmation removed');
+  }
+  renderPayroll();
+});

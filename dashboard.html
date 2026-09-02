@@ -1453,6 +1453,19 @@
               </div>
             </div>
 
+            <!-- Month-end payroll -->
+            <div id="payrollSection" style="display:none;margin-bottom:28px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+                <div>
+                  <h3 style="font-family:var(--serif);font-size:1.05rem;color:var(--white)">Salaries to pay</h3>
+                  <p style="font-size:0.78rem;color:var(--grey-3);margin-top:2px" id="payrollSub"></p>
+                </div>
+                <span id="payrollTotal" style="font-size:0.85rem;color:var(--gold);font-weight:700"></span>
+              </div>
+              <div id="payrollList"></div>
+              <div id="payrollPaid" style="margin-top:14px"></div>
+            </div>
+
             <!-- Attendance log -->
             <div style="margin-bottom:28px">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
@@ -2199,7 +2212,7 @@
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/db.js?v=7.8"></script>
-    <script src="js/dashboard.js?v=7.9"></script>
+    <script src="js/db.js?v=7.9"></script>
+    <script src="js/dashboard.js?v=8.0"></script>
   </body>
 </html>

@@ -415,12 +415,13 @@ async function renderSummaryPanel() {
   if (empty) empty.style.display = 'none';
   await Promise.all([
     renderMonthlyDelivery(),
+    renderPayoutCard(),
     renderSalaryCard(),
     renderDeductionsCard(),
   ]);
   // Show empty-state if nothing rendered
   if (empty) {
-    const anyVisible = ['monthlyDeliveryCard', 'salaryCard', 'deductionsSummary']
+    const anyVisible = ['monthlyDeliveryCard', 'payoutCard', 'salaryCard', 'deductionsSummary']
       .some(id => {
         const el = document.getElementById(id);
         return el && el.style.display !== 'none';
@@ -2226,4 +2227,49 @@ async function renderDeductionsCard() {
   } else {
     dedEl.style.display = 'none';
   }
+}
+
+/* ════════════════════════════════════════════
+   MONTH-END PAYOUT
+   Shows what a closed month owes this member, and whether the admin
+   has confirmed the payment yet.
+   ════════════════════════════════════════════ */
+async function renderPayoutCard() {
+  const box = document.getElementById('payoutCard');
+  if (!box || !currentMember) return;
+  if (!(parseInt(currentMember.salary, 10) > 0)) { box.style.display = 'none'; return; }
+
+  const payroll = await dbGetPayroll().catch(() => ({}));
+  const months = dbPayrollMonths(payroll._meta && payroll._meta.from);
+  const rows = [];
+
+  for (const key of months) {
+    if (currentMember.createdAt && monthKeyOf(new Date(currentMember.createdAt)) > key) continue;
+    const paidRec = (payroll[key] || {})[currentMember.id];
+    const sal = await dbGetMonthlySalary(currentMember, key).catch(() => null);
+    const amount = paidRec ? Number(paidRec.amount || 0) : (sal ? sal.expected : 0);
+    if (!amount) continue;
+    rows.push({ key, amount, paidRec });
+  }
+
+  if (!rows.length) { box.style.display = 'none'; return; }
+  box.style.display = 'block';
+
+  const visKey  = 'nej_salary_visible_' + currentMember.id;
+  const visible = localStorage.getItem(visKey) !== '0';
+  const fmt = v => visible ? `₦${v.toLocaleString()}` : '₦••••••';
+
+  box.innerHTML = `
+    <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--grey-3);margin-bottom:12px">Month-end payouts</div>
+    ${rows.map(r => `
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
+        <div>
+          <div style="font-size:0.88rem;color:var(--white)">${monthLabel(r.key)}</div>
+          <div style="font-size:0.7rem;color:${r.paidRec ? 'var(--green)' : 'var(--gold)'};margin-top:2px">
+            ${r.paidRec ? `Paid ${new Date(r.paidRec.paidAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : 'Awaiting payment'}
+          </div>
+        </div>
+        <strong style="color:${r.paidRec ? 'var(--grey-2)' : 'var(--gold)'};font-size:1rem">${fmt(r.amount)}</strong>
+      </div>`).join('')}
+    <p style="font-size:0.68rem;color:var(--grey-4);margin-top:10px">A payout clears once admin confirms it has been sent.</p>`;
 }

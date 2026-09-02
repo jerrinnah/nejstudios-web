@@ -442,10 +442,87 @@ async function dbAwardTakeoverBonusIfEligible(task) {
   return TAKEOVER_BONUS_POINTS;
 }
 
-// Expected salary for current calendar month based on base salary + deductions + bonus
-async function dbGetMonthlySalary(member) {
+/* ────────────────────────────────────────────
+   PAYROLL — month-end salaries awaiting the admin's confirmation
+   Stored as { "YYYY-MM": { memberId: { amount, paidAt, ... } } }
+   A member with no entry for a closed month is still owed.
+   ──────────────────────────────────────────── */
+const monthKeyOf = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+const thisMonthKey = () => monthKeyOf(new Date());
+function prevMonthKey(offset = 1) {
+  const d = new Date();
+  d.setDate(1);
+  d.setMonth(d.getMonth() - offset);
+  return monthKeyOf(d);
+}
+function monthLabel(key) {
+  const [y, m] = String(key).split('-').map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+}
+
+async function dbGetPayroll() {
+  try {
+    const r = await fetch('/api/sync.php?resource=payroll', { cache: 'no-store' });
+    if (r.ok) {
+      const data = await r.json();
+      if (data && typeof data === 'object' && !Array.isArray(data)) return data;
+    }
+  } catch {}
+  return {};
+}
+
+/* Payroll only bills from the month it was switched on, so months the
+   studio already settled offline are never shown as owing. */
+async function dbPayrollStart(payroll) {
+  const meta = payroll._meta || {};
+  if (meta.from) return meta.from;
+  const from = prevMonthKey(1);
+  payroll._meta = { ...meta, from, since: Date.now() };
+  await dbSavePayroll(payroll);
+  return from;
+}
+
+// Closed months this payroll should account for, newest first
+function dbPayrollMonths(from, lookBack = 6) {
+  const out = [];
+  for (let i = 1; i <= lookBack; i++) {
+    const key = prevMonthKey(i);
+    if (from && key < from) break;
+    out.push(key);
+  }
+  return out;
+}
+
+async function dbSavePayroll(payroll) {
+  try {
+    const r = await fetch('/api/sync.php?resource=payroll', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payroll),
+    });
+    return r.ok;
+  } catch { return false; }
+}
+
+// Record that a member has been paid for a month. Returns false if it did not reach the server.
+async function dbConfirmSalary(monthKey, memberId, record) {
+  const payroll = await dbGetPayroll();
+  payroll[monthKey] = payroll[monthKey] || {};
+  payroll[monthKey][memberId] = { ...record, paidAt: Date.now() };
+  return dbSavePayroll(payroll);
+}
+
+async function dbUndoSalary(monthKey, memberId) {
+  const payroll = await dbGetPayroll();
+  if (payroll[monthKey]) delete payroll[monthKey][memberId];
+  return dbSavePayroll(payroll);
+}
+
+// Expected salary for a calendar month based on base salary + deductions + bonus.
+// Pass a "YYYY-MM" key for a past month; defaults to the current one.
+async function dbGetMonthlySalary(member, key) {
   const baseSalary = parseInt(member.salary, 10) || 0;
-  const now   = new Date();
+  const now   = key ? new Date(Number(key.split('-')[0]), Number(key.split('-')[1]) - 1, 1) : new Date();
   const year  = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
   const monthPrefix = `${year}-${month}-`;
@@ -479,6 +556,7 @@ async function dbGetMonthlySalary(member) {
   const expected = Math.max(0, baseSalary - lateTotal - absentTotal + bonusAmount);
   return {
     baseSalary, lateTotal, absentTotal, bonusPoints, bonusAmount, expected,
+    monthKey: `${year}-${month}`,
   };
 }
 
