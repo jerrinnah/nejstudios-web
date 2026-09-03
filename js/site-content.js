@@ -16,9 +16,9 @@
   /* ── DEFAULTS (mirrors cms.js) ── */
   const DEFAULTS = {
     hero: {
-      eyebrow: 'Studio · Weddings · Events — Lagos, Nigeria',
+      eyebrow: 'Studio · Weddings · Events — Port Harcourt, Nigeria',
       line1: 'Where', line2: 'Light Meets', line3: 'Legacy.',
-      sub: 'NEJstudios — a creative studio in Lagos built on craft, precision, and a deep love for visual storytelling.',
+      sub: 'NEJstudios — a creative studio in Port Harcourt built on craft, precision, and a deep love for visual storytelling.',
       cta1: 'Book a Session', cta2: 'View Our Work', bg: '',
     },
     settings: {
@@ -27,18 +27,18 @@
       stat3v: '4K',   stat3l: 'Ultra HD Films',
       ticker: 'Studio Sessions, Weddings, Brand Films, Portraits, Music Videos, Drone Cinematography',
       footerCopy: '© 2026 NEJstudios. All rights reserved.',
-      footerTag: 'Designed with craft in Lagos, Nigeria.',
+      footerTag: 'Designed with craft in Port Harcourt, Nigeria.',
     },
     about: {
       title: 'Crafted with', titleItalic: 'Purpose.',
-      para1: 'NEJstudios was born out of a simple but powerful belief — that every moment worth living is worth preserving. What started as a one-person passion project in Lagos has grown into a full production house trusted by brands, families, and couples across Nigeria.',
+      para1: 'NEJstudios was born out of a simple but powerful belief — that every moment worth living is worth preserving. What started as a one-person passion project in Port Harcourt has grown into a full production house trusted by brands, families, and couples across Nigeria.',
       para2: "We obsess over light, emotion, and storytelling. Whether we're on a commercial set or capturing a bride's first glance at her groom, our standard never changes: excellence in every frame.",
       m1v: '500+', m1l: 'Events Covered',
       m2v: '200+', m2l: 'Weddings',
       m3v: '50+',  m3l: 'Brand Films',
     },
     contact: {
-      phone: '+234 800 000 0000', email: 'hello@nejstudios.com', location: 'Lagos, Nigeria',
+      phone: '+234 800 000 0000', email: 'hello@nejstudios.com', location: 'Port Harcourt, Nigeria',
       instagram: '', youtube: '', facebook: '', tiktok: '',
     },
   };

@@ -288,6 +288,18 @@
       color: var(--of-cream);
       margin-bottom: .75rem;
     }
+    .of-pkg__was {
+      font-family: var(--font-serif);
+      font-size: clamp(17px, 2vw, 22px);
+      color: var(--of-dim);
+      line-height: 1.1;
+      margin-bottom: 2px;
+    }
+    .of-pkg__was s {
+      text-decoration: line-through;
+      text-decoration-color: var(--of-gold);
+      text-decoration-thickness: 1.5px;
+    }
     .of-pkg__price {
       font-family: var(--font-serif);
       font-size: clamp(30px, 4vw, 42px);
@@ -551,6 +563,7 @@
           <article class="of-pkg">
             <div class="of-pkg__no">01</div>
             <h3 class="of-pkg__name">ceremony &amp; reception</h3>
+            <div class="of-pkg__was"><s>₦1,200,000</s></div>
             <div class="of-pkg__price">₦750,000</div>
             <p class="of-pkg__sub">Full-day photography, one content thriller, digital delivery.</p>
             <ul class="of-pkg__list">
@@ -568,6 +581,7 @@
             <span class="of-pkg__flag">Most chosen</span>
             <div class="of-pkg__no">02</div>
             <h3 class="of-pkg__name">full day experience</h3>
+            <div class="of-pkg__was"><s>₦2,500,000</s></div>
             <div class="of-pkg__price">₦1,400,000</div>
             <p class="of-pkg__sub">Everything above, plus the full film and the album.</p>
             <ul class="of-pkg__list">

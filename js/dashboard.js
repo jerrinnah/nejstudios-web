@@ -261,7 +261,7 @@ function seedIfEmpty() {
     { bookingKind:'studio', firstName:'Tunde',  middleName:'Adeyemi', clientName:'Tunde Adeyemi', phone:'+234 802 000 0002', email:'tunde@example.com',  sessionType:'Family',   status:'confirmed', createdAt: now - day*2 },
     { bookingKind:'studio', firstName:'Ngozi',  middleName:'Eze',     clientName:'Ngozi Eze',     phone:'+234 803 000 0003', email:'ngozi@example.com',  sessionType:'Creative', status:'completed', createdAt: now - day*5 },
     { bookingKind:'studio', firstName:'Fatima', middleName:'Bello',   clientName:'Fatima Bello',  phone:'+234 804 000 0004', email:'fatima@example.com', sessionType:'Fashion',  status:'pending',   createdAt: now - day*1 },
-    { bookingKind:'event', firstName:'David', lastName:'Okonkwo', clientName:'David Okonkwo', phone:'+234 805 000 0005', email:'david@example.com', eventType:'white-wedding', package:'luxury', eventDate:'2026-06-14', location:'Eko Hotel, Lagos', budget:'above1m', deliverables:'Full-day coverage, same-day edit, drone shots.', status:'confirmed', createdAt: now - day*3 },
+    { bookingKind:'event', firstName:'David', lastName:'Okonkwo', clientName:'David Okonkwo', phone:'+234 805 000 0005', email:'david@example.com', eventType:'white-wedding', package:'luxury', eventDate:'2026-06-14', location:'Hotel Presidential, Port Harcourt', budget:'above1m', deliverables:'Full-day coverage, same-day edit, drone shots.', status:'confirmed', createdAt: now - day*3 },
     { bookingKind:'event', firstName:'Chidi', lastName:'Nwosu', clientName:'Chidi Nwosu', phone:'+234 806 000 0006', email:'chidi@example.com', eventType:'traditional-wedding', package:'premium', eventDate:'2026-07-20', location:'Enugu State', budget:'350-600', deliverables:'Traditional ceremony film, 200+ edited photos.', status:'pending', createdAt: now - day*1 },
     { bookingKind:'event', firstName:'Kemi', lastName:'Afolabi', clientName:'Kemi Afolabi', phone:'+234 807 000 0007', email:'kemi@example.com', eventType:'brand-film', package:'premium', eventDate:'2026-05-10', location:'Victoria Island', budget:'350-600', deliverables:'5-minute brand campaign film, 3 social cuts.', status:'completed', createdAt: now - day*10 },
     { bookingKind:'event', firstName:'Emeka', lastName:'Obi', clientName:'Emeka Obi', phone:'+234 808 000 0008', email:'emeka@example.com', eventType:'corporate-event', package:'essential', eventDate:'2026-05-28', location:'Abuja', budget:'150-350', deliverables:'4-hour event coverage, recap video.', status:'pending', createdAt: now - day*0 },
@@ -1594,7 +1594,7 @@ function openInvoice(id) {
       <div>
         <div class="inv-logo-name"><span>NEJ</span>studios</div>
         <div class="inv-tagline">Premium Photography &amp; Film Production</div>
-        <div style="font-size:0.75rem;color:#888;margin-top:4px">Lagos, Nigeria · nejstudios.com</div>
+        <div style="font-size:0.75rem;color:#888;margin-top:4px">Port Harcourt, Nigeria · nejstudios.com</div>
       </div>
       <div class="inv-title-block">
         <h1>Invoice</h1>
@@ -1693,7 +1693,7 @@ function openInvoice(id) {
     <div class="inv-footer">
       <strong>Thank you for choosing NEJstudios!</strong><br/>
       We appreciate your trust and look forward to delivering exceptional work.<br/>
-      <span style="font-size:0.75rem;color:#aaa">NEJstudios · Lagos, Nigeria · nejstudios.com</span>
+      <span style="font-size:0.75rem;color:#aaa">NEJstudios · Port Harcourt, Nigeria · nejstudios.com</span>
     </div>
   `;
 
@@ -1766,7 +1766,7 @@ function openStudioReceipt(b) {
           <div class="pos-r-center">
             <div class="pos-r-logo">NEJstudios</div>
             <div class="pos-r-tagline">PHOTOGRAPHY &amp; FILM PRODUCTION</div>
-            <div class="pos-r-tagline">Lagos, Nigeria</div>
+            <div class="pos-r-tagline">Port Harcourt, Nigeria</div>
           </div>
           <hr class="pos-r-dashes"/>
           <div class="pos-r-center">

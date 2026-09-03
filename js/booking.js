@@ -42,7 +42,7 @@
       See you in the studio!
 
       — The NEJstudios Team
-      Lagos, Nigeria
+      Port Harcourt, Nigeria
       hello@nejstudios.com
       ─────────────────────────────────────────────
       Set "To Email" to {{client_email}}

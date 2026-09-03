@@ -8,11 +8,11 @@ const CMS_KEY = 'nej_cms';
 /* ── DEFAULT CONTENT ── */
 const DEFAULTS = {
   hero: {
-    eyebrow: 'Studio · Weddings · Events — Lagos, Nigeria',
+    eyebrow: 'Studio · Weddings · Events — Port Harcourt, Nigeria',
     line1: 'Where',
     line2: 'Light Meets',
     line3: 'Legacy.',
-    sub: 'NEJstudios — a creative studio in Lagos built on craft, precision, and a deep love for visual storytelling.',
+    sub: 'NEJstudios — a creative studio in Port Harcourt built on craft, precision, and a deep love for visual storytelling.',
     cta1: 'Book a Session',
     cta2: 'View Our Work',
     bg: 'https://images.unsplash.com/photo-1601506521793-dc748fc80b67?w=1800&q=85',
@@ -25,7 +25,7 @@ const DEFAULTS = {
   about: {
     title: 'Crafted with',
     titleItalic: 'Purpose.',
-    para1: 'Founded in Lagos, NEJstudios was born from a passion to preserve life\'s most meaningful moments through the art of photography and film. Every frame we capture is a deliberate act of storytelling.',
+    para1: 'Founded in Port Harcourt, NEJstudios was born from a passion to preserve life\'s most meaningful moments through the art of photography and film. Every frame we capture is a deliberate act of storytelling.',
     para2: 'From intimate studio sessions to grand weddings and high-production brand films, we bring the same level of care, technical excellence, and creative vision to every project.',
     para3: '',
     image: '',
@@ -56,9 +56,9 @@ const DEFAULTS = {
     { name: 'Cinematic', price: '₦700,000+', desc: 'Full feature production', featured: false, features: ['Multi-day shoot', 'Director & full crew', 'Custom score / music', 'Colour grading & VFX', 'Festival-quality master', 'Dedicated post-production'] },
   ],
   packagesWedding: [
-    { name: 'Silver', price: '₦200,000', desc: 'Essential wedding coverage', featured: false, features: ['6-hour coverage', '300+ edited photos', 'Online gallery', 'Digital download'] },
-    { name: 'Gold', price: '₦450,000', desc: 'Our most popular choice', featured: true, features: ['Full day coverage', '500+ edited photos', '5-min wedding film', 'Drone shots', 'Online gallery', 'USB + prints'] },
-    { name: 'Diamond', price: '₦850,000+', desc: 'The complete experience', featured: false, features: ['2-day coverage', 'Unlimited photos', 'Cinematic feature film', 'Drone & aerial shots', 'Engagement session', 'Premium album + prints', 'Dedicated editor'] },
+    { name: 'Silver', price: '₦1,300,000', desc: 'Essential wedding coverage', featured: false, features: ['6-hour coverage', '300+ edited photos', 'Online gallery', 'Digital download'] },
+    { name: 'Gold', price: '₦2,000,000', desc: 'Our most popular choice', featured: true, features: ['Full day coverage', '500+ edited photos', '5-min wedding film', 'Drone shots', 'Online gallery', 'USB + prints'] },
+    { name: 'Diamond', price: '₦3,300,000', desc: 'The complete experience', featured: false, features: ['2-day coverage', 'Unlimited photos', 'Cinematic feature film', 'Drone & aerial shots', 'Engagement session', 'Premium album + prints', 'Dedicated editor'] },
   ],
   testimonials: [
     { quote: "NEJstudios didn't just film our wedding — they preserved a memory that will last generations. Every detail was perfect.", name: 'Ada Okonkwo', role: 'Wedding Client, 2024' },
@@ -68,7 +68,7 @@ const DEFAULTS = {
   contact: {
     phone: '+234 800 000 0000',
     email: 'hello@nejstudios.com',
-    location: 'Lagos, Nigeria',
+    location: 'Port Harcourt, Nigeria',
     instagram: '',
     youtube: '',
     facebook: '',
@@ -80,7 +80,7 @@ const DEFAULTS = {
     stat3v: '4K',   stat3l: 'Ultra HD Films',
     ticker: 'Studio Sessions, Weddings, Brand Films, Portraits, Music Videos, Drone Cinematography',
     footerCopy: '© 2026 NEJstudios. All rights reserved.',
-    footerTag: 'Designed with craft in Lagos, Nigeria.',
+    footerTag: 'Designed with craft in Port Harcourt, Nigeria.',
   },
   live: {
     title: 'Live Event',
