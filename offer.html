@@ -3,6 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Meta Pixel Code -->
+  <script>
+  !function(f,b,e,v,n,t,s)
+  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+  n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];
+  s.parentNode.insertBefore(t,s)}(window, document,'script',
+  'https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init', '1588733249667671');
+  fbq('track', 'PageView');
+  </script>
+  <!-- End Meta Pixel Code -->
+
   <title>Wedding Offer — NEJstudios</title>
   <meta name="description" content="Limited wedding slots at 2026 pricing. The Silver Offer or the Bronze Offer, full coverage, real moments, delivered with care." />
 
@@ -452,6 +468,11 @@
 </head>
 <body>
 
+  <!-- Meta Pixel — no-JavaScript fallback -->
+  <noscript><img height="1" width="1" style="display:none"
+  src="https://www.facebook.com/tr?id=1588733249667671&amp;ev=PageView&amp;noscript=1"
+  /></noscript>
+
   <!-- ══════════════ NAVIGATION ══════════════ -->
   <nav class="nav" id="nav">
     <div class="nav__inner">
@@ -736,8 +757,29 @@
       'main-cta': 'Booking Inquiry',
     };
 
+    // What each package is worth, for ad reporting
+    const PACKAGE_VALUES = {
+      'ceremony-reception': 750000,
+      'full-day-experience': 1400000,
+    };
+
+    /* Tell the Meta pixel a lead came in. Wrapped because an ad blocker or a
+       failed pixel load must never stop someone booking. */
+    function trackLead(pkg, packageName) {
+      try {
+        if (typeof fbq !== 'function') return;
+        fbq('track', 'Lead', {
+          content_name: packageName,
+          content_category: 'Wedding offer',
+          value: PACKAGE_VALUES[pkg] || 0,
+          currency: 'NGN',
+        });
+      } catch (_) { /* tracking must never block a booking */ }
+    }
+
     function handleBooking(pkg) {
       const packageName = PACKAGE_NAMES[pkg] || 'Wedding Package';
+      trackLead(pkg, packageName);
       const datePart = selectedDate
         ? ` Our wedding date is ${formatDate(selectedDate)}.`
         : '';
