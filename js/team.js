@@ -726,6 +726,7 @@ async function renderAllTasksBar() {
    ════════════════════════════════════════════ */
 async function renderMyTasks() {
   if (!currentMember) return;
+  renderMyOverdue().catch(() => {});
   document.getElementById('myTasksGrid').innerHTML = `<div class="empty-state" style="grid-column:1/-1;opacity:0.5"><p style="color:var(--grey-3);font-size:0.85rem">Loading…</p></div>`;
   const myTasks   = (await dbGetTasks()).filter(t => t.assignedTo === currentMember.id);
   const grid      = document.getElementById('myTasksGrid');
@@ -2272,4 +2273,39 @@ async function renderPayoutCard() {
         <strong style="color:${r.paidRec ? 'var(--grey-2)' : 'var(--gold)'};font-size:1rem">${fmt(r.amount)}</strong>
       </div>`).join('')}
     <p style="font-size:0.68rem;color:var(--grey-4);margin-top:10px">A payout clears once admin confirms it has been sent.</p>`;
+}
+
+/* ════════════════════════════════════════════
+   MY PAST-DUE TASKS
+   A plain reminder at the top of My Tasks of anything the member is
+   holding past its deadline.
+   ════════════════════════════════════════════ */
+async function renderMyOverdue() {
+  const box = document.getElementById('myOverdue');
+  if (!box || !currentMember) return;
+
+  const mine = (await dbGetTasks()).filter(t =>
+    t.assignedTo === currentMember.id && t.status !== 'completed' && !t.deletedAt && _isOverdue(t));
+
+  if (!mine.length) { box.style.display = 'none'; return; }
+  box.style.display = 'block';
+
+  const daysLate = t => {
+    const dl = t.deadline || t.dueDate;
+    return dl ? Math.max(0, Math.floor((Date.now() - new Date(dl + 'T23:59:59').getTime()) / 86400000)) : 0;
+  };
+
+  box.innerHTML = `
+    <div style="color:var(--red);font-weight:700;font-size:0.88rem;margin-bottom:4px">
+      ${mine.length} task${mine.length === 1 ? '' : 's'} past due
+    </div>
+    <p style="font-size:0.75rem;color:var(--grey-3);margin-bottom:10px">Finish these first, or tell the admin if you are blocked.</p>
+    ${mine.map(t => {
+      const late = daysLate(t);
+      return `
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--border)">
+          <span style="font-size:0.85rem;color:var(--white)">${esc(t.title)}</span>
+          <span style="font-size:0.72rem;color:var(--red);white-space:nowrap">${late} day${late === 1 ? '' : 's'} late</span>
+        </div>`;
+    }).join('')}`;
 }

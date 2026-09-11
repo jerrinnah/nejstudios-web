@@ -458,8 +458,10 @@ function showDash() {
   syncTeamDeletedFromServer().catch(() => {});
   syncTeamOverridesFromServer().catch(() => {});
   syncBookingsFromServer().then(async () => {
-    await autoCreateEventDayTasks().catch(e => console.warn('Auto-task generation failed:', e));
+    // Post-event tasks are no longer generated automatically. Create them per
+    // booking with the Tasks button on the booking card.
     renderBookings();
+    nudgeOverdueOnce().catch(e => console.warn('Overdue reminders failed:', e));
     renderTasksBadge();
     renderApprovalsPanel().catch(() => {}); // keep approvals badge fresh
   });
@@ -668,7 +670,7 @@ function switchTab(name) {
   document.getElementById('headerTitle').textContent = titles[name] || 'Dashboard';
   // Load panel content
   if (name === 'schedule') renderAdminSchedule();
-  if (name === 'tasks')    renderTasks();
+  if (name === 'tasks')    { renderOverdueAlert(); renderTasks(); }
   if (name === 'team')     { renderTeam(); renderAttendance(); renderLeaveRequests(); renderPayroll(); }
   if (name === 'calendar') renderBookingsCalendar();
   if (name === 'gallery')  renderGalleryPanel();
@@ -728,6 +730,11 @@ function actionButtons(b) {
   }
   if (b.status === 'cancelled') {
     btns.push(`<button class="action-btn action-btn--pending"  data-id="${b.id}" data-action="pending">Reopen</button>`);
+  }
+  // Post-event tasks: off until the admin asks for them, per booking
+  if (b.status !== 'cancelled') {
+    const made = !!b.postEventTasksCreated;
+    btns.push(`<button class="action-btn" style="border-color:${made ? 'var(--green)' : 'var(--gold)'};color:${made ? 'var(--green)' : 'var(--gold)'}" data-id="${b.id}" data-action="make-tasks" title="${made ? 'Tasks already created for this booking' : 'Create the post-event tasks for this booking'}">${made ? '✓ Tasks' : '+ Tasks'}</button>`);
   }
   btns.push(`<button class="action-btn" style="border-color:var(--blue);color:var(--blue)" data-id="${b.id}" data-action="edit">Edit</button>`);
   btns.push(`<button class="action-btn" style="border-color:var(--purple);color:var(--purple)" data-id="${b.id}" data-action="assign-team">Team</button>`);
@@ -941,6 +948,7 @@ async function handleBookingAction(id, action) {
   if (action === 'send-gallery') { openSendGallery(id);         return; }
   if (action === 'edit')         { openEditBooking(id);         return; }
   if (action === 'assign-team')  { openAssignTeamModal(id);     return; }
+  if (action === 'make-tasks')   { makeTasksForBooking(id);     return; }
   if (action === 'share-event')  { shareEventToClient(id);      return; }
   if (action === 'whatsapp')     {
     const b = getBookings().find(x => x.id === id);
@@ -2771,6 +2779,7 @@ document.getElementById('tasksSelectCancelBtn')?.addEventListener('click', () =>
 document.getElementById('tasksSelectAllBtn')?.addEventListener('click', async () => {
   let tasks = await dbGetTasks();
   if (activeTaskStatus !== 'all') tasks = tasks.filter(t => t.status === activeTaskStatus);
+  if (activeTaskMonth  !== 'all') tasks = tasks.filter(t => _taskInMonth(t, activeTaskMonth));
   const allSelected = tasks.length > 0 && tasks.every(t => tasksSelectedIds.has(t.id));
   if (allSelected) tasksSelectedIds.clear();
   else tasks.forEach(t => tasksSelectedIds.add(t.id));
@@ -2779,7 +2788,11 @@ document.getElementById('tasksSelectAllBtn')?.addEventListener('click', async ()
 });
 document.getElementById('tasksBulkDeleteBtn')?.addEventListener('click', async () => {
   if (tasksSelectedIds.size === 0) { showToast('No tasks selected', 'err'); return; }
-  if (!confirm(`Delete ${tasksSelectedIds.size} selected task${tasksSelectedIds.size > 1 ? 's' : ''}? This cannot be undone.`)) return;
+  const all = await dbGetTasks();
+  const chosen = all.filter(t => tasksSelectedIds.has(t.id));
+  const names = chosen.slice(0, 6).map(t => `• ${t.title}`).join('\n');
+  const more  = chosen.length > 6 ? `\n• …and ${chosen.length - 6} more` : '';
+  if (!confirm(`Delete ${tasksSelectedIds.size} selected task${tasksSelectedIds.size > 1 ? 's' : ''}? This cannot be undone.\n\n${names}${more}`)) return;
   const ids = Array.from(tasksSelectedIds);
   for (const id of ids) {
     await dbDeleteTask(id).catch(() => {});
@@ -4488,16 +4501,45 @@ document.getElementById('bmEventForm').addEventListener('submit', e => {
   showToast(`Event booking for ${eventName} added ✓`);
 });
 
+/* Create this booking's post-event tasks, after the admin confirms. */
+async function makeTasksForBooking(id) {
+  const b = getBookings().find(x => x.id === id);
+  if (!b) return;
+  const date = b.bookingKind === 'studio' ? (b.shootDate || b.preferredDate) : b.eventDate;
+  if (!date) { showToast('Add a date to this booking first'); return; }
+
+  const isStudio = b.bookingKind === 'studio';
+  const summary = isStudio ? 'Backup and Retouching' : 'Backup, Lightroom, Thriller, full video and photobook';
+  const again = b.postEventTasksCreated
+    ? '\n\nTasks were created for this booking before. Any that already exist will be left alone.'
+    : '';
+  if (!confirm(`Create post-event tasks for ${b.clientName || 'this booking'}?\n\n${summary}, assigned to the usual staff and due from ${date}.${again}`)) return;
+
+  const res = await createPostEventTasks(id).catch(err => {
+    console.warn('Task creation failed:', err);
+    return { created: 0, reason: 'Something went wrong. Try again.' };
+  });
+
+  if (res.reason)       showToast(res.reason);
+  else if (res.created) showToast(`${res.created} task${res.created === 1 ? '' : 's'} created for ${res.eventName}`);
+  else                  showToast('Those tasks already exist for this booking');
+
+  renderBookings();
+  renderTasksBadge();
+}
+
 /* ════════════════════════════════════════════
-   AUTO-GENERATE POST-EVENT TASKS
-   When a booking's event/shoot date hits, create 5 standard tasks:
-   Backup (same-day), Lightroom (3d), Thriller (3d), Full video (3d), Photobook (3d).
+   POST-EVENT TASKS
+   Created on demand, one booking at a time, from the Tasks button on a
+   booking card. Nothing is generated automatically.
+   Backup (same-day), then Retouching for studio shoots, or Lightroom,
+   Thriller, full video and photobook for events (all due 3 days after).
    ════════════════════════════════════════════ */
-async function autoCreateEventDayTasks() {
-  const today = new Date().toISOString().slice(0, 10);
-  const bookings = (await dbFetchBookings()).filter(b => !b.deletedAt);
+async function createPostEventTasks(bookingId) {
   const tasks = await dbGetTasks();
   const allBookings = getBookings();
+  const b = allBookings.find(x => x.id === bookingId);
+  if (!b) return { created: 0, reason: 'Booking not found' };
   const team = getTeam();
 
   // Helper: find a team member by username (case-insensitive) → returns {id, name} or null
@@ -4511,11 +4553,9 @@ async function autoCreateEventDayTasks() {
   const NEJ     = findMember('nej');
   const LOLYA   = findMember('lolya');
 
-  for (const b of bookings) {
+  {
     const eventDate = b.bookingKind === 'studio' ? (b.shootDate || b.preferredDate) : b.eventDate;
-    if (!eventDate || eventDate > today) continue;     // event hasn't happened yet
-    if (b.postEventTasksCreated) continue;             // already done
-    if (b.status === 'cancelled') continue;
+    if (!eventDate) return { created: 0, reason: 'This booking has no date yet' };
 
     const eventName = b.clientName || (b.bookingKind === 'studio' ? 'Studio Shoot' : 'Event');
     const isStudio  = b.bookingKind === 'studio';
@@ -4560,9 +4600,11 @@ async function autoCreateEventDayTasks() {
       templates.push({ title: `Design Photobook ${eventName}`, deadline: plus3, priority: 'medium', assignee: DORATHY });
     }
 
+    let created = 0;
     for (const t of templates) {
       const exists = tasks.some(x => x.bookingId === b.id && x.title === t.title);
       if (exists) continue;
+      created++;
       const newTask = {
         id:           'TASK-' + Math.random().toString(36).slice(2,8).toUpperCase(),
         bookingId:    b.id,
@@ -4601,12 +4643,13 @@ async function autoCreateEventDayTasks() {
       }
     }
 
-    // Mark booking so we don't recreate on next load
+    // Remember that this booking's tasks exist, so the card can show it
     const idx = allBookings.findIndex(x => x.id === b.id);
-    if (idx !== -1) {
+    if (idx !== -1 && created) {
       allBookings[idx].postEventTasksCreated = true;
       await dbUpsertBooking(allBookings[idx]);
     }
+    return { created, total: templates.length, eventName };
   }
 }
 
@@ -4857,3 +4900,116 @@ document.addEventListener('click', async (e) => {
   }
   renderPayroll();
 });
+
+/* ════════════════════════════════════════════
+   PAST-DUE TASKS
+   Lists everything past its deadline and still open, and nudges the
+   person it is assigned to. Each assignee is nudged at most once a day.
+   ════════════════════════════════════════════ */
+const OVERDUE_NUDGE_KEY = 'nej_overdue_nudged';
+
+function _overdueNudgeLog() {
+  try { return JSON.parse(localStorage.getItem(OVERDUE_NUDGE_KEY) || '{}'); } catch { return {}; }
+}
+function _markOverdueNudged(taskId, day) {
+  const log = _overdueNudgeLog();
+  log[taskId] = day;
+  // keep it tidy: drop entries older than a week
+  const cutoff = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+  Object.keys(log).forEach(k => { if (log[k] < cutoff) delete log[k]; });
+  localStorage.setItem(OVERDUE_NUDGE_KEY, JSON.stringify(log));
+}
+
+const _daysLate = t => {
+  const dl = t.deadline || t.dueDate;
+  if (!dl) return 0;
+  return Math.max(0, Math.floor((Date.now() - new Date(dl + 'T23:59:59').getTime()) / 86400000));
+};
+
+async function getOverdueTasks() {
+  const tasks = await dbGetTasks();
+  return tasks
+    .filter(t => t.status !== 'completed' && !t.deletedAt && _isOverdue(t))
+    .sort((a, b) => _daysLate(b) - _daysLate(a));
+}
+
+// Notify the assignee that a task is past due. Returns true if a nudge went out.
+async function remindOverdue(task, { force = false } = {}) {
+  if (!task.assignedTo) return false;
+  const today = new Date().toISOString().slice(0, 10);
+  if (!force && _overdueNudgeLog()[task.id] === today) return false;  // already nudged today
+  const late = _daysLate(task);
+  await pushTeamNotification(task.assignedTo, {
+    type: 'task-overdue',
+    title: 'Task past due',
+    message: `${task.title} was due ${task.deadline || task.dueDate}${late ? ` — ${late} day${late === 1 ? '' : 's'} ago` : ''}`,
+    taskId: task.id,
+    ts: Date.now(),
+  });
+  _markOverdueNudged(task.id, today);
+  return true;
+}
+
+async function renderOverdueAlert() {
+  const box = document.getElementById('overdueAlert');
+  if (!box) return;
+  const overdue = await getOverdueTasks();
+  if (!overdue.length) { box.style.display = 'none'; return; }
+
+  box.style.display = 'block';
+  document.getElementById('overdueCount').textContent =
+    `${overdue.length} task${overdue.length === 1 ? '' : 's'} past the deadline`;
+
+  const list = document.getElementById('overdueList');
+  list.innerHTML = overdue.map(t => {
+    const late = _daysLate(t);
+    return `
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;margin-bottom:8px">
+        <div style="min-width:200px;flex:1">
+          <div style="color:var(--white);font-size:0.86rem">${_escHtml(t.title)}</div>
+          <div style="font-size:0.72rem;color:var(--grey-3);margin-top:2px">
+            ${_escHtml(t.assignedName || 'Unassigned')} · due ${_escHtml(t.deadline || t.dueDate || '—')}
+            <span style="color:var(--red)">· ${late} day${late === 1 ? '' : 's'} late</span>
+          </div>
+        </div>
+        <button class="task-action-btn" data-remind="${_escHtml(t.id)}"
+                style="border-color:var(--gold);color:var(--gold)"
+                ${t.assignedTo ? '' : 'disabled title="Nobody is assigned to this task"'}>Remind</button>
+      </div>`;
+  }).join('');
+}
+
+document.getElementById('overdueToggle')?.addEventListener('click', () => {
+  const list = document.getElementById('overdueList');
+  const btn  = document.getElementById('overdueToggle');
+  const open = list.style.display !== 'none';
+  list.style.display = open ? 'none' : 'block';
+  btn.textContent = open ? 'Show' : 'Hide';
+});
+
+document.getElementById('overdueRemindAll')?.addEventListener('click', async () => {
+  const overdue = (await getOverdueTasks()).filter(t => t.assignedTo);
+  if (!overdue.length) { showToast('Nothing past due to remind about'); return; }
+  if (!confirm(`Send a reminder for ${overdue.length} past-due task${overdue.length === 1 ? '' : 's'}?`)) return;
+  let sent = 0;
+  for (const t of overdue) if (await remindOverdue(t, { force: true })) sent++;
+  showToast(`${sent} reminder${sent === 1 ? '' : 's'} sent`);
+});
+
+document.addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-remind]');
+  if (!btn) return;
+  const task = (await dbGetTasks()).find(t => t.id === btn.dataset.remind);
+  if (!task) return;
+  btn.disabled = true;
+  await remindOverdue(task, { force: true });
+  btn.disabled = false;
+  btn.textContent = 'Reminded';
+  showToast(`${task.assignedName || 'Assignee'} reminded about "${task.title}"`);
+});
+
+// On load, nudge each assignee once a day about anything past due
+async function nudgeOverdueOnce() {
+  const overdue = await getOverdueTasks();
+  for (const t of overdue) await remindOverdue(t).catch(() => {});
+}
