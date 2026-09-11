@@ -31,13 +31,15 @@ async function _serverSave(resource, data) {
   // Always save locally first so UI is never blocked
   localStorage.setItem(lsKey, JSON.stringify(data));
   try {
-    await fetch(API + '?resource=' + resource, {
+    const r = await fetch(API + '?resource=' + resource, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify(data),
     });
+    return r.ok;
   } catch {
     // Server unreachable — localStorage copy will sync next time server is up
+    return false;
   }
 }
 
@@ -287,12 +289,14 @@ async function dbUpdateScheduleEntry(id, updates) {
 
 async function dbGetTasks() {
   let tasks = await _serverGet('tasks');
+  // Deleted tasks stay in storage as tombstones so no device can bring them back
+  const tombstoned = new Set(tasks.filter(t => t.deletedAt).map(t => t.id));
   // Merge any locally-saved tasks the server doesn't have yet (handles offline-created tasks)
   try {
     const local = JSON.parse(localStorage.getItem(DB_TASKS_KEY) || '[]');
     if (Array.isArray(local) && local.length > 0) {
       const serverIds = new Set(tasks.map(t => t.id));
-      const extras    = local.filter(t => !serverIds.has(t.id));
+      const extras    = local.filter(t => !serverIds.has(t.id) && !tombstoned.has(t.id) && !t.deletedAt);
       if (extras.length > 0) {
         tasks = [...tasks, ...extras];
         // Push merged list back to server silently so they're persisted
@@ -300,12 +304,13 @@ async function dbGetTasks() {
       }
     }
   } catch {}
-  return tasks;
+  return tasks.filter(t => !t.deletedAt);
 }
 
 async function dbGetTask(id) {
   const tasks = await _serverGet('tasks');
-  return tasks.find(t => t.id === id) || null;
+  const hit = tasks.find(t => t.id === id);
+  return (hit && !hit.deletedAt) ? hit : null;
 }
 
 async function dbAddTask(task) {
@@ -326,11 +331,30 @@ async function dbUpdateTask(id, updates) {
 }
 
 async function dbDeleteTask(id) {
-  const before = await dbGetTask(id);
-  const tasks = (await _serverGet('tasks')).filter(t => t.id !== id);
-  await _serverSave('tasks', tasks);
+  const res = await dbDeleteTasks([id]);
+  return res.deleted === 1;
+}
+
+/* Delete one or many tasks in a single round trip.
+   Entries are kept as tombstones ({id, deletedAt}) so a device holding a
+   stale cache cannot merge them back in. Returns what actually happened. */
+async function dbDeleteTasks(ids) {
+  const wanted = new Set(ids);
+  const all = await _serverGet('tasks');
+  const hit = all.filter(t => wanted.has(t.id) && !t.deletedAt);
+  if (!hit.length) return { deleted: 0, saved: true };
+
+  const now = Date.now();
+  // Drop tombstones older than 60 days so the list cannot grow forever
+  const cutoff = now - 60 * 86400000;
+  const next = all
+    .filter(t => !(t.deletedAt && t.deletedAt < cutoff))
+    .map(t => (wanted.has(t.id) && !t.deletedAt) ? { id: t.id, deletedAt: now } : t);
+
+  const saved = await _serverSave('tasks', next);
   _fireTasks(null);
-  dbAuditLog('task.delete', { taskId: id, title: before && before.title, assignedTo: before && before.assignedName });
+  hit.forEach(t => dbAuditLog('task.delete', { taskId: t.id, title: t.title, assignedTo: t.assignedName }));
+  return { deleted: hit.length, saved, titles: hit.map(t => t.title) };
 }
 
 /* ════════════════════════════════════════════
@@ -353,6 +377,7 @@ function _isOverdue(task) {
 async function dbGetOverdueTasksForOthers(memberId) {
   const tasks = await _serverGet('tasks');
   return tasks.filter(t =>
+    !t.deletedAt &&
     t.assignedTo !== memberId &&
     t.status !== 'completed' &&
     _isOverdue(t)

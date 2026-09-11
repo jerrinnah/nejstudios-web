@@ -2793,13 +2793,27 @@ document.getElementById('tasksBulkDeleteBtn')?.addEventListener('click', async (
   const names = chosen.slice(0, 6).map(t => `• ${t.title}`).join('\n');
   const more  = chosen.length > 6 ? `\n• …and ${chosen.length - 6} more` : '';
   if (!confirm(`Delete ${tasksSelectedIds.size} selected task${tasksSelectedIds.size > 1 ? 's' : ''}? This cannot be undone.\n\n${names}${more}`)) return;
-  const ids = Array.from(tasksSelectedIds);
-  for (const id of ids) {
-    await dbDeleteTask(id).catch(() => {});
+
+  const btn = document.getElementById('tasksBulkDeleteBtn');
+  const label = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Deleting…';
+
+  const res = await dbDeleteTasks(Array.from(tasksSelectedIds))
+    .catch(err => { console.warn('Bulk delete failed:', err); return { deleted: 0, saved: false }; });
+
+  btn.disabled = false; btn.textContent = label;
+
+  if (!res.saved) {
+    // Say so rather than claiming success — they would reappear on the next load
+    alert('The delete did not reach the server, so nothing was removed. Check your connection and try again.');
+    return;
   }
-  showToast(`${ids.length} task${ids.length > 1 ? 's' : ''} deleted ✓`);
+  showToast(res.deleted
+    ? `${res.deleted} task${res.deleted > 1 ? 's' : ''} deleted ✓`
+    : 'Those tasks were already gone');
   setTasksSelectMode(false);
   await renderTasksBadge();
+  renderOverdueAlert().catch(() => {});
 });
 
 async function renderTasks() {
